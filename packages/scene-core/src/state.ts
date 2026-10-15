@@ -1,89 +1,93 @@
 /**
- * URL state & scene snapshots (TZ W-05, W-51).
+ * URL state & snapshots (TZ W-05, W-51).
  *
- * W-05: "Адрес состояния: язык, тема, выбранная структура, режим, шаг процесса —
- * в URL (/ky/bio/g7/animal-cell?focus=bio.nucleus)". A link can be sent to a
- * class and pasted into a presentation, so the state must round-trip exactly.
+ * W-05: language, topic, focused structure, mode, process step — in the URL
+ * (`/ky/bio/g7/animal-cell?focus=bio.nucleus`). The state must round-trip so a
+ * link can be sent to a class or pasted into a presentation.
  */
-import type { Lang } from '@bilig/content-model';
-import { LANGS } from '@bilig/content-model';
+import {
+  SceneStateSchema,
+  isLang,
+  type Camera,
+  type SceneState,
+  type Snapshot,
+} from '@bilig/content-model';
 
-export type ViewMode = 'study' | 'lesson';
+export type { SceneState, Snapshot };
 
-export interface SceneState {
-  lang: Lang;
-  subjectSlug: string;
-  grade?: string;
-  topicSlug: string;
-  /** Selected concept key, URL param `focus` (TZ W-05 example). */
-  focus?: string;
-  /** Active view mode id (labels/rotate/…); omitted when default. */
-  mode?: string;
-  /** Current process step index; omitted when none. */
-  step?: number;
-  /** Study vs lesson shell (TZ W-01). */
-  view?: ViewMode;
-}
-
-/** Build the path + query for a scene state (TZ W-05). */
+/**
+ * Path `/:lang/:subject[/:grade]/:topic` + query:
+ * `focus`, `mode` (comma tokens, see encodeModes), `process`, `step`,
+ * `view=lesson`, `lesson` (tour step). Camera is never put in the URL.
+ */
 export function buildStateUrl(s: SceneState): string {
-  const segments = [s.lang, s.subjectSlug];
+  const segments = [s.lang, s.subjectKey];
   if (s.grade) segments.push(s.grade);
-  segments.push(s.topicSlug);
+  segments.push(s.topicKey);
   const path = '/' + segments.map(encodeURIComponent).join('/');
 
   const q = new URLSearchParams();
   if (s.focus) q.set('focus', s.focus);
-  if (s.mode) q.set('mode', s.mode);
+  if (s.modes?.length) q.set('mode', s.modes.join(','));
+  if (s.process) q.set('process', s.process);
   if (typeof s.step === 'number') q.set('step', String(s.step));
-  if (s.view && s.view !== 'study') q.set('view', s.view);
-  const query = q.toString();
+  if (s.view === 'lesson') q.set('view', 'lesson');
+  if (typeof s.lessonStep === 'number') q.set('lesson', String(s.lessonStep));
+  const query = q.toString().replace(/%2C/g, ',');
   return query ? `${path}?${query}` : path;
 }
 
-const isLang = (v: string): v is Lang => (LANGS as string[]).includes(v);
+const intParam = (v: string | null): number | undefined =>
+  v !== null && /^\d+$/.test(v) ? Number(v) : undefined;
 
 /**
- * Parse a scene-state URL back into a SceneState. Returns null when the path
- * doesn't match the expected `/:lang/:subject[/:grade]/:topic` shape.
+ * Parse a scene-state URL (path + optional query; a full URL or hash is fine).
+ * Returns null when the path is not `/:lang/:subject[/:grade]/:topic` or keys are invalid.
+ * Invalid optional params are dropped rather than failing the whole link.
  */
 export function parseStateUrl(url: string): SceneState | null {
-  const [rawPath, rawQuery = ''] = url.split('?');
-  const parts = rawPath.split('/').filter(Boolean).map(decodeURIComponent);
+  const noHash = url.split('#')[0];
+  const withoutOrigin = noHash.replace(/^[a-z]+:\/\/[^/]+/i, '');
+  const [rawPath, rawQuery = ''] = withoutOrigin.split('?');
+  let parts: string[];
+  try {
+    parts = rawPath.split('/').filter(Boolean).map(decodeURIComponent);
+  } catch {
+    return null;
+  }
   if (parts.length < 3 || parts.length > 4) return null;
-  const [lang, subjectSlug, maybeGradeOrTopic, maybeTopic] = parts;
+  const [lang, subjectKey] = parts;
   if (!isLang(lang)) return null;
-
-  const hasGrade = parts.length === 4;
-  const grade = hasGrade ? maybeGradeOrTopic : undefined;
-  const topicSlug = hasGrade ? maybeTopic : maybeGradeOrTopic;
+  const grade = parts.length === 4 ? parts[2] : undefined;
+  const topicKey = parts[parts.length - 1];
 
   const q = new URLSearchParams(rawQuery);
-  const stepRaw = q.get('step');
-  const step = stepRaw !== null && /^\d+$/.test(stepRaw) ? Number(stepRaw) : undefined;
-  const view = q.get('view');
+  const candidate: Record<string, unknown> = { lang, subjectKey, grade, topicKey };
+  const base = SceneStateSchema.safeParse(candidate);
+  if (!base.success) return null;
 
-  return {
-    lang,
-    subjectSlug,
-    grade,
-    topicSlug,
+  const optional: Partial<SceneState> = {
     focus: q.get('focus') ?? undefined,
-    mode: q.get('mode') ?? undefined,
-    step,
-    view: view === 'lesson' ? 'lesson' : undefined,
+    modes: q.get('mode')?.split(',').filter(Boolean),
+    process: q.get('process') ?? undefined,
+    step: intParam(q.get('step')),
+    view: q.get('view') === 'lesson' ? 'lesson' : undefined,
+    lessonStep: intParam(q.get('lesson')),
   };
+  const out: SceneState = { ...base.data };
+  for (const [k, v] of Object.entries(optional)) {
+    if (v === undefined) continue;
+    const probe = SceneStateSchema.safeParse({ ...base.data, [k]: v });
+    if (probe.success) (out as Record<string, unknown>)[k] = v;
+  }
+  return out;
 }
 
-/**
- * A snapshot for a presentation slide (TZ W-51): keeps the SceneState so the
- * slide can be reopened live, plus a rendered image url.
- */
-export interface Snapshot {
-  sceneState: SceneState;
-  imageUrl: string;
+/** W-51: a snapshot keeps the image and a deep copy of the SceneState (+ camera). */
+export function makeSnapshot(state: SceneState, image: string, camera?: Camera): Snapshot {
+  const sceneState = structuredClone(camera ? { ...state, camera } : state);
+  return { image, sceneState };
 }
 
-export function makeSnapshot(state: SceneState, imageUrl: string): Snapshot {
-  return { sceneState: { ...state }, imageUrl };
-}
+/** URL for reopening a snapshot live (drops the camera, which the URL cannot carry). */
+export const snapshotUrl = (snap: Snapshot): string => buildStateUrl(snap.sceneState);

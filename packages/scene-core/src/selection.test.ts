@@ -1,47 +1,71 @@
 import { describe, it, expect } from 'vitest';
-import { pickConcept, anchorFor, hueFor, type Hit } from './selection.js';
+import {
+  anchorFor,
+  conceptVisibility,
+  hideOthers,
+  hueFor,
+  isolateSelected,
+  pickConcept,
+  selectByKey,
+  type Hit,
+} from './index.js';
+import { topicConcepts } from '@bilig/content-model';
 import { animalCellPackage } from '@bilig/content-model/fixtures/animal-cell';
 
-const concepts = animalCellPackage.topics[0].concepts;
-const membrane = concepts.find((c) => c.id === 'bio.membrane')!;
-const nucleus = concepts.find((c) => c.id === 'bio.nucleus')!;
+const concepts = topicConcepts(animalCellPackage);
+const keys = animalCellPackage.topic.conceptKeys;
+const nucleus = concepts.find((c) => c.key === 'bio.nucleus')!;
 
-describe('pickConcept (TZ W-21: shells do not steal clicks)', () => {
-  it('prefers a non-container structure over an enclosing shell, even if the shell is nearer', () => {
+describe('pickConcept (W-21: shells do not steal clicks)', () => {
+  it('prefers a non-container even if the shell is nearer', () => {
     const hits: Hit[] = [
-      { conceptId: 'bio.membrane', distance: 1 }, // container, closest
-      { conceptId: 'bio.nucleus', distance: 5 }, // inner structure, farther
+      { conceptKey: 'bio.membrane', distance: 1 },
+      { conceptKey: 'bio.nucleus', distance: 5 },
     ];
     expect(pickConcept(hits, concepts)).toBe('bio.nucleus');
   });
 
-  it('among several solids, picks the nearest', () => {
-    const hits: Hit[] = [
-      { conceptId: 'bio.mitochondrion', distance: 3 },
-      { conceptId: 'bio.nucleus', distance: 2 },
-    ];
-    expect(pickConcept(hits, concepts)).toBe('bio.nucleus');
+  it('nearest solid among several; nearest shell if only shells', () => {
+    expect(pickConcept([{ conceptKey: 'bio.mitochondrion', distance: 3 }, { conceptKey: 'bio.nucleus', distance: 2 }], concepts)).toBe('bio.nucleus');
+    expect(pickConcept([{ conceptKey: 'bio.membrane', distance: 1 }], concepts)).toBe('bio.membrane');
   });
 
-  it('falls back to the nearest shell when only shells are hit', () => {
-    const hits: Hit[] = [{ conceptId: 'bio.membrane', distance: 1 }];
-    expect(pickConcept(hits, concepts)).toBe('bio.membrane');
-  });
-
-  it('returns null when nothing is hit', () => {
+  it('ignores unknown keys; null when nothing is hit', () => {
+    expect(pickConcept([{ conceptKey: 'ghost', distance: 0 }, { conceptKey: 'bio.membrane', distance: 2 }], concepts)).toBe('bio.membrane');
+    expect(pickConcept([{ conceptKey: 'ghost', distance: 0 }], concepts)).toBeNull();
     expect(pickConcept([], concepts)).toBeNull();
   });
 });
 
-describe('anchorFor / hueFor (TZ W-22, W-31 overrides win)', () => {
-  it('uses the scene override anchor before the concept anchor', () => {
-    expect(anchorFor(nucleus)).toEqual([0, 0, 0]);
-    expect(anchorFor(nucleus, { anchor: [1, 2, 3] })).toEqual([1, 2, 3]);
+describe('selectByKey / anchorFor / hueFor', () => {
+  it('selects only existing keys', () => {
+    expect(selectByKey(concepts, 'bio.nucleus')).toBe('bio.nucleus');
+    expect(selectByKey(concepts, 'bio.ghost')).toBeNull();
+    expect(selectByKey(concepts, null)).toBeNull();
   });
 
-  it('override hue > concept hue > fallback', () => {
-    expect(hueFor(nucleus, 140)).toBe(280); // concept.colorHue
-    expect(hueFor(nucleus, 140, { colorHue: 10 })).toBe(10); // override wins
-    expect(hueFor(membrane, 140)).toBe(140); // fallback (no own hue)
+  it('override anchor > fallback (first instance) > undefined', () => {
+    const o = animalCellPackage.topic.overrides;
+    expect(anchorFor('bio.nucleus', o, [9, 9, 9])).toEqual([0, 0.2, 0]);
+    expect(anchorFor('bio.membrane', o, [9, 9, 9])).toEqual([9, 9, 9]);
+    expect(anchorFor('bio.membrane', o)).toBeUndefined();
+    expect(anchorFor('bio.nucleus', undefined)).toBeUndefined();
+  });
+
+  it('override hue > concept hue', () => {
+    expect(hueFor(nucleus)).toBe(280);
+    expect(hueFor(nucleus, { hue: 10 })).toBe(10);
+    expect(hueFor(nucleus, {})).toBe(280);
+  });
+});
+
+describe('visibility (W-24 «Выделить» / «Скрыть остальное», tour steps)', () => {
+  it('isolate ghosts the others; hide hides; hide wins', () => {
+    expect(conceptVisibility(keys)).toEqual({ 'bio.membrane': 'normal', 'bio.nucleus': 'normal', 'bio.mitochondrion': 'normal' });
+    expect(conceptVisibility(keys, { isolate: ['bio.nucleus'], hide: ['bio.membrane', 'bio.nucleus'] })).toEqual({
+      'bio.membrane': 'hidden', 'bio.nucleus': 'hidden', 'bio.mitochondrion': 'ghost',
+    });
+    expect(isolateSelected(keys, 'bio.nucleus')['bio.membrane']).toBe('ghost');
+    expect(hideOthers(keys, 'bio.nucleus')).toEqual({ 'bio.membrane': 'hidden', 'bio.nucleus': 'normal', 'bio.mitochondrion': 'hidden' });
   });
 });

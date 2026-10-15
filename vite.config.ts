@@ -12,12 +12,8 @@ export default defineConfig({
     // alias greedily swallows subpath imports.
     alias: [
       {
-        find: '@bilig/content-model/fixtures/animal-cell',
-        replacement: pkg('./packages/content-model/src/fixtures/animal-cell.ts'),
-      },
-      {
-        find: '@bilig/content-model/schema',
-        replacement: pkg('./packages/content-model/src/schema.ts'),
+        find: '@bilig/content-model/api',
+        replacement: pkg('./packages/content-model/src/api/index.ts'),
       },
       {
         find: '@bilig/content-model',

@@ -1,34 +1,27 @@
 /**
  * @bilig/scene-core — the viewer core contract shared by every scene plugin
- * (TZ W-20..W-26). The engine (bilig_ft) is identical for all subjects; a
- * subject only ships data + a plugin type. There is NO `if (subject)` anywhere
- * in UI code (TZ W-23) — the panel, modes, readouts and tools are all derived
- * from the plugin + the topic's SceneSpec.
+ * (TZ W-20..W-26, W-41, W-50). The engine is identical for all subjects; a
+ * subject only ships data + a plugin kind. There is NO `if (subject)` in UI
+ * code (W-23) — the panel, modes, readouts and tools derive from the plugin
+ * and the topic's SceneSpec. Everything except the React component type is pure.
  */
 import type { ComponentType } from 'react';
 import type {
-  Concept,
   Lang,
   Localized,
-  PluginType,
   Process,
+  ResolvedConcept,
   SceneSpec,
+  ScenePluginKind,
   Topic,
 } from '@bilig/content-model';
+import { resolveModes, type ModeDef, type ModeState } from './modes.js';
+import type { ConceptVisibility } from './selection.js';
+import type { PlayerView } from './player.js';
 
-/** A toggle/segment in the "Вид модели" panel (TZ W-23). Built from data. */
-export interface ModeDef {
-  id: string;
-  label: Localized;
-  /** Mutually-exclusive segment group (e.g. "representation"); absent = standalone toggle. */
-  group?: string;
-  /** Pre-selected when the scene loads. */
-  default?: boolean;
-}
-
-/** A numeric/labelled process readout (TZ W-43). Values come from the plugin, never drawn by hand. */
+/** A process readout (W-43). Values come from the plugin, never hand-drawn. */
 export interface Readout {
-  id: string;
+  key: string;
   label: Localized;
   value: number | string;
   unit?: string;
@@ -39,81 +32,71 @@ export interface Readout {
 /** Live viewer state the engine owns and passes to plugins. */
 export interface ViewerState {
   lang: Lang;
-  /** Currently selected concept id, or null in overview (TZ W-30/W-31). */
-  selectedConceptId: string | null;
-  /** Active mode ids keyed by group (and standalone toggles). */
-  modes: Record<string, boolean | string>;
-  /** Process playback, when a process is active (TZ W-41). */
-  process?: {
-    id: string;
-    stepIndex: number;
-    playing: boolean;
-    speed: number; // 0.5 | 1 | 2
-    progress: number; // 0..1
-  };
+  /** Selected concept key, or null in overview (W-30/W-31). */
+  selectedConceptKey: string | null;
+  modes: ModeState;
+  /** Per-concept visibility (toolbar / tour step). Absent key = normal. */
+  visibility?: Record<string, ConceptVisibility>;
+  /** Active process playback (W-41). */
+  process?: PlayerView & { key: string };
 }
 
-/** What a plugin's Component receives. The engine renders it inside the shared canvas. */
+/** What a plugin's Component receives inside the shared canvas. */
 export interface SceneProps {
   topic: Topic;
-  scene: SceneSpec;
-  concepts: Concept[];
+  /** Topic concepts merged with overrides, in display order. */
+  concepts: ResolvedConcept[];
   state: ViewerState;
-  /** Select a concept by id (null to deselect). Shells (container=true) ignore clicks — TZ W-21. */
-  onSelectConcept: (id: string | null) => void;
+  /** Select by key (null = deselect). Containers never steal clicks (W-21) — use pickConcept. */
+  onSelectConcept: (key: string | null) => void;
 }
 
-/**
- * A scene plugin. `type` matches SceneSpec.plugin; the engine dispatches on it.
- * Everything a subject needs to render + drive its 3D lives behind this contract.
- */
+/** A scene plugin; `type` matches `SceneSpec.plugin`. */
 export interface ScenePlugin {
-  type: PluginType;
-  /** Modes this plugin offers for a given scene (TZ W-23: panel built from this). */
-  modesFor(scene: SceneSpec): ModeDef[];
-  /** The r3f/React component drawn inside the shared canvas (TZ W-20 core is shared). */
+  type: ScenePluginKind;
+  /** Modes the plugin offers for a scene (W-23). */
+  modes(scene: SceneSpec): ModeDef[];
   Component: ComponentType<SceneProps>;
-  /** Process readouts for the current state (TZ W-43). Optional: only `sim`/process scenes. */
-  readouts?(topic: Topic, process: Process, state: ViewerState): Readout[];
+  /** Process readouts for the current playback (W-43). */
+  readouts?(process: Process, playback: PlayerView): Readout[];
 }
 
-/** Always-present modes every scene has (TZ W-23: «Подписи», «Вращение»). */
-export const UNIVERSAL_MODES: ModeDef[] = [
-  { id: 'labels', label: { ky: 'Белгилер', ru: 'Подписи', en: 'Labels' } },
-  { id: 'rotate', label: { ky: 'Айлануу', ru: 'Вращение', en: 'Rotation' }, default: true },
-];
-
-/** The plugin registry. bilig_ft registers concrete plugins at startup. */
+/** The plugin registry; apps register concrete plugins at startup. */
 export class PluginRegistry {
-  private readonly plugins = new Map<PluginType, ScenePlugin>();
+  private readonly plugins = new Map<string, ScenePlugin>();
 
   register(plugin: ScenePlugin): void {
     this.plugins.set(plugin.type, plugin);
   }
 
-  get(type: PluginType): ScenePlugin | undefined {
+  get(type: string): ScenePlugin | undefined {
     return this.plugins.get(type);
   }
 
-  has(type: PluginType): boolean {
+  has(type: string): boolean {
     return this.plugins.has(type);
   }
 
-  /** Resolve the full mode list for a scene: universal modes + plugin modes. */
+  /** Panel modes: plugin modes ∩ scene.modes, then the universal modes. */
   modesFor(scene: SceneSpec): ModeDef[] {
     const plugin = this.get(scene.plugin);
-    const pluginModes = plugin ? plugin.modesFor(scene) : [];
-    // Universal modes last so representation segments come first in the panel.
-    return [...pluginModes, ...UNIVERSAL_MODES];
+    return resolveModes(plugin ? plugin.modes(scene) : [], scene.modes);
   }
 }
 
-/** A singleton registry for the running app. */
+/** Singleton registry for the running app. */
 export const registry = new PluginRegistry();
 
-// Pure, framework-agnostic viewer logic (testable without WebGL/React).
 export * from './tokens.js'; // W-03: tokens from hue, AA contrast
-export * from './selection.js'; // W-21/W-22/W-31: picking, anchors, hues
-export * from './navigation.js'; // W-04: course tree & breadcrumbs
+export * from './modes.js'; // W-23: panel modes, group exclusivity, defaults, URL tokens
+export * from './selection.js'; // W-21/W-22/W-24/W-31: picking, anchors, hues, visibility
+export * from './navigation.js'; // W-04: breadcrumbs, course tree, catalog groups
 export * from './state.js'; // W-05/W-51: URL state & snapshots
 export * from './progress.js'; // W-11: изучено N из M, offline merge
+/** W-41 process player (pure reducer): `player.play(s)`, `player.tick(s, dt)`… */
+export * as player from './player.js';
+export type { PlayerState, PlayerAction, PlayerView, Segment, Speed } from './player.js';
+export { SPEEDS } from './player.js';
+/** W-50 tour / lesson stepper: `stepper.next(s)`, `stepper.keyToStepCommand(key)`… */
+export * as stepper from './stepper.js';
+export type { StepperState, StepCommand, LessonFrame } from './stepper.js';

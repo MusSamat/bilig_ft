@@ -1,43 +1,48 @@
 /**
  * Concept card (TZ W-30/W-31). No selection → topic overview + "В модели" chips.
- * With selection → structure detail: color dot, title, description, typed
- * properties (numbers via Intl per language, W-30), fact, related, actions.
+ * With selection → color dot, title, description, typed properties (Intl per
+ * language), fun fact, related, actions. Concept data = dictionary + overrides.
  */
 import { useTranslation } from 'react-i18next';
-import type { Concept, Topic } from '@bilig/content-model';
-import { t as tr } from '@bilig/content-model';
-import { hueFor } from '@bilig/scene-core';
+import {
+  formatPropValue,
+  propertyType,
+  t as tr,
+  type ContentPackage,
+  type ResolvedConcept,
+} from '@bilig/content-model';
 import { useStore } from '../store';
 
-function formatValue(value: string | number, unit: string | undefined, lang: string): string {
-  const v = typeof value === 'number' ? new Intl.NumberFormat(lang).format(value) : value;
-  return unit ? `${v} ${unit}` : String(v);
-}
-
-export function ConceptCard({ topic }: { topic: Topic }): JSX.Element {
+export function ConceptCard({
+  pkg,
+  concepts,
+}: {
+  pkg: ContentPackage;
+  concepts: ResolvedConcept[];
+}): JSX.Element {
   const { t } = useTranslation();
   const lang = useStore((s) => s.lang);
-  const selectedId = useStore((s) => s.selectedConceptId);
+  const selectedKey = useStore((s) => s.selectedConceptKey);
   const select = useStore((s) => s.selectConcept);
+  const { topic } = pkg;
+  const extraTypes = pkg.propertyTypes ?? [];
 
-  const concept: Concept | undefined = topic.concepts.find((c) => c.id === selectedId);
+  const concept = concepts.find((c) => c.key === selectedKey);
 
   if (!concept) {
     return (
       <aside className="card">
-        <h2>{tr(topic.title, lang)}</h2>
-        {topic.classification && (
-          <p className="classification">{tr(topic.classification, lang)}</p>
-        )}
+        <h2>
+          {tr(topic.title, lang)}
+          {topic.formula ? `, ${topic.formula}` : ''}
+        </h2>
+        {topic.classification && <p className="classification">{tr(topic.classification, lang)}</p>}
         <p>{tr(topic.description, lang)}</p>
         <h4>{t('concept.inModel')}</h4>
         <div className="chips">
-          {topic.concepts.map((c) => (
-            <button key={c.id} className="chip" onClick={() => select(c.id)}>
-              <span
-                className="chip__dot"
-                style={{ background: `hsl(${hueFor(c, c.container ? 200 : 150)} 70% 60%)` }}
-              />
+          {concepts.map((c) => (
+            <button key={c.key} className="chip" onClick={() => select(c.key)}>
+              <span className="chip__dot" style={{ background: `hsl(${c.hue} 70% 60%)` }} />
               {tr(c.title, lang)}
             </button>
           ))}
@@ -46,12 +51,10 @@ export function ConceptCard({ topic }: { topic: Topic }): JSX.Element {
     );
   }
 
-  const hue = hueFor(concept, concept.container ? 200 : 150, topic.scene.overrides?.[concept.id]);
-
   return (
     <aside className="card">
       <div className="card__head">
-        <span className="sphere" style={{ background: `hsl(${hue} 70% 60%)` }} />
+        <span className="sphere" style={{ background: `hsl(${concept.hue} 70% 60%)` }} />
         <div>
           <h2>{tr(concept.title, lang)}</h2>
           {concept.subtitle && <p className="subtitle">{tr(concept.subtitle, lang)}</p>}
@@ -59,15 +62,15 @@ export function ConceptCard({ topic }: { topic: Topic }): JSX.Element {
       </div>
       <p>{tr(concept.description, lang)}</p>
 
-      {concept.properties.length > 0 && (
+      {concept.props.length > 0 && (
         <>
           <h4>{t('concept.properties')}</h4>
           <table className="props">
             <tbody>
-              {concept.properties.map((p) => (
+              {concept.props.map((p) => (
                 <tr key={p.type}>
-                  <td className="props__label">{tr(p.label, lang)}</td>
-                  <td className="props__value">{formatValue(p.value, p.unit, lang)}</td>
+                  <td className="props__label">{tr(propertyType(p.type, extraTypes)?.label, lang)}</td>
+                  <td className="props__value">{formatPropValue(p, lang, extraTypes)}</td>
                 </tr>
               ))}
             </tbody>
@@ -75,21 +78,21 @@ export function ConceptCard({ topic }: { topic: Topic }): JSX.Element {
         </>
       )}
 
-      {concept.fact && (
+      {concept.funFact && (
         <div className="fact">
-          <strong>{t('concept.fact')}:</strong> {tr(concept.fact, lang)}
+          <strong>{t('concept.fact')}:</strong> {tr(concept.funFact, lang)}
         </div>
       )}
 
-      {concept.relatedIds.length > 0 && (
+      {concept.related.length > 0 && (
         <>
           <h4>{t('concept.related')}</h4>
           <div className="chips">
-            {concept.relatedIds.map((rid) => {
-              const rc = topic.concepts.find((c) => c.id === rid);
+            {concept.related.map((rk) => {
+              const rc = pkg.concepts.find((c) => c.key === rk);
               if (!rc) return null;
               return (
-                <button key={rid} className="chip" onClick={() => select(rid)}>
+                <button key={rk} className="chip" onClick={() => select(rk)}>
                   {tr(rc.title, lang)}
                 </button>
               );

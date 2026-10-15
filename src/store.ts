@@ -1,36 +1,36 @@
 /**
- * Global UI state (zustand). Deliberately small: language, theme, view mode,
- * current selection, and active scene modes. Content and routing live elsewhere.
+ * Global UI state (zustand): language, theme, view mode, current selection and
+ * active scene modes. Content and routing live elsewhere.
  */
 import { create } from 'zustand';
-import type { Lang } from '@bilig/content-model';
-import { DEFAULT_LANG } from '@bilig/content-model';
-import type { Theme, ViewMode } from '@bilig/scene-core';
+import { DEFAULT_LANG, isLang, type Lang, type ViewMode } from '@bilig/content-model';
+import type { ModeState, Theme } from '@bilig/scene-core';
 import i18n from './i18n';
 
 interface AppState {
   lang: Lang;
   theme: Theme;
   view: ViewMode;
-  selectedConceptId: string | null;
-  /** Active scene modes keyed by id/group (TZ W-23). */
-  modes: Record<string, boolean | string>;
+  selectedConceptKey: string | null;
+  /** Active scene modes (TZ W-23): `{ [group]: modeId, [toggle]: boolean }`. */
+  modes: ModeState;
   setLang: (lang: Lang) => void;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
   setView: (view: ViewMode) => void;
-  selectConcept: (id: string | null) => void;
-  setMode: (id: string, value: boolean | string) => void;
+  selectConcept: (key: string | null) => void;
+  setModes: (modes: ModeState) => void;
 }
 
-const storedLang = (localStorage.getItem('bilig.lang') as Lang | null) ?? DEFAULT_LANG;
+const rawLang = localStorage.getItem('bilig.lang');
+const storedLang: Lang = isLang(rawLang) ? rawLang : DEFAULT_LANG;
 const storedTheme = (localStorage.getItem('bilig.theme') as Theme | null) ?? 'dark';
 
 export const useStore = create<AppState>((set) => ({
   lang: storedLang,
   theme: storedTheme,
   view: 'study',
-  selectedConceptId: null,
+  selectedConceptKey: null,
   modes: { rotate: true, labels: false },
 
   setLang: (lang) => {
@@ -50,7 +50,6 @@ export const useStore = create<AppState>((set) => ({
       return { theme };
     }),
   setView: (view) => set({ view }),
-  selectConcept: (selectedConceptId) => set({ selectedConceptId }),
-  setMode: (id, value) =>
-    set((s) => ({ modes: { ...s.modes, [id]: value } })),
+  selectConcept: (selectedConceptKey) => set({ selectedConceptKey }),
+  setModes: (modes) => set({ modes }),
 }));

@@ -1,71 +1,74 @@
 /**
- * Course-tree navigation & breadcrumbs (TZ W-04).
- *
- * "Хлебные крошки: предмет → раздел → тема. Иерархия любой глубины из модели
- * курса." The tree is data (CourseNode[]); no screen hard-codes depth.
+ * Course tree & breadcrumbs (TZ W-04: предмет → раздел → тема), built from the
+ * catalog data (Subject → Course → Unit → Topic).
  */
-import type { CourseNode } from '@bilig/content-model';
+import type { Catalog, Course, Localized, Subject, TopicSummary, Unit } from '@bilig/content-model';
 
-export interface TreeNode extends CourseNode {
-  children: TreeNode[];
+export type CrumbKind = 'subject' | 'course' | 'unit' | 'topic';
+export interface Crumb {
+  kind: CrumbKind;
+  key: string;
+  title: Localized;
 }
 
-/** Build the forest of course nodes for a subject, children ordered by `order`. */
-export function buildTree(nodes: CourseNode[]): TreeNode[] {
-  const byId = new Map<string, TreeNode>();
-  for (const n of nodes) byId.set(n.id, { ...n, children: [] });
-
-  const roots: TreeNode[] = [];
-  for (const node of byId.values()) {
-    if (node.parentId && byId.has(node.parentId)) {
-      byId.get(node.parentId)!.children.push(node);
-    } else {
-      roots.push(node);
-    }
-  }
-  const sort = (list: TreeNode[]): void => {
-    list.sort((a, b) => a.order - b.order);
-    list.forEach((c) => sort(c.children));
-  };
-  sort(roots);
-  return roots;
-}
-
-/**
- * Breadcrumb path from the subject root down to `nodeId` (inclusive).
- * Returns [] if the node is unknown. Detects and breaks parent cycles.
- */
-export function breadcrumbs(nodes: CourseNode[], nodeId: string): CourseNode[] {
-  const byId = new Map(nodes.map((n) => [n.id, n]));
-  const path: CourseNode[] = [];
-  const seen = new Set<string>();
-  let current = byId.get(nodeId);
-  while (current && !seen.has(current.id)) {
-    seen.add(current.id);
-    path.unshift(current);
-    current = current.parentId ? byId.get(current.parentId) : undefined;
-  }
-  return byId.has(nodeId) ? path : [];
-}
-
-/** All leaf topics under a subtree (nodes carrying a topicId), in tree order. */
-export function topicsUnder(nodes: CourseNode[], rootId: string): CourseNode[] {
-  const tree = buildTree(nodes);
-  const find = (list: TreeNode[]): TreeNode | undefined => {
-    for (const n of list) {
-      if (n.id === rootId) return n;
-      const hit = find(n.children);
-      if (hit) return hit;
-    }
-    return undefined;
-  };
-  const start = find(tree);
-  if (!start) return [];
-  const out: CourseNode[] = [];
-  const walk = (n: TreeNode): void => {
-    if (n.topicId) out.push(n);
-    n.children.forEach(walk);
-  };
-  walk(start);
+/** Breadcrumb path to a topic. Missing levels are skipped; unknown topic → []. */
+export function breadcrumbs(catalog: Catalog, topicKey: string): Crumb[] {
+  const topic = catalog.topics.find((t) => t.key === topicKey);
+  if (!topic) return [];
+  const unit = catalog.units.find((u) => u.key === topic.unitKey);
+  const course = unit && catalog.courses.find((c) => c.key === unit.courseKey);
+  const subject = catalog.subjects.find((s) => s.key === (course?.subjectKey ?? topic.subjectKey));
+  const out: Crumb[] = [];
+  if (subject) out.push({ kind: 'subject', key: subject.key, title: subject.title });
+  if (course) out.push({ kind: 'course', key: course.key, title: course.title });
+  if (unit) out.push({ kind: 'unit', key: unit.key, title: unit.title });
+  out.push({ kind: 'topic', key: topic.key, title: topic.title });
   return out;
+}
+
+export interface UnitNode {
+  unit: Unit;
+  topics: TopicSummary[];
+}
+export interface CourseNode {
+  course: Course;
+  units: UnitNode[];
+}
+export interface SubjectTree {
+  subject: Subject;
+  courses: CourseNode[];
+}
+
+/** Subject → courses (by grade) → units (by order) → topics (by key). */
+export function subjectTree(catalog: Catalog, subjectKey: string): SubjectTree | null {
+  const subject = catalog.subjects.find((s) => s.key === subjectKey);
+  if (!subject) return null;
+  const courses = catalog.courses
+    .filter((c) => c.subjectKey === subjectKey)
+    .sort((a, b) => a.grade - b.grade || a.key.localeCompare(b.key))
+    .map((course) => ({
+      course,
+      units: catalog.units
+        .filter((u) => u.courseKey === course.key)
+        .sort((a, b) => a.order - b.order)
+        .map((unit) => ({
+          unit,
+          topics: catalog.topics
+            .filter((t) => t.unitKey === unit.key)
+            .sort((a, b) => a.key.localeCompare(b.key)),
+        })),
+    }));
+  return { subject, courses };
+}
+
+/** Subjects grouped for the catalog modal (W-02): groups by order, subjects by order. */
+export function groupedSubjects(catalog: Catalog): { groupKey: string; title: Localized; subjects: Subject[] }[] {
+  return [...catalog.groups]
+    .sort((a, b) => a.order - b.order)
+    .map((g) => ({
+      groupKey: g.key,
+      title: g.title,
+      subjects: catalog.subjects.filter((s) => s.group === g.key).sort((a, b) => a.order - b.order),
+    }))
+    .filter((g) => g.subjects.length > 0);
 }
