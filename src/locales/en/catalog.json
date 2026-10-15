@@ -1,0 +1,14 @@
+{
+  "title": "Subject catalog",
+  "search": "Search subjects or topics…",
+  "searchLabel": "Search the catalog",
+  "coming": "Soon",
+  "locked": "{{name}} – coming soon",
+  "models_one": "{{count}} model",
+  "models_other": "{{count}} models",
+  "topics": "Topics",
+  "structures": "Structures",
+  "empty": "Nothing found",
+  "loadError": "Could not load the catalog",
+  "hotkey": "Shortcuts: / or Ctrl+K"
+}

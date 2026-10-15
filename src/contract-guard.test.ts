@@ -1,4 +1,4 @@
-/** Guard: app code must never import test-only content fixtures. */
+/** Guard: app code must never import test-only content fixtures (src/mocks is dev/test-only and excluded). */
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -8,7 +8,7 @@ const root = fileURLToPath(new URL('.', import.meta.url));
 const files = (dir: string): string[] =>
   readdirSync(dir).flatMap((f) => {
     const p = join(dir, f);
-    return statSync(p).isDirectory() ? files(p) : /\.(ts|tsx)$/.test(f) && !/\.test\.tsx?$/.test(f) ? [p] : [];
+    return statSync(p).isDirectory() ? (f === 'mocks' || f === 'test' ? [] : files(p)) : /\.(ts|tsx)$/.test(f) && !/\.test\.tsx?$/.test(f) ? [p] : [];
   });
 
 describe('app code', () => {

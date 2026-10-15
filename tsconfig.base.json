@@ -20,7 +20,10 @@
       "@bilig/content-model": ["./packages/content-model/src/index.ts"],
       "@bilig/content-model/api": ["./packages/content-model/src/api/index.ts"],
       "@bilig/content-model/fixtures/*": ["./packages/content-model/src/fixtures/*.ts"],
-      "@bilig/scene-core": ["./packages/scene-core/src/index.ts"]
+      "@bilig/scene-core": ["./packages/scene-core/src/index.ts"],
+      "@bilig/scene-kit": ["./packages/scene-kit/src/index.ts"],
+      "@bilig/plugin-*": ["./packages/plugin-*/src/index.ts"],
+      "@/*": ["./src/*"]
     },
     "baseUrl": "."
   }

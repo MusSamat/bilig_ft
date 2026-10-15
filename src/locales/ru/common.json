@@ -1,0 +1,21 @@
+{
+  "loading": "Загрузка…",
+  "close": "Закрыть",
+  "back": "Назад",
+  "next": "Далее",
+  "cancel": "Отмена",
+  "save": "Сохранить",
+  "retry": "Повторить",
+  "error": "Что-то пошло не так",
+  "offline": "Нет сети",
+  "online": "Сеть есть",
+  "delete": "Удалить",
+  "edit": "Изменить",
+  "open": "Открыть",
+  "dismiss": "Скрыть",
+  "done": "Готово",
+  "minutes_one": "{{count}} минута",
+  "minutes_few": "{{count}} минуты",
+  "minutes_many": "{{count}} минут",
+  "minutes_other": "{{count}} минуты"
+}

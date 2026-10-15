@@ -83,7 +83,7 @@ describe('process player (W-41/W-42)', () => {
       { type: 'play' }, { type: 'tick', dt: 1 }, { type: 'speed', speed: 2 }, { type: 'pause' },
       { type: 'toggle' }, { type: 'seek', fraction: 0 }, { type: 'seekStep', index: 1 },
     ] as const) s = player.playerReducer(s, a);
-    expect(player.playerView(s)).toEqual({ stepIndex: 1, percent: 33, playing: true, speed: 2 });
+    expect(player.playerView(s)).toMatchObject({ stepIndex: 1, percent: 33, playing: true, speed: 2 });
     expect(player.playerReducer(s, { type: 'reset' }).time).toBe(0);
   });
 });

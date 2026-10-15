@@ -1,0 +1,10 @@
+{
+  "step": "Step {{current}} of {{total}}",
+  "prev": "Back",
+  "next": "Next",
+  "exit": "Exit lesson",
+  "teacherNote": "Teacher note",
+  "remoteHint": "Arrow keys ← → or a presentation remote",
+  "noTour": "No tour in this topic: stepping through structures",
+  "region": "Lesson mode"
+}

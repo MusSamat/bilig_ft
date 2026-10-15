@@ -1,0 +1,16 @@
+{
+  "title": "Каталог предметов",
+  "search": "Поиск предмета или темы…",
+  "searchLabel": "Поиск по каталогу",
+  "coming": "Скоро",
+  "locked": "{{name}} – скоро",
+  "models_one": "{{count}} модель",
+  "models_few": "{{count}} модели",
+  "models_many": "{{count}} моделей",
+  "models_other": "{{count}} модели",
+  "topics": "Темы",
+  "structures": "Структуры",
+  "empty": "Ничего не найдено",
+  "loadError": "Не удалось загрузить каталог",
+  "hotkey": "Горячие клавиши: / или Ctrl+K"
+}

@@ -1,0 +1,19 @@
+{
+  "offline": "No network connection",
+  "unauthorized": "Please sign in again",
+  "forbidden": "You do not have access to this",
+  "not_found": "Not found",
+  "validation_failed": "Please check the entered data",
+  "invalid_credentials": "Incorrect sign-in details",
+  "class_code_invalid": "There is no class with this code",
+  "pin_locked": "Too many attempts. Try again in 15 minutes",
+  "rate_limited": "Too many requests. Try again shortly",
+  "tutor_unavailable": "The assistant is temporarily unavailable",
+  "internal": "Server error",
+  "invalid_response": "Unexpected server response",
+  "invalid_package": "The topic package is invalid",
+  "conflict": "The data has changed",
+  "version_mismatch": "Changed elsewhere. Reload the page",
+  "idempotency_conflict": "Duplicate request",
+  "payload_too_large": "The file is too large"
+}

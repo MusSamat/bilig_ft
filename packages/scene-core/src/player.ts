@@ -157,10 +157,22 @@ export interface PlayerView {
   percent: number;
   playing: boolean;
   speed: Speed;
+  /** Elapsed process time in seconds (for continuous engines such as `ode`). */
+  time: number;
+  /** 0..1 progress inside the current step. */
+  stepFraction: number;
+  /** 0..1 progress over the whole process (unrounded). */
+  fraction: number;
 }
-export const playerView = (s: PlayerState): PlayerView => ({
-  stepIndex: currentStep(s),
-  percent: percent(s),
-  playing: s.playing,
-  speed: s.speed,
-});
+export const playerView = (s: PlayerState): PlayerView => {
+  const total = totalDuration(s);
+  return {
+    stepIndex: currentStep(s),
+    percent: percent(s),
+    playing: s.playing,
+    speed: s.speed,
+    time: s.time,
+    stepFraction: stepFraction(s),
+    fraction: total === 0 ? 0 : clamp(s.time / total, 0, 1),
+  };
+};

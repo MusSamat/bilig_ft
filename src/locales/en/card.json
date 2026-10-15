@@ -1,0 +1,24 @@
+{
+  "region": "Structure card",
+  "overview": "Topic overview",
+  "sampleProps": "Sample properties",
+  "inModel": "In the model",
+  "properties": "Properties",
+  "fact": "Fun fact",
+  "related": "Related to",
+  "analogy": "Analogy",
+  "misconception": "Common mistake",
+  "ask": "Ask the assistant",
+  "toPresentation": "Add to presentation",
+  "addedToDeck": "“{{name}}” added to the presentation",
+  "deselect": "Clear selection",
+  "examples": "Examples",
+  "stemTitle": "STEM in life",
+  "simpleTitle": "Simply put",
+  "field": {
+    "s": "Science",
+    "t": "Technology",
+    "e": "Engineering",
+    "m": "Mathematics"
+  }
+}

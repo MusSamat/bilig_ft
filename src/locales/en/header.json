@@ -1,0 +1,25 @@
+{
+  "home": "Home",
+  "subject": "Choose a subject",
+  "openCatalog": "Open the catalog",
+  "study": "Study",
+  "lesson": "Lesson",
+  "viewMode": "Mode",
+  "present": "Presentation",
+  "presentCount_one": "{{count}} slide in the presentation",
+  "presentCount_other": "{{count}} slides in the presentation",
+  "language": "Language",
+  "langName": {
+    "ky": "Kyrgyz",
+    "ru": "Russian",
+    "en": "English"
+  },
+  "themeToLight": "Switch to light theme",
+  "themeToDark": "Switch to dark theme",
+  "login": "Sign in",
+  "profile": "Profile",
+  "cabinet": "My dashboard",
+  "teacher": "Teacher dashboard",
+  "logout": "Sign out",
+  "offlineBadge": "Offline"
+}

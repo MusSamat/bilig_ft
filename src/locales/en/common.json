@@ -1,0 +1,19 @@
+{
+  "loading": "Loading…",
+  "close": "Close",
+  "back": "Back",
+  "next": "Next",
+  "cancel": "Cancel",
+  "save": "Save",
+  "retry": "Try again",
+  "error": "Something went wrong",
+  "offline": "Offline",
+  "online": "Online",
+  "delete": "Delete",
+  "edit": "Edit",
+  "open": "Open",
+  "dismiss": "Dismiss",
+  "done": "Done",
+  "minutes_one": "{{count}} minute",
+  "minutes_other": "{{count}} minutes"
+}

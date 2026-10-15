@@ -1,31 +1,65 @@
-/** Landing page: hero + the subject catalog (TZ W-02). */
-import { useEffect, useState } from 'react';
+/** Home (W-01/W-02, scenario «Ученик» 2): hero, catalog, assignments and recent topics. */
+import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Header } from '../components/Header';
-import { CatalogModal } from '../components/CatalogModal';
-import { applyTheme, NEUTRAL_HUE } from '../theme';
-import { useStore } from '../store';
+import { t as tr } from '@bilig/content-model';
+import { useCatalog } from '../api/content';
+import { useSession } from '../api/session';
+import { RecentTopics } from '../cabinet/RecentTopics';
+import { StudentAssignments } from '../cabinet/StudentAssignments';
+import { Icon } from '../components/Icon';
+import { Thumb } from '../components/Thumb';
+import { Formula } from '../lib/formula';
+import { useLang } from '../lib/hooks';
+import { topicPath } from '../lib/urls';
+import { useUi } from '../state/ui';
 
 export function HomePage(): JSX.Element {
   const { t } = useTranslation();
-  const theme = useStore((s) => s.theme);
-  const [catalogOpen, setCatalogOpen] = useState(true);
+  const lang = useLang();
+  const openCatalog = useUi((s) => s.openCatalog);
+  const setContext = useUi((s) => s.setContext);
+  const isStudent = useSession((s) => s.me?.kind === 'student');
+  const { data: catalog } = useCatalog();
 
-  useEffect(() => {
-    applyTheme(NEUTRAL_HUE, theme);
-  }, [theme]);
+  useEffect(() => setContext(null), [setContext]);
 
   return (
-    <div className="app">
-      <Header onOpenCatalog={() => setCatalogOpen(true)} />
-      {catalogOpen && <CatalogModal onClose={() => setCatalogOpen(false)} />}
-      <main className="hero">
-        <h1 className="hero__title">Bilig</h1>
-        <p className="hero__tagline">{t('app.tagline')}</p>
-        <button className="btn btn--accent btn--lg" onClick={() => setCatalogOpen(true)}>
+    <div className="page">
+      <section className="hero">
+        <h1>{t('home.heading')}</h1>
+        <p>{t('home.lead')}</p>
+        <button type="button" className="btn btn--primary btn--lg" onClick={openCatalog}>
+          <Icon name="search" />
           {t('home.openCatalog')}
         </button>
-      </main>
+        <span className="muted small">{t('catalog.hotkey')}</span>
+      </section>
+      {isStudent && <StudentAssignments />}
+      <RecentTopics />
+      {catalog && catalog.topics.length > 0 && (
+        <section className="card stack" aria-labelledby="featured-title">
+          <h2 id="featured-title" className="panel-title">
+            {t('home.featured')}
+          </h2>
+          <div className="topic-grid">
+            {catalog.topics.slice(0, 12).map((tp) => {
+              const subject = catalog.subjects.find((s) => s.key === tp.subjectKey);
+              return (
+                <Link key={tp.key} className="topic-tile" to={topicPath(catalog, lang, tp.key)}>
+                  <Thumb src={tp.thumb && /^(https?:)?\//.test(tp.thumb) ? tp.thumb : undefined} alt="" hue={subject?.hue ?? 220} icon={subject?.icon ?? 'book'} width={72} height={54} />
+                  <span>
+                    <b>{tr(tp.title, lang)}</b>
+                    {tp.formula && <>{', '}<Formula tex={tp.formula} /></>}
+                    <br />
+                    <span className="muted small">{subject ? tr(subject.title, lang) : ''}</span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

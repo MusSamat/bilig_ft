@@ -32,6 +32,20 @@ describe('tokensFromHue — AA contrast for every hue 0–359 (TZ W-03)', () => 
     });
   }
 
+  for (const theme of ['light', 'dark'] as const) {
+    it(`${theme}: accent text, button label and focus ring pass AA for all hues`, () => {
+      const failures: string[] = [];
+      for (let hue = 0; hue <= 359; hue++) {
+        const tk = tokensFromHue(hue, theme);
+        const surface = parseHsl(tk.surface);
+        if (contrastRatio(parseHsl(tk.accentText), surface) < AA_NORMAL) failures.push(`accentText@${hue}`);
+        if (contrastRatio(parseHsl(tk.buttonText), parseHsl(tk.button)) < AA_NORMAL) failures.push(`button@${hue}`);
+        if (contrastRatio(parseHsl(tk.focus), surface) < AA_LARGE) failures.push(`focus@${hue}`);
+      }
+      expect(failures).toEqual([]);
+    });
+  }
+
   it('is deterministic (same hue + theme → same tokens)', () => {
     expect(tokensFromHue(140, 'light')).toEqual(tokensFromHue(140, 'light'));
   });

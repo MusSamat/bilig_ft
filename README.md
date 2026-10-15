@@ -1,29 +1,86 @@
 # bilig_ft
 
 Client for **Bilig**, a data-driven 3D STEM learning platform for schools of
-Kyrgyzstan (ky / ru / en, offline-first PWA). Vite + React + react-three-fiber
-+ i18next. The API is the separate repo [`bilig_back`](../bilig_back).
+Kyrgyzstan (ky / ru / en). Vite + React 18 + TypeScript, react-three-fiber +
+drei, TanStack Query, Zustand, i18next. The API is the separate repo
+[`bilig_back`](../bilig_back). Specification: [`docs/TZ.md`](docs/TZ.md).
+
+No screen knows a subject or topic by name: the catalog, topic page, scene,
+modes, card, processes, comparison and quiz are all built from content
+packages and scene plugins.
 
 ## Layout
 
 ```
-src/                 app shell, catalog, 3D viewer, concept card, i18n, PWA
+src/
+  api/            typed client over the contract ENDPOINTS (zod-validated), session, SSE tutor
+  components/     shell: header, catalog modal, breadcrumbs, icon sprite, toasts
+  topic/          topic page: header, tiles, samples, stage + toolbar, mode panel,
+                  structure tree, concept card + examples, assistant, processes,
+                  comparison, quiz, lesson mode
+  scene/          lazy 3D viewer core (camera flights, labels, lighting, adaptive DPR, capture)
+  presentation/   deck template, editor, PPTX (pptxgenjs) and PDF (jsPDF) export — lazy
+  pages/ cabinet/ home, login, student and teacher dashboards
+  state/          zustand stores (ui, viewer, deck)
+  lib/            IndexedDB (Dexie), progress, formulas, hooks, URLs, theme
+  locales/<lang>/ UI strings per namespace (new language = new folder)
+  mocks/          DEV/TEST ONLY: MSW handlers + a snapshot of bilig_back content
 packages/
-  permissions/       RBAC matrix (client only hides buttons)  — @bilig/permissions
-  content-model/     content schema + zod validators          — @bilig/content-model
-  scene-core/        viewer plugin contract + pure logic      — @bilig/scene-core
-docs/TZ.md           technical specification
+  permissions/    RBAC matrix                       — shared contract (edited in bilig_back)
+  content-model/  content schemas + API DTOs        — shared contract (edited in bilig_back)
+  scene-core/     viewer contract + pure logic: modes, selection, URL state, progress,
+                  player, stepper, engines (timeline/stoich/ode), label layout, hue tokens
+  scene-kit/      r3f helpers shared by plugins (looks, picking)
+  plugin-gltf/    GLB scenes with node masks (meshopt + KTX2); procedural fallback
+  plugin-molecule/ ball-and-stick / space-filling, animated electron shells
+  plugin-crystal/ lattices (rock salt, sc, bcc, fcc, CsCl)
+  plugin-geometry/ solids, solid / wireframe
+  plugin-sim/     simulations (pendulum, inclined plane, circuit, orbits…) with formula readouts
+e2e/              Playwright: TZ §3 student and teacher scenarios, axe, 360 px
+CONTRACT_REQUESTS.md  contract changes the client needs from bilig_back
 ```
 
-`packages/permissions` and `packages/content-model` are the **shared contract**
-with `bilig_back`. Make every change to them in both repos (see TZ §7).
+`packages/permissions` and `packages/content-model` are the **shared
+contract** with `bilig_back`; only the backend edits them (TZ §7). Client
+needs go to `CONTRACT_REQUESTS.md`.
 
-## Run / test
+## Run
 
 ```bash
 npm install
 npm run dev               # http://localhost:5173, proxies /api -> :3000 (bilig_back)
-npm test
-npm run typecheck
-npm run build             # production bundle + service worker
+npm run dev:mock          # same, with the MSW mock API (VITE_MOCK=1) — no backend needed
 ```
+
+Mock accounts (dev only): teacher `teacher@bilig.kg` / `bilig-teacher-2026`;
+students: class code `ABC123`, any name, PIN `1234`. In the browser console,
+`__biligMock.setTutorDown(true)` simulates a 503 from the assistant.
+
+## Test
+
+```bash
+npm run typecheck         # app + every workspace package
+npm test                  # Vitest: packages (pure logic) + components (Testing Library, MSW, jsdom)
+npm run build             # production build
+npm run size              # initial JS ≤ 250 KB gzip, and no mocks in the build
+npx playwright install chromium
+npm run e2e               # Playwright against the dev server with mocks (+ axe)
+```
+
+CI (`.github/workflows/ci.yml`) runs typecheck, tests, build, size check and e2e.
+
+## Architecture notes
+
+- **URL is the state** (W-05): `/:lang/:subject/:grade/:topic?focus=&mode=&process=&step=&view=lesson&lesson=`.
+  The header switches language by navigating to the same URL under the new `/:lang`.
+- **Plugins** register from a lazy chunk (`src/scene/plugins.ts`), so three.js
+  is not in the initial bundle. The panel is `plugin.modes() ∩ scene.modes` +
+  universal modes; labels come from `mode.<id>` locale keys.
+- **Readouts** come from the plugin's `readouts()` or the process engine in
+  scene-core — never hand-written numbers.
+- **Permissions** come from `GET /me`; the client only hides buttons.
+- **i18n**: `src/i18n.test.ts` checks equal key sets, plural categories per
+  `Intl.PluralRules`, that used keys exist, and that src has no literal UI strings.
+- **Out of scope for now**: offline downloads and the results sync queue
+  (W-55), the offline assistant fallback, new PWA work. The existing
+  vite-plugin-pwa config is unchanged.

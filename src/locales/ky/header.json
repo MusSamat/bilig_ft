@@ -1,0 +1,25 @@
+{
+  "home": "Башкы бет",
+  "subject": "Предмет тандоо",
+  "openCatalog": "Каталогду ачуу",
+  "study": "Изилдөө",
+  "lesson": "Сабак",
+  "viewMode": "Режим",
+  "present": "Презентация",
+  "presentCount_one": "Презентацияда {{count}} слайд",
+  "presentCount_other": "Презентацияда {{count}} слайд",
+  "language": "Тил",
+  "langName": {
+    "ky": "Кыргызча",
+    "ru": "Орусча",
+    "en": "Англисче"
+  },
+  "themeToLight": "Жарык теманы күйгүзүү",
+  "themeToDark": "Караңгы теманы күйгүзүү",
+  "login": "Кирүү",
+  "profile": "Профиль",
+  "cabinet": "Менин кабинетим",
+  "teacher": "Мугалимдин кабинети",
+  "logout": "Чыгуу",
+  "offlineBadge": "Офлайн"
+}

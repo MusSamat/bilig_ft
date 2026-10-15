@@ -1,0 +1,21 @@
+{
+  "panel": "Model view",
+  "whole": "Whole",
+  "section": "Section",
+  "shells": "Electron shells",
+  "solid": "Solid",
+  "wireframe": "Wireframe",
+  "vectors": "Velocity vector",
+  "ball-stick": "Ball-and-stick",
+  "spacefill": "Space-filling",
+  "schematic": "Schematic",
+  "electrons": "Electron flow",
+  "trace": "Trajectory",
+  "energy": "Energy",
+  "orbits": "Orbits",
+  "earth-view": "View from Earth",
+  "sun-rays": "Sun rays",
+  "true-scale": "True scale",
+  "labels": "Labels",
+  "rotate": "Rotation"
+}

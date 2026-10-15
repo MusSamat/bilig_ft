@@ -1,0 +1,21 @@
+{
+  "tabs": "Topic processes",
+  "equation": "Equation",
+  "inputs": "Input",
+  "outputs": "Output",
+  "energy": "Energy",
+  "play": "Play",
+  "pause": "Pause",
+  "reset": "Restart",
+  "speed": "Speed",
+  "speedValue": "{{value}}×",
+  "seek": "Process position",
+  "percent": "{{value}}%",
+  "steps": "Process steps",
+  "step": "Step {{n}}",
+  "stepOf": "Step {{n}} of {{total}}: {{title}}",
+  "structure": "Structure",
+  "readouts": "Readouts",
+  "currentStep": "Current step",
+  "none": "This topic has no processes"
+}

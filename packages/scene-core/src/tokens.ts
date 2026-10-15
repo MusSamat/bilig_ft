@@ -21,6 +21,16 @@ export interface ThemeTokens {
   text: string;
   /** Muted/secondary text that meets AA on `surface`. */
   textMuted: string;
+  /** Accent used as text or links on `surface` (AA ≥ 4.5:1). */
+  accentText: string;
+  /** Primary button background. */
+  button: string;
+  /** Button label color (AA ≥ 4.5:1 on `button`). */
+  buttonText: string;
+  /** Focus ring (non-text contrast ≥ 3:1 on `surface`, WCAG 1.4.11). */
+  focus: string;
+  /** Hairline borders / separators. */
+  border: string;
 }
 
 export interface HSL {
@@ -92,6 +102,45 @@ function readableText(surface: HSL, hue: number, minRatio: number): HSL {
   return goDark ? { h: hue, s: 0, l: 0 } : { h: hue, s: 0, l: 100 };
 }
 
+/**
+ * Walk lightness from `start` in `step` increments until `ok` holds; returns
+ * the first passing color (the extremes 0/100 always pass the predicates used here).
+ */
+function walkLightness(h: number, s: number, start: number, step: number, ok: (c: HSL) => boolean): HSL {
+  for (let l = start; l >= 0 && l <= 100; l += step) {
+    const c: HSL = { h, s, l };
+    if (ok(c)) return c;
+  }
+  return { h, s, l: step < 0 ? 0 : 100 };
+}
+
+const WHITE: HSL = { h: 0, s: 0, l: 100 };
+const BLACK: HSL = { h: 0, s: 0, l: 8 };
+
+/**
+ * Text targets carry headroom above AA (4.5:1) so text stays AA on tinted
+ * panels derived from the surface (cards, chips, goal box) — axe checks those.
+ */
+const TEXT_RATIO = 7;
+const MUTED_RATIO = 5.5;
+
+/** Interactive tokens (accent text, button, focus) for a surface; AA by construction. */
+function interactiveTokens(h: number, theme: Theme, surface: HSL) {
+  const light = theme === 'light';
+  const accentText = walkLightness(h, 70, light ? 40 : 62, light ? -2 : 2, (c) => contrastRatio(c, surface) >= MUTED_RATIO);
+  // Light theme: saturated button with white label; dark theme: light button with dark label.
+  const label = light ? WHITE : BLACK;
+  const button = walkLightness(h, light ? 65 : 70, light ? 42 : 62, light ? -2 : 2, (c) => contrastRatio(c, label) >= AA_NORMAL);
+  const focus = walkLightness(h, 80, light ? 45 : 60, light ? -2 : 2, (c) => contrastRatio(c, surface) >= AA_LARGE);
+  return {
+    accentText: hsl(accentText),
+    button: hsl(button),
+    buttonText: hsl(label),
+    focus: hsl(focus),
+    border: hsl({ h, s: 14, l: light ? 82 : 26 }),
+  };
+}
+
 /** Compute the full token set for a hue + theme (TZ W-03). */
 export function tokensFromHue(hue: number, theme: Theme): ThemeTokens {
   const h = clampHue(hue);
@@ -102,8 +151,9 @@ export function tokensFromHue(hue: number, theme: Theme): ThemeTokens {
       bgTo: hsl({ h: h + 20, s: 28, l: 14 }),
       accent: hsl({ h, s: 70, l: 62 }),
       surface: hsl(surface),
-      text: hsl(readableText(surface, h, AA_NORMAL)),
-      textMuted: hsl(readableText(surface, h, AA_LARGE)),
+      text: hsl(readableText(surface, h, TEXT_RATIO)),
+      textMuted: hsl(readableText(surface, h, MUTED_RATIO)),
+      ...interactiveTokens(h, theme, surface),
     };
   }
   const surface: HSL = { h, s: 30, l: 97 };
@@ -112,8 +162,9 @@ export function tokensFromHue(hue: number, theme: Theme): ThemeTokens {
     bgTo: hsl({ h: h + 20, s: 45, l: 90 }),
     accent: hsl({ h, s: 65, l: 40 }),
     surface: hsl(surface),
-    text: hsl(readableText(surface, h, AA_NORMAL)),
-    textMuted: hsl(readableText(surface, h, AA_LARGE)),
+    text: hsl(readableText(surface, h, TEXT_RATIO)),
+    textMuted: hsl(readableText(surface, h, MUTED_RATIO)),
+    ...interactiveTokens(h, theme, surface),
   };
 }
 

@@ -1,0 +1,10 @@
+{
+  "title": "Comparison",
+  "caption": "Comparison by property",
+  "property": "Property",
+  "youAreHere": "You are here",
+  "noValue": "—",
+  "scrollHint": "Scroll the table sideways",
+  "openSample": "Open {{name}}",
+  "none": "This topic has no comparison"
+}

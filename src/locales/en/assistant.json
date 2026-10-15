@@ -1,0 +1,20 @@
+{
+  "title": "Assistant",
+  "greeting": "Hi! Ask me anything about “{{topic}}”.",
+  "placeholder": "What does… do, Where is…, How big is…",
+  "inputLabel": "Question for the assistant",
+  "send": "Send",
+  "suggestions": "Suggestions",
+  "suggest": {
+    "what": "What does the {{name}} do?",
+    "where": "Where is the {{name}}?",
+    "size": "How big is the {{name}}?"
+  },
+  "thinking": "Thinking…",
+  "noAnswer": "I could not find an answer in this topic. Try asking differently.",
+  "cited": "Show on the model",
+  "limit": "You reached the guest question limit. Sign in to continue.",
+  "you": "You",
+  "bot": "Assistant",
+  "history": "Conversation"
+}
