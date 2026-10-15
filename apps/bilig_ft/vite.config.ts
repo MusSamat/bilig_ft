@@ -8,15 +8,31 @@ const pkg = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 // Monorepo: import shared packages from source (no build step) via aliases.
 export default defineConfig({
   resolve: {
-    alias: {
-      '@bilig/permissions': pkg('../../packages/permissions/src/index.ts'),
-      '@bilig/content-model': pkg('../../packages/content-model/src/index.ts'),
-      '@bilig/content-model/schema': pkg('../../packages/content-model/src/schema.ts'),
-      '@bilig/scene-core': pkg('../../packages/scene-core/src/index.ts'),
-      '@': pkg('./src'),
-    },
+    // Order matters: specific subpaths before the package root, else the root
+    // alias greedily swallows subpath imports.
+    alias: [
+      {
+        find: '@bilig/content-model/fixtures/animal-cell',
+        replacement: pkg('../../packages/content-model/src/fixtures/animal-cell.ts'),
+      },
+      {
+        find: '@bilig/content-model/schema',
+        replacement: pkg('../../packages/content-model/src/schema.ts'),
+      },
+      {
+        find: '@bilig/content-model',
+        replacement: pkg('../../packages/content-model/src/index.ts'),
+      },
+      { find: '@bilig/permissions', replacement: pkg('../../packages/permissions/src/index.ts') },
+      { find: '@bilig/scene-core', replacement: pkg('../../packages/scene-core/src/index.ts') },
+      { find: '@', replacement: pkg('./src') },
+    ],
   },
-  server: { port: 5173 },
+  server: {
+    port: 5173,
+    // Dev: proxy API calls to bilig_back (CORS-free during development).
+    proxy: { '/api': 'http://localhost:3000' },
+  },
   plugins: [
     react(),
     VitePWA({

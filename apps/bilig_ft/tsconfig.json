@@ -2,13 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "types": ["vite/client"],
+    "types": ["vite/client", "vite-plugin-pwa/client"],
     "noEmit": true
   },
-  "include": ["src", "vite.config.ts"],
-  "references": [
-    { "path": "../../packages/permissions" },
-    { "path": "../../packages/content-model" },
-    { "path": "../../packages/scene-core" }
-  ]
+  "include": ["src", "vite.config.ts"]
 }
