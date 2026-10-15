@@ -1,33 +1,49 @@
 {
-  "name": "bilig",
+  "name": "bilig_ft",
   "private": true,
   "version": "0.1.0",
-  "description": "Bilig — data-driven, plugin-based 3D STEM learning platform for schools of Kyrgyzstan (ky/ru/en, offline-first).",
+  "description": "Bilig client — trilingual 3D STEM viewer (Vite + React + react-three-fiber + PWA).",
   "type": "module",
   "workspaces": [
-    "packages/*",
-    "apps/*"
+    "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace apps/bilig_ft",
-    "dev:ft": "npm run dev --workspace apps/bilig_ft",
-    "dev:back": "npm run start:dev --workspace apps/bilig_back",
-    "build": "npm run build --workspaces --if-present",
-    "build:ft": "npm run build --workspace apps/bilig_ft",
-    "typecheck": "npm run typecheck --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit && npm run typecheck --workspaces --if-present",
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "dependencies": {
+    "@bilig/content-model": "*",
+    "@bilig/permissions": "*",
+    "@bilig/scene-core": "*",
+    "@react-three/drei": "^9.114.0",
+    "@react-three/fiber": "^8.17.10",
+    "i18next": "^23.16.4",
+    "minisearch": "^7.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^15.1.0",
+    "react-router-dom": "^6.27.0",
+    "three": "^0.169.0",
+    "zod": "^3.25.76",
+    "zustand": "^5.0.1"
+  },
   "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/three": "^0.169.0",
+    "@vitejs/plugin-react": "^4.3.3",
     "prettier": "^3.3.3",
     "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vite-plugin-pwa": "^0.20.5",
     "vitest": "^2.1.9"
   },
   "engines": {
     "node": ">=20"
-  },
-  "dependencies": {
-    "zod": "^3.25.76"
   }
 }

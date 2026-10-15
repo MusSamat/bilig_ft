@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const pkg = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
-// Monorepo: import shared packages from source (no build step) via aliases.
+// Import shared packages from source (no build step) via aliases.
 export default defineConfig({
   resolve: {
     // Order matters: specific subpaths before the package root, else the root
@@ -13,18 +13,18 @@ export default defineConfig({
     alias: [
       {
         find: '@bilig/content-model/fixtures/animal-cell',
-        replacement: pkg('../../packages/content-model/src/fixtures/animal-cell.ts'),
+        replacement: pkg('./packages/content-model/src/fixtures/animal-cell.ts'),
       },
       {
         find: '@bilig/content-model/schema',
-        replacement: pkg('../../packages/content-model/src/schema.ts'),
+        replacement: pkg('./packages/content-model/src/schema.ts'),
       },
       {
         find: '@bilig/content-model',
-        replacement: pkg('../../packages/content-model/src/index.ts'),
+        replacement: pkg('./packages/content-model/src/index.ts'),
       },
-      { find: '@bilig/permissions', replacement: pkg('../../packages/permissions/src/index.ts') },
-      { find: '@bilig/scene-core', replacement: pkg('../../packages/scene-core/src/index.ts') },
+      { find: '@bilig/permissions', replacement: pkg('./packages/permissions/src/index.ts') },
+      { find: '@bilig/scene-core', replacement: pkg('./packages/scene-core/src/index.ts') },
       { find: '@', replacement: pkg('./src') },
     ],
   },
