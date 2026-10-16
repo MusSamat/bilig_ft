@@ -2,12 +2,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import type { EndpointName } from '@bilig/content-model/api';
+import { ITEM_TYPES, SUBJECT_STATUSES } from '@bilig/content-model';
+import { ENDPOINTS, type EndpointDef, type EndpointName } from '@bilig/content-model/api';
 import { ApiError } from '../api/client';
 import { useCanCall } from '../api/hooks';
 import { api } from '../api/session';
 import { SchemaForm, useValidation } from '../forms/SchemaForm';
-import { defaultFor } from '../forms/zod-utils';
+import { defaultFor, withRemovals } from '../forms/zod-utils';
 import { useAdminLang, useT } from '../i18n';
 import { clearDraft, readDraft, useAutosave } from '../lib/draft';
 import { useSuggestions } from '../lib/suggest';
@@ -18,30 +19,45 @@ import { useAdminPath } from '../shell/base';
 import { navIcon } from '../shell/Layout';
 import { useScopedHue } from '../shell/theme';
 import { ErrorBox, FilterSelect, FilterText, PageHeader, Skeleton } from '../shell/ui';
-import { recordKey, type AdminRec, type ResourceDef } from './resources';
+import { recordKey, type AdminRec, type ResourceDef, type ResourceFilter } from './resources';
 import { Icon } from '../lib/icons';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const call = (name: EndpointName, opts: unknown) => api.call(name as any, opts as any) as Promise<any>;
 
-/** Load one record: GET when the contract has it, otherwise search the list (groups, glossary). */
-export async function fetchRecord(def: ResourceDef, key: string): Promise<AdminRec> {
-  if (def.get) return call(def.get, { params: { [def.param]: key } });
-  let cursor: string | undefined;
-  for (let i = 0; i < 20; i++) {
-    const page = await call(def.list, { query: { q: key, limit: 100, ...(cursor ? { cursor } : {}) } });
-    const hit = (page.items as AdminRec[]).find((r) => recordKey(def, r) === key);
-    if (hit) return hit;
-    if (!page.nextCursor) break;
-    cursor = page.nextCursor;
-  }
-  throw new ApiError(404, null, def.list);
+/** Load one record by its key (every dictionary has a GET since contract 0.3.0). */
+export function fetchRecord(def: ResourceDef, key: string): Promise<AdminRec> {
+  return call(def.get, { params: { [def.param]: key } });
 }
 
 export function SubjectFilter({ value, onApply }: { value?: string; onApply(v: string | undefined): void }) {
   const t = useT();
   const s = useSuggestions(['subjects']);
   return <FilterSelect label={t('fields.subjectKey')} value={value} options={(s.subjectKey ?? []).map((o) => ({ value: o.value, label: o.label ?? o.value }))} onApply={onApply} />;
+}
+
+/** The filter controls a `ResourceDef` asks for; every value lives in the URL and goes to the server. */
+function ResourceFilters({ def, list }: { def: ResourceDef; list: ReturnType<typeof useListParams> }) {
+  const t = useT();
+  const has = (f: ResourceFilter) => def.filters.includes(f);
+  const s = useSuggestions([...(has('unitKey') ? (['units'] as const) : []), ...(has('objectiveKey') ? (['objectives'] as const) : [])]);
+  const opts = (field: string) => {
+    const o = (s[field] ?? []).map((x) => ({ value: x.value, label: x.label ?? x.value }));
+    const cur = list.filters[field];
+    return cur && !o.some((x) => x.value === cur) ? [...o, { value: cur, label: cur }] : o;
+  };
+  const set = (f: string) => (v: string | undefined) => list.setFilter(f, v);
+  return (
+    <div className="adm-filters">
+      {has('q') && <FilterText label={t('list.search')} value={list.filters.q} onApply={set('q')} />}
+      {has('subjectKey') && <SubjectFilter value={list.filters.subjectKey} onApply={set('subjectKey')} />}
+      {has('status') && <FilterSelect label={t('fields.status')} value={list.filters.status} options={SUBJECT_STATUSES.map((v) => ({ value: v, label: t(`enum.${v}`) }))} onApply={set('status')} />}
+      {has('unitKey') && <FilterSelect label={t('fields.unitKey')} value={list.filters.unitKey} options={opts('unitKey')} onApply={set('unitKey')} />}
+      {has('kind') && <FilterText label={t('fields.kind')} value={list.filters.kind} onApply={set('kind')} />}
+      {has('type') && <FilterSelect label={t('fields.type')} value={list.filters.type} options={ITEM_TYPES.map((v) => ({ value: v, label: t(`enum.${v}`) }))} onApply={set('type')} />}
+      {has('objectiveKey') && <FilterSelect label={t('fields.objectiveKey')} value={list.filters.objectiveKey} options={opts('objectiveKeys')} onApply={set('objectiveKey')} />}
+    </div>
+  );
 }
 
 export function ResourceList({ def, toolbar, children }: { def: ResourceDef; toolbar?: ReactNode; children?: ReactNode }) {
@@ -87,10 +103,7 @@ export function ResourceList({ def, toolbar, children }: { def: ResourceDef; too
         )}
       </PageHeader>
       {children}
-      <div className="adm-filters">
-        {def.filters.includes('q') && <FilterText label={t('list.search')} value={list.filters.q} onApply={(v) => list.setFilter('q', v)} />}
-        {def.filters.includes('subjectKey') && <SubjectFilter value={list.filters.subjectKey} onApply={(v) => list.setFilter('subjectKey', v)} />}
-      </div>
+      <ResourceFilters def={def} list={list} />
       {report && <pre className="adm-alert adm-alert--info">{report}</pre>}
       <ListView
         endpoint={def.list}
@@ -188,7 +201,10 @@ function ResourceUpdate({ def, recKey, side, deleteBlocked }: ResourceEditProps 
     draftKey: `${def.id}:${recKey}`,
     server,
     save: async (value, version) => {
-      const r = (await call(def.patch, { params: { [def.param]: recKey }, body: def.patchBody(value, version), ifMatch: version })) as AdminRec;
+      // A cleared optional field goes out as null so the server removes it (contract 0.3.0).
+      const stored = qc.getQueryData<AdminRec>(['record', def.id, recKey])?.data;
+      const body = def.patchBody(withRemovals((ENDPOINTS[def.patch] as EndpointDef).body, value, stored), version);
+      const r = (await call(def.patch, { params: { [def.param]: recKey }, body, ifMatch: version })) as AdminRec;
       qc.setQueryData(['record', def.id, recKey], r);
       void qc.invalidateQueries({ queryKey: [def.list] });
       return { value: r.data, version: r.version };

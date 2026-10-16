@@ -1,12 +1,12 @@
 /**
  * Admin sign-in (TZ §6): e-mail + password, then a TOTP code when the server
  * answers 401 `totp_required`. Roles without an enrolled authenticator get a
- * 403 `totp_enrollment_required`; the enrolment step signs in once with the
- * client audience (which does not need TOTP), sets up the authenticator via
- * POST /me/2fa, closes that client session and returns to the code step.
+ * 403 `totp_enrollment_required` carrying a short-lived `enrollmentToken`
+ * (contract 0.3.0): POST /auth/2fa/setup returns the otpauth URL, and
+ * POST /auth/2fa/verify with the first code signs straight in to the admin.
  */
 import { useState, type FormEvent } from 'react';
-import { LoginRequestSchema, TotpSchema } from '@bilig/content-model/api';
+import { LoginRequestSchema, TotpSchema, type TokenResponse } from '@bilig/content-model/api';
 import { ApiError, validationError } from '../api/client';
 import { api, useSession } from '../api/session';
 import { useT } from '../i18n';
@@ -15,6 +15,15 @@ import { Brand, LangSeg, ThemeButton } from '../shell/Layout';
 import { ErrorBox } from '../shell/ui';
 
 type Step = 'password' | 'totp' | 'enroll';
+
+/** The base32 secret from an otpauth URL, for typing it in by hand. */
+export const otpSecret = (url: string) => {
+  try {
+    return new URL(url).searchParams.get('secret') ?? undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 export async function loadMe() {
   const me = await api.call('me');
@@ -39,9 +48,9 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState<unknown>(null);
-  const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [enroll, setEnroll] = useState<{ token: string; otpauthUrl?: string } | null>(null);
+  const [enrollToken, setEnrollToken] = useState<string | null>(null);
+  const [otpauthUrl, setOtpauthUrl] = useState<string | null>(null);
 
   const login = async (totp?: string) => {
     const body = { email, password, ...(totp ? { totp } : {}) };
@@ -55,6 +64,10 @@ export function Login() {
       setStep('totp');
       return;
     }
+    await signedIn(res);
+  };
+
+  const signedIn = async (res: TokenResponse) => {
     useSession.getState().setToken(res.accessToken);
     await loadMe();
   };
@@ -63,7 +76,6 @@ export function Login() {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    setInfo(null);
     try {
       if (step === 'password') await login();
       else if (step === 'totp') {
@@ -72,19 +84,24 @@ export function Login() {
           return;
         }
         await login(code);
-      } else if (step === 'enroll' && enroll) {
-        await api.call('me2fa', { body: { action: 'verify', code }, token: enroll.token, audience: 'client' });
-        await api.call('logout', { body: {}, token: enroll.token, audience: 'client' }).catch(() => undefined);
-        setEnroll(null);
-        setCode('');
-        setInfo(t('login.enrolled'));
-        setStep('totp');
+      } else if (step === 'enroll' && enrollToken && otpauthUrl) {
+        if (!TotpSchema.safeParse(code).success) {
+          setError(validationError('authTotpEnrollVerify', [{ path: ['code'], message: t('login.totpFormat') }]));
+          return;
+        }
+        const res = await api.call('authTotpEnrollVerify', { body: { enrollmentToken: enrollToken, code } });
+        setEnrollToken(null);
+        setOtpauthUrl(null);
+        await signedIn(res);
       }
     } catch (err) {
       if (err instanceof ApiError && err.code === 'totp_required') {
         setStep('totp');
         setCode('');
-      } else if (err instanceof ApiError && err.code === 'forbidden' && err.detail === 'totp_enrollment_required') {
+      } else if (err instanceof ApiError && err.code === 'forbidden' && err.detail === 'totp_enrollment_required' && err.problem?.enrollmentToken) {
+        setEnrollToken(err.problem.enrollmentToken);
+        setOtpauthUrl(null);
+        setCode('');
         setStep('enroll');
       } else setError(err);
     } finally {
@@ -96,9 +113,8 @@ export function Login() {
     setBusy(true);
     setError(null);
     try {
-      const tok = await api.call('login', { body: { email, password }, audience: 'client' });
-      const r = await api.call('me2fa', { body: { action: 'setup' }, token: tok.accessToken, audience: 'client' });
-      setEnroll({ token: tok.accessToken, otpauthUrl: r.otpauthUrl });
+      const r = await api.call('authTotpEnrollSetup', { body: { enrollmentToken: enrollToken! } });
+      setOtpauthUrl(r.otpauthUrl ?? null);
     } catch (err) {
       setError(err);
     } finally {
@@ -149,7 +165,7 @@ export function Login() {
         )}
         {step === 'enroll' && (
           <>
-            {!enroll ? (
+            {!otpauthUrl ? (
               <button type="button" className="adm-btn" disabled={busy} onClick={startEnroll}>
                 <Icon id="key" size={18} />
                 {t('login.enrollStart')}
@@ -157,29 +173,31 @@ export function Login() {
             ) : (
               <>
                 <p>{t('login.enrollScan')}</p>
-                {enroll.otpauthUrl && (
-                  <code className="adm-otpauth" data-testid="otpauth">
-                    {enroll.otpauthUrl}
-                  </code>
+                <code className="adm-otpauth" data-testid="otpauth">
+                  {otpauthUrl}
+                </code>
+                {otpSecret(otpauthUrl) && (
+                  <p className="adm-hint">
+                    {t('login.enrollSecret')} <code data-testid="otp-secret">{otpSecret(otpauthUrl)}</code>
+                  </p>
                 )}
                 <label className="adm-field">
                   <span>{t('login.totp')}</span>
-                  <input className="adm-otp" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} />
+                  <input className="adm-otp" inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={6} value={code} autoFocus onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} />
                 </label>
               </>
             )}
           </>
         )}
-        {info && <p className="adm-alert adm-alert--info">{info}</p>}
         <ErrorBox error={error} />
         <div className="adm-login__actions">
           {step !== 'password' && (
-            <button type="button" className="adm-btn adm-btn--ghost" onClick={() => { setStep('password'); setCode(''); setError(null); }}>
+            <button type="button" className="adm-btn adm-btn--ghost" onClick={() => { setStep('password'); setCode(''); setError(null); setEnrollToken(null); setOtpauthUrl(null); }}>
               <Icon id="prev" size={18} />
               {t('common.back')}
             </button>
           )}
-          {(step !== 'enroll' || enroll) && (
+          {(step !== 'enroll' || otpauthUrl) && (
             <button type="submit" className="adm-btn adm-btn--primary" disabled={busy}>
               {step === 'password' ? t('login.submit') : t('login.verify')}
               <Icon id="arrow" size={18} />

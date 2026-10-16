@@ -1,7 +1,7 @@
-/** Topic list (server filters q / subjectKey / status in the URL) and topic creation. */
+/** Topic list (server filters q / subjectKey / status / unitKey / mine and sort in the URL) and topic creation. */
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CONTENT_STATUSES } from '@bilig/content-model';
+import { CONTENT_STATUSES, t as tl, type Lang } from '@bilig/content-model';
 import { AdminTopicCreateSchema, type AdminTopic } from '@bilig/content-model/api';
 import { useApiMutation, useCanCall } from '../../api/hooks';
 import { api } from '../../api/session';
@@ -11,29 +11,39 @@ import { useSuggestions } from '../../lib/suggest';
 import { ListView, type BulkAction, type Column } from '../../lists/ListView';
 import { useListParams } from '../../lists/useListParams';
 import { useAdminPath } from '../../shell/base';
-import { ErrorBox, FilterSelect, FilterText, PageHeader, StatusBadge, fmtDate } from '../../shell/ui';
+import { ErrorBox, FilterCheck, FilterSelect, FilterText, PageHeader, StatusBadge, fmtDate } from '../../shell/ui';
 import { SubjectFilter } from '../ResourcePages';
 import { Icon } from '../../lib/icons';
 import { navIcon } from '../../shell/Layout';
 
+const topicTitle = (r: AdminTopic, lang: string) => (r.title ? tl(r.title, lang as Lang) : undefined);
+
 export function topicColumns(t: ReturnType<typeof useT>, lang: string): Column<AdminTopic>[] {
   return [
     { key: 'key', header: t('fields.key'), render: (r) => <code>{r.key}</code>, sortValue: (r) => r.key },
+    { key: 'title', header: t('fields.title'), render: (r) => topicTitle(r, lang) ?? <span className="adm-muted">—</span>, sortValue: (r) => topicTitle(r, lang) },
     { key: 'unitKey', header: t('fields.unitKey'), render: (r) => r.unitKey, sortValue: (r) => r.unitKey },
     { key: 'status', header: t('fields.status'), render: (r) => <StatusBadge status={r.status} />, sortValue: (r) => r.status },
     { key: 'publishedVersion', header: t('topics.published'), render: (r) => r.publishedVersion ?? '—', sortValue: (r) => r.publishedVersion },
     { key: 'latestVersion', header: t('topics.latest'), render: (r) => r.latestVersion ?? '—', sortValue: (r) => r.latestVersion },
     { key: 'updatedAt', header: t('fields.updatedAt'), render: (r) => fmtDate(r.updatedAt, lang), sortValue: (r) => r.updatedAt },
+    { key: 'updatedBy', header: t('topics.updatedBy'), render: (r) => (r.updatedBy ? <code title={r.updatedBy}>{r.updatedBy.slice(0, 8)}</code> : '—') },
   ];
 }
 
-export function TopicFilters({ list }: { list: ReturnType<typeof useListParams> }) {
+/** q / subject / status, plus the unit and «только мои» filters where the page asks for them. */
+export function TopicFilters({ list, extra = [] }: { list: ReturnType<typeof useListParams>; extra?: ('unitKey' | 'mine')[] }) {
   const t = useT();
+  const units = (useSuggestions(extra.includes('unitKey') ? ['units'] : []).unitKey ?? []).map((u) => ({ value: u.value, label: u.label ?? u.value }));
+  // A unit from the URL stays selectable even when it is not on the first suggestion page.
+  if (list.filters.unitKey && !units.some((u) => u.value === list.filters.unitKey)) units.push({ value: list.filters.unitKey, label: list.filters.unitKey });
   return (
     <div className="adm-filters">
       <FilterText label={t('list.search')} value={list.filters.q} onApply={(v) => list.setFilter('q', v)} />
       <SubjectFilter value={list.filters.subjectKey} onApply={(v) => list.setFilter('subjectKey', v)} />
       <FilterSelect label={t('fields.status')} value={list.filters.status} options={CONTENT_STATUSES.map((s) => ({ value: s, label: t(`enum.${s}`) }))} onApply={(v) => list.setFilter('status', v)} />
+      {extra.includes('unitKey') && <FilterSelect label={t('fields.unitKey')} value={list.filters.unitKey} options={units} onApply={(v) => list.setFilter('unitKey', v)} />}
+      {extra.includes('mine') && <FilterCheck label={t('topics.mine')} value={list.filters.mine} onApply={(v) => list.setFilter('mine', v)} />}
     </div>
   );
 }
@@ -43,7 +53,7 @@ export function TopicsList() {
   const lang = useAdminLang((s) => s.lang);
   const to = useAdminPath();
   const nav = useNavigate();
-  const list = useListParams(['q', 'subjectKey', 'status']);
+  const list = useListParams(['q', 'subjectKey', 'status', 'unitKey', 'mine']);
   const canCreate = useCanCall('adminTopicCreate');
   const canSubmit = useCanCall('adminTopicSubmit');
   const columns = useMemo(() => topicColumns(t, lang), [t, lang]);
@@ -60,7 +70,7 @@ export function TopicsList() {
           </Link>
         )}
       </PageHeader>
-      <TopicFilters list={list} />
+      <TopicFilters list={list} extra={['unitKey', 'mine']} />
       <ListView endpoint="adminTopicList" list={list} columns={columns} rowKey={(r: AdminTopic) => r.id} bulkActions={bulk} onRowClick={(r: AdminTopic) => nav(to(`topics/${r.id}`))} />
     </section>
   );

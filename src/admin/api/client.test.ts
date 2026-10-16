@@ -26,6 +26,15 @@ describe('typed admin API client', () => {
     expect(m.calls[0].headers['if-match']).toBe('"7"');
   });
 
+  it('optional If-Match (schools, licences) is sent only when a version is given', async () => {
+    const school = { id: '00000000-0000-4000-8000-000000000003', name: 'S', region: 'R', type: 'state', language: 'ky', status: 'active', version: 3 };
+    const m = mockApi({ 'PATCH /admin/schools/:id': { body: school } });
+    await api.call('adminSchoolPatch', { params: { id: school.id }, body: { name: 'S' } });
+    await api.call('adminSchoolPatch', { params: { id: school.id }, body: { name: 'S' }, ifMatch: 2 });
+    expect(m.calls[0].headers['if-match']).toBeUndefined();
+    expect(m.calls[1].headers['if-match']).toBe('"2"');
+  });
+
   it('validates bodies before sending and responses after receiving', async () => {
     const m = mockApi({ 'GET /admin/topics': { body: { items: [{ nope: true }], nextCursor: null } } });
     await expect(api.call('adminGlossaryCreate', { body: { id: '', ky: '', ru: '', en: '', forbidden: [] } })).rejects.toBeInstanceOf(ContractError);

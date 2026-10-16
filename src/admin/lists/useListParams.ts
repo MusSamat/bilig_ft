@@ -24,8 +24,12 @@ export interface ListParams {
   first(): void;
   toggleSort(field: string): void;
   setLimit(n: number): void;
-  /** Query object for the API (filters + cursor + limit, plus sort when the server supports it). */
-  query(serverSort?: boolean): Record<string, string | number | undefined>;
+  /**
+   * Query object for the API: filters + cursor + limit, plus `sort` / `order`
+   * when the server sorts (`true` = by the URL sort field, a string = by that
+   * server field instead).
+   */
+  query(serverSort?: boolean | string): Record<string, string | number | undefined>;
 }
 
 export function useListParams(filterKeys: readonly string[], defaultLimit = 25): ListParams {
@@ -113,19 +117,28 @@ export function useListParams(filterKeys: readonly string[], defaultLimit = 25):
       ...filters,
       ...(cursor ? { cursor } : {}),
       limit,
-      ...(serverSort && sort ? { sort: sort.field, order: sort.dir } : {}),
+      ...(serverSort && sort ? { sort: typeof serverSort === 'string' ? serverSort : sort.field, order: sort.dir } : {}),
     }),
   };
 }
 
-/**
- * Does the endpoint's query schema accept a `sort` parameter? None of the
- * contract 0.2.1 admin lists do (see CONTRACT_REQUESTS.md); until then the
- * sort is applied to the loaded page only and the UI says so.
- */
-export function supportsServerSort(name: EndpointName): boolean {
+const sortSchema = (name: EndpointName): z.ZodTypeAny | undefined => {
   const q = (ENDPOINTS[name] as { query?: z.ZodTypeAny }).query;
-  return !!q && q instanceof z.ZodObject && 'sort' in q.shape;
+  return q instanceof z.ZodObject ? (q.shape as Record<string, z.ZodTypeAny>).sort : undefined;
+};
+
+/** Does the endpoint's query schema accept a `sort` parameter at all? (contract 0.3.0: every admin list.) */
+export function supportsServerSort(name: EndpointName): boolean {
+  return !!sortSchema(name);
+}
+
+/**
+ * Can the server sort this list by `field`? The fixed lists (users, audit,
+ * builds…) take an enum of fields; a column outside it is sorted on the
+ * loaded page only, and the UI says so.
+ */
+export function serverSortable(name: EndpointName, field: string): boolean {
+  return !!sortSchema(name)?.safeParse(field).success;
 }
 
 /** Keep only the query keys the endpoint's schema declares (unknown URL params never reach the API). */

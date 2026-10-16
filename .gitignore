@@ -39,3 +39,4 @@ coverage
 # Playwright
 test-results
 playwright-report
+src/admin/locales/.lock

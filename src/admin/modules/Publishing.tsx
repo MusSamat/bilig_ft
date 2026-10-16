@@ -15,7 +15,7 @@ import { short } from '../lib/diff';
 import { ListView, type BulkAction } from '../lists/ListView';
 import { useListParams } from '../lists/useListParams';
 import { useAdminPath } from '../shell/base';
-import { Badge, Dialog, ErrorBox, FilterText, KeyValue, PageHeader, StatusBadge, fmtDate } from '../shell/ui';
+import { Badge, Dialog, ErrorBox, KeyValue, PageHeader, StatusBadge, fmtDate } from '../shell/ui';
 import { TopicFilters, topicColumns } from './topics/TopicsList';
 import { Icon } from '../lib/icons';
 import { navIcon } from '../shell/Layout';
@@ -82,16 +82,15 @@ export function PublishingList() {
   return (
     <section>
       <PageHeader title={t('nav.publishing')} icon={navIcon('publishing')} description={t('pages.publishing')} />
-      <TopicFilters list={list} />
-      <div className="adm-filters">
-        <FilterText label={t('publishing.unitFilter')} value={list.filters.unitKey} onApply={(v) => list.setFilter('unitKey', v)} />
-        {can('content.publish') && (
+      <TopicFilters list={list} extra={['unitKey']} />
+      {can('content.publish') && (
+        <div className="adm-filters">
           <label className="adm-filter">
             <span>{t('publishing.scheduleBulk')}</span>
             <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
           </label>
-        )}
-      </div>
+        </div>
+      )}
       {list.filters.unitKey && <p className="adm-hint">{t('publishing.unitHint')}</p>}
       {report && <pre className="adm-alert adm-alert--info">{report}</pre>}
       <ListView
@@ -100,7 +99,6 @@ export function PublishingList() {
         columns={columns}
         rowKey={(r: AdminTopic) => r.id}
         bulkActions={bulk}
-        refine={list.filters.unitKey ? (rows: AdminTopic[]) => rows.filter((r) => r.unitKey === list.filters.unitKey) : undefined}
         onRowClick={(r: AdminTopic) => nav(to(`publishing/${r.id}`))}
       />
     </section>
@@ -109,6 +107,7 @@ export function PublishingList() {
 
 function Checklist({ id }: { id: string }) {
   const t = useT();
+  const to = useAdminPath();
   const q = useApiQuery('adminTopicChecklist', { params: { id } });
   const c = q.data;
   return (
@@ -129,7 +128,13 @@ function Checklist({ id }: { id: string }) {
             <ul className="adm-plain">
               {c.issues.slice(0, 50).map((i, n) => (
                 <li key={n}>
-                  <Badge tone={i.severity === 'error' ? 'error' : 'warn'}>{t(`enum.${i.severity}`)}</Badge> <code>{i.path.join('.')}</code> {i.message}
+                  <Badge tone={i.severity === 'error' ? 'error' : 'warn'}>{t(`enum.${i.severity}`)}</Badge> <code>{i.path.join('.')}</code> {t(`publishing.issue.${i.code}`, { defaultValue: i.message })}
+                  {i.code === 'rights_missing' && (
+                    <>
+                      {' '}
+                      <Link to={to(`topics/${id}?tab=rights`)}>{t('publishing.openRights')}</Link>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
@@ -332,7 +337,25 @@ export function PublishingDetail() {
   const [action, setAction] = useState<WorkflowAction | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [result, setResult] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const canCancel = useCanCall('adminTopicScheduleCancel');
   const d = detail.data;
+  // A-13: drop the scheduled publish; the topic stays in review (409 when nothing is scheduled any more).
+  const cancelSchedule = async () => {
+    if (!d) return;
+    setError(null);
+    setCancelling(true);
+    try {
+      await api.call('adminTopicScheduleCancel', { params: { id }, ifMatch: d.version });
+      setResult(t('publishing.scheduleCancelled'));
+    } catch (e) {
+      setError(e);
+    } finally {
+      setCancelling(false);
+      void detail.refetch();
+      void qc.invalidateQueries({ queryKey: ['adminTopicList'] });
+    }
+  };
   const vlist = versions.data?.items ?? [];
   const semvers = vlist.map((v) => v.version);
   const allowed = (d?.availableActions ?? []).filter((a) => can(WORKFLOW[a].permission));
@@ -354,7 +377,21 @@ export function PublishingDetail() {
               [t('fields.status'), <StatusBadge key="s" status={d.status} />],
               [t('topics.published'), d.publishedVersion ?? '—'],
               [t('topics.latest'), d.latestVersion ?? '—'],
-              [t('publishing.scheduled'), d.scheduledAt ? fmtDate(d.scheduledAt, lang) : '—'],
+              [
+                t('publishing.scheduled'),
+                d.scheduledAt ? (
+                  <span key="sch" className="adm-inline">
+                    {fmtDate(d.scheduledAt, lang)}
+                    {canCancel && (
+                      <button type="button" className="adm-btn adm-btn--small adm-btn--ghost" disabled={cancelling} onClick={cancelSchedule}>
+                        {t('publishing.cancelSchedule')}
+                      </button>
+                    )}
+                  </span>
+                ) : (
+                  '—'
+                ),
+              ],
               [t('fields.subjectKey'), d.subjectKey],
             ]}
           />

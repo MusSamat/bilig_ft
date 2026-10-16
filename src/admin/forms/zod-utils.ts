@@ -164,3 +164,23 @@ export const humanize = (key: string) =>
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/[_-]+/g, ' ')
     .replace(/^./, (c) => c.toUpperCase());
+
+/**
+ * PATCH bodies (contract 0.3.0): an optional field the patch schema also
+ * accepts as `null` is removed by sending `null` — JSON cannot carry
+ * `undefined`, so a field the editor cleared would otherwise be kept by the
+ * server's merge. `data` is the whole edited record; with `base` (the stored
+ * record) only fields that existed there are nulled.
+ */
+export function withRemovals<T extends Record<string, unknown>>(patchSchema: z.ZodTypeAny | undefined, data: T, base?: Record<string, unknown>): T {
+  const obj = patchSchema ? core(patchSchema).find((s): s is z.AnyZodObject => s instanceof z.ZodObject) : undefined;
+  if (!obj) return data;
+  const out: Record<string, unknown> = { ...data };
+  for (const [k, s] of Object.entries(obj.shape as z.ZodRawShape)) {
+    const u = unwrap(s);
+    if (!u.optional || !u.nullable || data[k] !== undefined) continue;
+    if (base && base[k] === undefined) continue;
+    out[k] = null;
+  }
+  return out as T;
+}

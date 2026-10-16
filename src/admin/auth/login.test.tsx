@@ -61,26 +61,43 @@ describe('admin sign-in with TOTP', () => {
     expect(screen.getByLabelText('Код из приложения (6 цифр)')).toBeInTheDocument();
   });
 
-  it('enrols an authenticator when the account has none (client-audience session, then back to the code step)', async () => {
+  it('enrols an authenticator with the enrollmentToken from the 403 and signs straight in', async () => {
+    const enrollmentToken = 'e'.repeat(43);
     const api = mockApi({
       'POST /auth/refresh': fail('unauthorized'),
-      'POST /auth/login': (c) => (c.headers['x-bilig-audience'] === 'client' ? { body: token('client-access') } : fail('forbidden', { detail: 'totp_enrollment_required' })),
-      'POST /me/2fa': (c) => ((c.body as { action: string }).action === 'setup' ? { body: { enabled: false, otpauthUrl: 'otpauth://totp/Bilig:editor?secret=ABC' } } : { body: { enabled: true } }),
-      'POST /auth/logout': { body: { ok: true } },
+      'POST /auth/login': fail('forbidden', { detail: 'totp_enrollment_required', enrollmentToken }),
+      'POST /auth/2fa/setup': { body: { enabled: false, otpauthUrl: 'otpauth://totp/Bilig:editor?secret=ABCDEF234&issuer=Bilig' } },
+      'POST /auth/2fa/verify': (c) => ((c.body as { code: string }).code === '654321' ? { body: token('admin-access') } : fail('invalid_credentials')),
+      'GET /me': (c) => (c.headers.authorization === 'Bearer admin-access' ? { body: meFixture() } : fail('unauthorized')),
+      'GET /admin/topics': { body: page([]) },
+      'GET /admin/strings': { body: page([]) },
+      'GET /admin/builds': { body: page([]) },
     });
     renderAdmin('/admin', { me: null });
     await screen.findByLabelText('E-mail');
     fillPassword();
     fireEvent.click(await screen.findByRole('button', { name: 'Подключить 2FA' }));
-    expect(await screen.findByTestId('otpauth')).toHaveTextContent('otpauth://totp/Bilig:editor?secret=ABC');
+    expect(await screen.findByTestId('otpauth')).toHaveTextContent('otpauth://totp/Bilig:editor?secret=ABCDEF234');
+    expect(screen.getByTestId('otp-secret')).toHaveTextContent('ABCDEF234');
+    expect(api.find('POST', '/auth/2fa/setup')[0].body).toEqual({ enrollmentToken });
+
+    // a wrong code stays on the step (no refresh-and-sign-out on its 401)
+    fireEvent.change(screen.getByLabelText('Код из приложения (6 цифр)'), { target: { value: '111111' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }));
+    expect(await screen.findByText('Неверный e-mail, пароль или код')).toBeInTheDocument();
+    expect(api.find('POST', '/auth/refresh')).toHaveLength(1);
+
     fireEvent.change(screen.getByLabelText('Код из приложения (6 цифр)'), { target: { value: '654321' } });
     fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }));
-    expect(await screen.findByText('2FA подключена. Теперь войдите с кодом.')).toBeInTheDocument();
-    const twofa = api.find('POST', '/me/2fa');
-    expect(twofa.map((c) => (c.body as { action: string }).action)).toEqual(['setup', 'verify']);
-    expect(twofa.every((c) => c.headers.authorization === 'Bearer client-access' && c.headers['x-bilig-audience'] === 'client')).toBe(true);
-    expect(api.find('POST', '/auth/logout')[0].headers['x-bilig-audience']).toBe('client');
-    expect(useSession.getState().token).toBeNull();
+    expect(await screen.findByRole('heading', { name: 'Дашборд' })).toBeInTheDocument();
+    expect(api.find('POST', '/auth/2fa/verify').map((c) => c.body)).toEqual([
+      { enrollmentToken, code: '111111' },
+      { enrollmentToken, code: '654321' },
+    ]);
+    // no client-audience workaround any more
+    expect(api.calls.every((c) => c.headers['x-bilig-audience'] === 'admin')).toBe(true);
+    expect(api.find('POST', '/me/2fa')).toHaveLength(0);
+    expect(useSession.getState().token).toBe('admin-access');
   });
 
   it('refreshes once on 401 and retries the request with the new token', async () => {

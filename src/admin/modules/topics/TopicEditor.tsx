@@ -9,6 +9,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { ActivitiesSchema, QuizSpecSchema, TopicSchema, conceptForNode, type Topic } from '@bilig/content-model';
 import { useApiMutation, useCanCall } from '../../api/hooks';
+import { api } from '../../api/session';
 import { SchemaForm, IssueSummary, useValidation } from '../../forms/SchemaForm';
 import { adminRegistry } from '../../forms/editors';
 import { activities, registerActivity, type ActivityDef } from '../../forms/registry';
@@ -30,6 +31,7 @@ export const TAB_SCHEMAS = {
   scene: part('scene', 'samples'),
   structures: part('conceptKeys', 'overrides'),
   texts: part('examples', 'i18n'),
+  rights: part('rights'),
 };
 const TAB_FIELDS: Record<string, string[]> = {
   basic: Object.keys(TAB_SCHEMAS.basic.shape),
@@ -37,6 +39,7 @@ const TAB_FIELDS: Record<string, string[]> = {
   structures: ['conceptKeys', 'overrides'],
   activities: ['activities'],
   texts: ['examples', 'i18n'],
+  rights: ['rights'],
 };
 
 // Built-in activities (A-07 tour and A-09 comparison have their own screens).
@@ -148,18 +151,58 @@ function SchemaFormLike({ schema, value, onChange, readOnly, suggest, fieldKey }
   return <SchemaForm schema={wrapped} value={{ [fieldKey]: value }} readOnly={readOnly} suggest={suggest} onChange={(v) => onChange((v as Record<string, unknown>)[fieldKey])} />;
 }
 
-function RightsTab({ doc }: { doc: Topic }) {
+/** What a rights entry can cover: the scene asset and the sample thumbnails (package-relative paths). */
+export function coverOptions(doc: Topic): { value: string; label?: string }[] {
+  const out = new Map<string, string | undefined>();
+  if (doc.scene?.asset) out.set(doc.scene.asset, undefined);
+  for (const s of doc.samples ?? []) if (s.thumb) out.set(s.thumb, s.key);
+  return [...out].map(([value, label]) => ({ value, ...(label ? { label } : {}) }));
+}
+
+/** The publish checklist's `rights_missing`: a 3D asset with no entry that covers it (or the whole topic). */
+export const rightsMissing = (doc: Topic) => !!doc.scene?.asset && !(doc.rights ?? []).some((r) => !r.covers || r.covers === doc.scene?.asset);
+
+function RightsTab({ doc, onChange, suggest, readOnly }: { doc: Topic; onChange(d: Topic): void; suggest: Record<string, { value: string; label?: string }[]>; readOnly: boolean }) {
   const t = useT();
   const to = useAdminPath();
+  const [error, setError] = useState<unknown>(null);
+  const [busy, setBusy] = useState(false);
+  const asset = doc.scene?.asset;
+  // Copy the licence / author / source recorded at upload (A-05) into an entry covering the scene asset.
+  const fromAsset = async () => {
+    if (!asset) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const page = await api.call('adminAssetList', { query: { q: asset, limit: 10 } });
+      const a = page.items.find((x) => x.key === asset || x.filename === asset) ?? page.items[0];
+      if (!a?.license || !a.author || !a.source) throw new Error(t('rights.assetNoMeta', { key: asset }));
+      onChange({ ...doc, rights: [...(doc.rights ?? []), { license: a.license, author: a.author, source: a.source, covers: asset }] });
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <div className="adm-card">
       <h3>{t('rights.title')}</h3>
       <p>
-        {t('rights.asset')}: <code>{doc.scene?.asset ?? '—'}</code>
+        {t('rights.asset')}: <code>{asset ?? '—'}</code> · <Link to={to('assets')}>{t('nav.assets')}</Link>
       </p>
-      <p>{t('rights.samples', { count: doc.samples?.length ?? 0 })}</p>
-      <p className="adm-hint">{t('rights.gap')}</p>
-      <Link to={to('assets')}>{t('nav.assets')}</Link>
+      {rightsMissing(doc) && (
+        <p className="adm-alert adm-alert--warn" role="status">
+          {t('rights.missing')}
+        </p>
+      )}
+      <PartForm schema={TAB_SCHEMAS.rights} doc={doc} onChange={onChange} suggest={{ ...suggest, covers: coverOptions(doc) }} readOnly={readOnly} />
+      {asset && !readOnly && (
+        <button type="button" className="adm-btn adm-btn--small" disabled={busy} onClick={fromAsset}>
+          {t('rights.fromAsset')}
+        </button>
+      )}
+      <ErrorBox error={error} />
+      <p className="adm-hint">{t('rights.hint')}</p>
     </div>
   );
 }
@@ -284,7 +327,7 @@ export function TopicEditor() {
               },
               { id: 'activities', label: label('activities'), content: <ActivitiesTab doc={doc} onChange={set} topicId={id} readOnly={readOnly} suggest={suggest} /> },
               { id: 'texts', label: label('texts'), content: <PartForm schema={TAB_SCHEMAS.texts} doc={doc} onChange={set} suggest={suggest} readOnly={readOnly} /> },
-              { id: 'rights', label: t('topics.tab.rights'), content: <RightsTab doc={doc} /> },
+              { id: 'rights', label: label('rights'), content: <RightsTab doc={doc} onChange={set} suggest={suggest} readOnly={readOnly} /> },
             ]}
           />
         )}

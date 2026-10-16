@@ -9,7 +9,8 @@
  *  - the access token lives in memory only; on 401 the client refreshes once
  *    through the HttpOnly `bilig_admin_rt` cookie and retries;
  *  - versioned writes send `If-Match: "<version>"` (409 → `ApiError` with
- *    code `version_mismatch`, handled by the conflict UI).
+ *    code `version_mismatch`, handled by the conflict UI); for endpoints with
+ *    `ifMatchOptional` (schools, licences) it is sent whenever a version is known.
  */
 import type { z } from 'zod';
 import {
@@ -20,7 +21,6 @@ import {
   TokenResponseSchema,
   buildPath,
   problem,
-  type Audience,
   type EndpointName,
   type Problem,
 } from '@bilig/content-model/api';
@@ -34,10 +34,8 @@ export interface CallOpts<N extends EndpointName> {
   params?: Record<string, string>;
   query?: QueryIn<N>;
   body?: BodyIn<N>;
-  /** Entity version for If-Match (required when the endpoint declares `ifMatch`). */
+  /** Entity version for If-Match (required when the endpoint declares `ifMatch`, sent when given for `ifMatchOptional`). */
   ifMatch?: number;
-  /** Override the audience (only the 2FA enrolment flow uses `client`). */
-  audience?: Audience;
   /** Use this bearer token instead of the stored admin token. */
   token?: string;
   signal?: AbortSignal;
@@ -93,7 +91,7 @@ export interface BinaryResult {
   filename?: string;
 }
 
-const NO_REFRESH: ReadonlySet<EndpointName> = new Set(['login', 'refresh', 'logout']);
+const NO_REFRESH: ReadonlySet<EndpointName> = new Set(['login', 'refresh', 'logout', 'authTotpEnrollSetup', 'authTotpEnrollVerify']);
 
 function serializeQuery(q: Record<string, unknown>): string {
   const sp = new URLSearchParams();
@@ -139,6 +137,7 @@ export function createApiClient(cfg: ClientConfig) {
       body?: z.ZodTypeAny;
       query?: z.ZodTypeAny;
       ifMatch?: boolean;
+      ifMatchOptional?: boolean;
     };
     let url = base + buildPath(def.path, opts.params);
     if (def.query) {
@@ -148,7 +147,7 @@ export function createApiClient(cfg: ClientConfig) {
     }
     const headers: Record<string, string> = {
       Accept: 'application/json',
-      [HEADERS.audience]: opts.audience ?? 'admin',
+      [HEADERS.audience]: 'admin',
       [HEADERS.acceptLanguage]: cfg.lang(),
     };
     let body: string | undefined;
@@ -161,7 +160,7 @@ export function createApiClient(cfg: ClientConfig) {
     if (def.ifMatch) {
       if (opts.ifMatch === undefined) throw new Error(`${name} requires ifMatch`);
       headers[HEADERS.ifMatch] = `"${opts.ifMatch}"`;
-    }
+    } else if (def.ifMatchOptional && opts.ifMatch !== undefined) headers[HEADERS.ifMatch] = `"${opts.ifMatch}"`;
     const token = opts.token ?? cfg.getToken();
     if (token) headers[HEADERS.authorization] = `Bearer ${token}`;
 

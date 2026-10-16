@@ -5,13 +5,17 @@
  * «проверено» saved with one PATCH; CSV / XLIFF import and export; glossary
  * terms highlighted in the source, forbidden variants flagged in targets.
  *
- * The contract lists one locale per request, so the other two columns are
- * fetched from the same cursor (keys are paged in key order in every locale).
+ * One request (`GET /admin/strings/rows`) returns ru, ky and en side by side,
+ * with search, key prefix and sort done on the server. Every saved item
+ * carries the row version (and, for targets, the source hash) it was edited
+ * from; a stale one makes the server refuse the whole PATCH (409), and the
+ * conflicting cells offer «взять их» / «оставить мою».
  */
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useMemo, useState } from 'react';
 import { I18N_STATUSES, LANGS, findForbidden, type GlossaryTerm, type I18nStatus, type Lang } from '@bilig/content-model';
-import type { LocaleString } from '@bilig/content-model/api';
+import type { StringRow } from '@bilig/content-model/api';
+import { ApiError } from '../api/client';
 import { useApiQuery, useCanCall } from '../api/hooks';
 import { api } from '../api/session';
 import { useT } from '../i18n';
@@ -21,9 +25,22 @@ import { useListParams } from '../lists/useListParams';
 import { Badge, ErrorBox, FilterCheck, FilterSelect, FilterText, PageHeader, StatusBadge, downloadBlob } from '../shell/ui';
 import { navIcon } from '../shell/Layout';
 
-type Edit = { value: string; status: I18nStatus };
+/** An unsaved cell edit and the row version / source hash it was based on. */
+type Edit = { value: string; status: I18nStatus; version: number; sourceHash?: string };
 const ek = (key: string, locale: Lang) => `${key}\u0000${locale}`;
-export const TRANSLATION_FILTERS = ['locale', 'status', 'untranslated', 'sourceChanged', 'q'] as const;
+export const TRANSLATION_FILTERS = ['locale', 'status', 'untranslated', 'sourceChanged', 'q', 'prefix'] as const;
+const SORTS = ['key', '-key', '-updatedAt', 'updatedAt'] as const;
+
+/**
+ * The rows endpoint applies status / untranslated / sourceChanged to any of the
+ * requested locales; the page shows them for the target locale only.
+ */
+export function matchesTarget(r: StringRow, target: Lang, f: { status?: I18nStatus; untranslated?: boolean; sourceChanged?: boolean }): boolean {
+  if (f.status && r.status[target] !== f.status) return false;
+  if (f.untranslated && r.values[target]?.trim()) return false;
+  if (f.sourceChanged && !r.sourceChangedLocales.includes(target)) return false;
+  return true;
+}
 
 export async function loadGlossary(): Promise<GlossaryTerm[]> {
   const out: GlossaryTerm[] = [];
@@ -130,7 +147,7 @@ function ImportExport({ locale }: { locale: Lang }) {
                   const format = /\.csv$/i.test(f.name) ? 'csv' : 'xliff';
                   const r = await api.call('adminStringsImport', { body: { format, locale, content: await f.text(), ...(importStatus ? { status: importStatus } : {}) } });
                   setResult(t('translations.importResult', { updated: r.updated, unchanged: r.unchanged, unknown: r.unknownKeys.length, errors: r.errors.length }) + (r.errors.length ? '\n' + r.errors.map((x) => `${x.line ?? ''}: ${x.message}`).join('\n') : ''));
-                  void qc.invalidateQueries({ queryKey: ['adminStrings'] });
+                  void qc.invalidateQueries({ queryKey: ['adminStringRows'] });
                 } catch (err) {
                   setError(err);
                 }
@@ -151,67 +168,86 @@ export function Translations() {
   const list = useListParams(TRANSLATION_FILTERS, 50);
   const target = (list.filters.locale === 'en' || list.filters.locale === 'ru' ? list.filters.locale : 'ky') as Lang;
   const status = I18N_STATUSES.includes(list.filters.status as I18nStatus) ? (list.filters.status as I18nStatus) : undefined;
+  const untranslated = list.filters.untranslated === 'true';
+  const sourceChanged = list.filters.sourceChanged === 'true';
+  const sort = list.sort && (list.sort.field === 'key' || list.sort.field === 'updatedAt') ? list.sort : undefined;
   const canPatch = useCanCall('adminStringsPatch');
   const main = useApiQuery(
-    'adminStrings',
+    'adminStringRows',
     {
       query: {
-        locale: target,
+        locales: 'ru,ky,en',
         ...(status ? { status } : {}),
-        ...(list.filters.untranslated === 'true' ? { untranslated: 'true' } : {}),
-        ...(list.filters.sourceChanged === 'true' ? { sourceChanged: 'true' } : {}),
+        ...(untranslated ? { untranslated: 'true' } : {}),
+        ...(sourceChanged ? { sourceChanged: 'true' } : {}),
+        ...(list.filters.q ? { q: list.filters.q } : {}),
+        ...(list.filters.prefix ? { prefix: list.filters.prefix } : {}),
+        ...(sort ? { sort: sort.field as 'key' | 'updatedAt', order: sort.dir } : {}),
         ...(list.cursor ? { cursor: list.cursor } : {}),
         limit: list.limit,
       },
     },
     { placeholderData: keepPreviousData },
   );
-  const others = LANGS.filter((l) => l !== target);
-  const side = others.map((l) => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiQuery('adminStrings', { query: { locale: l, ...(list.cursor ? { cursor: list.cursor } : {}), limit: 500 } }, { placeholderData: keepPreviousData, enabled: !!main.data });
-  });
   const glossary = useQuery({ queryKey: ['glossary-all'], queryFn: loadGlossary, staleTime: 5 * 60_000, enabled: useCanCall('adminGlossaryList') });
   const terms = glossary.data ?? [];
   const [edits, setEdits] = useState<Map<string, Edit>>(new Map());
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [error, setError] = useState<unknown>(null);
+  const [conflict, setConflict] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const byLocale = useMemo(() => {
-    const m = new Map<Lang, Map<string, LocaleString>>();
-    m.set(target, new Map((main.data?.items ?? []).map((r) => [r.key, r])));
-    others.forEach((l, i) => m.set(l, new Map((side[i].data?.items ?? []).map((r) => [r.key, r]))));
-    return m;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [main.data, side[0].data, side[1].data, target]);
+  const loaded = main.data?.items ?? [];
+  const rows = loaded.filter((r) => matchesTarget(r, target, { status, untranslated, sourceChanged }));
+  const hidden = loaded.length - rows.length;
+  const byKey = useMemo(() => new Map(loaded.map((r) => [r.key, r])), [loaded]);
 
-  let rows = main.data?.items ?? [];
-  const qtext = list.filters.q?.toLowerCase();
-  if (qtext) rows = rows.filter((r) => r.key.toLowerCase().includes(qtext) || LANGS.some((l) => byLocale.get(l)?.get(r.key)?.value.toLowerCase().includes(qtext)));
-
+  /** Base of a new edit: what the editor sees now. */
+  const base = (r: StringRow | undefined, l: Lang) => ({ version: r?.versions[l] ?? 0, ...(l !== 'ru' && r ? { sourceHash: r.sourceHash } : {}) });
   const cell = (key: string, l: Lang) => {
     const e = edits.get(ek(key, l));
-    const row = byLocale.get(l)?.get(key);
-    return { value: e?.value ?? row?.value ?? '', status: e?.status ?? row?.status, row, edited: !!e };
+    const row = byKey.get(key);
+    const stale = !!e && !!row && (e.version !== (row.versions[l] ?? 0) || (e.sourceHash !== undefined && e.sourceHash !== row.sourceHash));
+    return { value: e?.value ?? row?.values[l] ?? '', status: e?.status ?? row?.status[l], exists: !!row && l in row.status, theirs: row?.values[l] ?? '', edited: !!e, stale };
   };
-  const setCell = (key: string, l: Lang, patch: Partial<Edit>) => {
+  const setCell = (key: string, l: Lang, patch: Partial<Pick<Edit, 'value' | 'status'>>) => {
     const cur = cell(key, l);
+    const prev = edits.get(ek(key, l));
     const next = new Map(edits);
-    next.set(ek(key, l), { value: patch.value ?? cur.value, status: patch.status ?? (patch.value !== undefined && cur.status === 'machine' ? 'draft' : (cur.status ?? 'draft')) });
+    next.set(ek(key, l), {
+      ...(prev ?? base(byKey.get(key), l)),
+      value: patch.value ?? cur.value,
+      status: patch.status ?? (patch.value !== undefined && cur.status === 'machine' ? 'draft' : (cur.status ?? 'draft')),
+    });
     setEdits(next);
   };
-  const save = async (items: { key: string; locale: Lang; value: string; status: I18nStatus }[]) => {
+  /** Conflict resolution for one cell: drop my edit, or rebase it on the current row. */
+  const takeTheirs = (key: string, l: Lang) => {
+    const next = new Map(edits);
+    next.delete(ek(key, l));
+    setEdits(next);
+  };
+  const keepMine = (key: string, l: Lang) => {
+    const e = edits.get(ek(key, l));
+    if (!e) return;
+    setEdits(new Map(edits).set(ek(key, l), { ...e, ...base(byKey.get(key), l) }));
+  };
+  const save = async (items: { key: string; locale: Lang; value: string; status: I18nStatus; version: number; sourceHash?: string }[], fromEdits: boolean) => {
     if (!items.length) return;
     setSaving(true);
     setError(null);
+    setConflict(null);
     try {
       for (let i = 0; i < items.length; i += 1000) await api.call('adminStringsPatch', { body: { items: items.slice(i, i + 1000) } });
-      setEdits(new Map());
+      if (fromEdits) setEdits(new Map());
       setSelected(new Set());
-      await qc.invalidateQueries({ queryKey: ['adminStrings'] });
+      await qc.invalidateQueries({ queryKey: ['adminStringRows'] });
     } catch (e) {
-      setError(e);
+      if (e instanceof ApiError && e.code === 'version_mismatch') {
+        // Nothing was written; reload the rows and keep the edits so the stale cells can be resolved.
+        setConflict(e.detail ?? '');
+        await qc.invalidateQueries({ queryKey: ['adminStringRows'] });
+      } else setError(e);
     } finally {
       setSaving(false);
     }
@@ -220,16 +256,27 @@ export function Translations() {
     const [key, locale] = k.split('\u0000') as [string, Lang];
     return { key, locale, ...v };
   });
+  const staleCount = pending.filter((p) => cell(p.key, p.locale).stale).length;
 
   return (
     <section>
       <PageHeader title={t('nav.translations')} icon={navIcon('translations')} description={t('pages.translations')}>
         {canPatch && (
           <>
-            <button type="button" className="adm-btn" disabled={!selected.size || saving} onClick={() => save([...selected].map((key) => ({ key, locale: target, value: cell(key, target).value, status: 'reviewed' as const })))}>
+            <button
+              type="button"
+              className="adm-btn"
+              disabled={!selected.size || saving}
+              onClick={() =>
+                save(
+                  [...selected].map((key) => ({ key, locale: target, value: cell(key, target).value, status: 'reviewed' as const, ...base(byKey.get(key), target) })),
+                  false,
+                )
+              }
+            >
               {t('translations.markReviewed', { count: selected.size })}
             </button>
-            <button type="button" className="adm-btn adm-btn--primary" disabled={!pending.length || saving} onClick={() => save(pending)}>
+            <button type="button" className="adm-btn adm-btn--primary" disabled={!pending.length || saving} onClick={() => save(pending, true)}>
               {saving ? t('common.saving') : t('translations.save', { count: pending.length })}
             </button>
           </>
@@ -241,9 +288,22 @@ export function Translations() {
         <FilterCheck label={t('translations.untranslated')} value={list.filters.untranslated} onApply={(v) => list.setFilter('untranslated', v)} />
         <FilterCheck label={t('translations.sourceChanged')} value={list.filters.sourceChanged} onApply={(v) => list.setFilter('sourceChanged', v)} />
         <FilterText label={t('list.search')} value={list.filters.q} onApply={(v) => list.setFilter('q', v)} />
+        <FilterText label={t('translations.prefix')} value={list.filters.prefix} onApply={(v) => list.setFilter('prefix', v)} />
+        <FilterSelect
+          label={t('translations.sort')}
+          value={sort ? `${sort.dir === 'desc' ? '-' : ''}${sort.field}` : undefined}
+          options={SORTS.map((s) => ({ value: s, label: t(`translations.sorts.${s.replace('-', 'desc_')}`) }))}
+          onApply={(v) => list.setFilter('sort', v)}
+        />
       </div>
-      {list.filters.q && <p className="adm-hint">{t('translations.searchPageOnly')}</p>}
+      {hidden > 0 && <p className="adm-hint">{t('translations.hiddenOther', { count: hidden, lang: target })}</p>}
       <ImportExport locale={target} />
+      {conflict !== null && (
+        <div className="adm-alert adm-alert--warn" role="alert">
+          <strong>{t('translations.conflict', { count: staleCount })}</strong>
+          {conflict && <span className="adm-muted"> — {conflict}</span>}
+        </div>
+      )}
       <ErrorBox error={error ?? main.error} />
       <div className="adm-tablewrap">
       <table className="adm-table adm-translations">
@@ -285,7 +345,7 @@ export function Translations() {
               )}
               <td>
                 <code className="adm-key">{r.key}</code>
-                {r.sourceChanged && <Badge tone="warn">{t('translations.sourceChangedBadge')}</Badge>}
+                {r.sourceChanged && <Badge tone="warn">{t('translations.sourceChangedIn', { langs: r.sourceChangedLocales.join(', ') })}</Badge>}
               </td>
               {(['ru', 'ky', 'en'] as const).map((l) => {
                 const c = cell(r.key, l);
@@ -307,7 +367,8 @@ export function Translations() {
                     <div className="adm-inline">
                       {c.status === 'machine' && <Badge tone="warn">{t('translations.machine')}</Badge>}
                       {c.status && c.status !== 'machine' && <StatusBadge status={c.status} />}
-                      {canPatch && c.row && (
+                      {l !== 'ru' && r.sourceChangedLocales.includes(l) && <Badge tone="warn">{t('translations.sourceChangedBadge')}</Badge>}
+                      {canPatch && c.exists && (
                         <select aria-label={t('translations.statusOf', { key: r.key, lang: l })} value={c.status} onChange={(e) => setCell(r.key, l, { status: e.target.value as I18nStatus })}>
                           {I18N_STATUSES.map((s) => (
                             <option key={s} value={s}>
@@ -317,6 +378,17 @@ export function Translations() {
                         </select>
                       )}
                     </div>
+                    {c.stale && (
+                      <div className="adm-conflict-cell" data-testid={`stale-${r.key}-${l}`}>
+                        <div className="adm-muted">{t('translations.theirs', { value: c.theirs || '—' })}</div>
+                        <button type="button" className="adm-btn adm-btn--small adm-btn--ghost" onClick={() => takeTheirs(r.key, l)}>
+                          {t('conflict.takeTheirs')}
+                        </button>
+                        <button type="button" className="adm-btn adm-btn--small" onClick={() => keepMine(r.key, l)}>
+                          {t('translations.keepMine')}
+                        </button>
+                      </div>
+                    )}
                     {forbidden.map((f) => (
                       <div key={f.variant} className="adm-field-errors">
                         {t('translations.forbidden', { variant: f.variant, suggestion: f.suggestion })}
@@ -331,7 +403,6 @@ export function Translations() {
       </table>
       </div>
       <Pager list={list} nextCursor={main.data?.nextCursor ?? null} fetching={main.isFetching} />
-      <p className="adm-hint">{t('translations.lockNote')}</p>
     </section>
   );
 }

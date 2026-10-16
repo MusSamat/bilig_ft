@@ -34,6 +34,9 @@ export interface AdminRec<T = Record<string, unknown>> {
   updatedBy?: string;
 }
 
+/** v0.3.0 list filters: `status` (subjects), `unitKey` (objectives), `kind` (concepts), `type` / `objectiveKey` (items). */
+export type ResourceFilter = 'q' | 'subjectKey' | 'status' | 'unitKey' | 'kind' | 'type' | 'objectiveKey';
+
 type Src = 'subjects' | 'groups' | 'courses' | 'units' | 'objectives' | 'concepts' | 'processes' | 'items';
 
 export interface ResourceDef {
@@ -42,7 +45,7 @@ export interface ResourceDef {
   schema: z.ZodTypeAny;
   keyField: 'key' | 'id';
   list: EndpointName;
-  get?: EndpointName;
+  get: EndpointName;
   create: EndpointName;
   patch: EndpointName;
   del?: EndpointName;
@@ -50,7 +53,8 @@ export interface ResourceDef {
   param: 'key' | 'id';
   patchBody(data: Record<string, unknown>, version: number): unknown;
   columns(t: TFn, lang: Lang): Column<AdminRec<any>>[]; // eslint-disable-line @typescript-eslint/no-explicit-any
-  filters: ('q' | 'subjectKey' | 'status')[];
+  /** Server filters shown above the list (all in the URL). */
+  filters: ResourceFilter[];
   suggest: Src[];
   /** Fields omitted from the form (besides the key on edit). */
   hidden?: string[];
@@ -99,7 +103,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
     del: 'adminSubjectDelete',
     param: 'key',
     patchBody: partialPatch,
-    filters: ['q'],
+    filters: ['q', 'status'],
     suggest: ['groups'],
     columns: (t, lang) => [
       col<any>('icon', t('fields.icon'), (d) => <span style={{ color: `hsl(${d.hue} 60% 42%)` }}><Icon id={d.icon} /></span>),
@@ -118,6 +122,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
     schema: SubjectGroupSchema,
     keyField: 'key',
     list: 'adminGroupList',
+    get: 'adminGroupGet',
     create: 'adminGroupCreate',
     patch: 'adminGroupPatch',
     del: 'adminGroupDelete',
@@ -184,7 +189,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
     del: 'adminObjectiveDelete',
     param: 'key',
     patchBody: partialPatch,
-    filters: ['q', 'subjectKey'],
+    filters: ['q', 'subjectKey', 'unitKey'],
     suggest: ['units'],
     columns: (t, lang) => [
       col<any>('code', t('fields.code'), (d) => <code>{d.code}</code>, (d) => d.code),
@@ -206,7 +211,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
     del: 'adminConceptDelete',
     param: 'key',
     patchBody: partialPatch,
-    filters: ['q', 'subjectKey'],
+    filters: ['q', 'subjectKey', 'kind'],
     suggest: ['concepts'],
     columns: (t, lang) => [
       col<any>('hue', '', (d) => <span className="adm-dot" style={{ background: `hsl(${d.hue} 65% 50%)` }} />),
@@ -253,7 +258,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
     del: 'adminItemDelete',
     param: 'key',
     patchBody: (data, version) => ({ data, version }),
-    filters: ['q', 'subjectKey'],
+    filters: ['q', 'subjectKey', 'type', 'objectiveKey'],
     suggest: ['objectives', 'concepts'],
     columns: (t, lang) => [
       keyCol(t),
@@ -276,6 +281,7 @@ export const RESOURCES: Record<string, ResourceDef> = {
     schema: GlossaryTermSchema,
     keyField: 'id',
     list: 'adminGlossaryList',
+    get: 'adminGlossaryGet',
     create: 'adminGlossaryCreate',
     patch: 'adminGlossaryPatch',
     del: 'adminGlossaryDelete',

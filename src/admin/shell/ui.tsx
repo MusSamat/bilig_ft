@@ -129,6 +129,10 @@ const STATUS_TONE: Record<string, Tone> = {
   reviewed: 'ok',
   live: 'ok',
   soon: 'neutral',
+  pending: 'warn',
+  accepted: 'ok',
+  revoked: 'archived',
+  expired: 'neutral',
 };
 
 export function StatusBadge({ status }: { status: string }) {

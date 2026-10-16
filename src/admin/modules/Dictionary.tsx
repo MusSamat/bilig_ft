@@ -47,18 +47,45 @@ export const ItemsList = () => <ResourceList def={RESOURCES.items} />;
 
 // --- A-04 concept usage -------------------------------------------------------------
 
+/**
+ * Everything that blocks deleting the concept, as `topic:<key>`, `process:<key>`
+ * or `concept:<key>` (contract 0.3.0 `usedBy`); older servers only send `topicKeys`.
+ */
+export function usageRefs(u: { topicKeys: string[]; usedBy?: string[] }): { type: string; key: string }[] {
+  const raw = u.usedBy ?? u.topicKeys.map((k) => `topic:${k}`);
+  return raw.map((r) => {
+    const i = r.indexOf(':');
+    return i < 0 ? { type: 'topic', key: r } : { type: r.slice(0, i), key: r.slice(i + 1) };
+  });
+}
+
+const USAGE_PATH: Record<string, (key: string) => string> = {
+  topic: (k) => `topics?q=${encodeURIComponent(k)}`,
+  process: (k) => `processes/${encodeURIComponent(k)}`,
+  concept: (k) => `concepts/${encodeURIComponent(k)}`,
+};
+
 function ConceptUsage({ conceptKey }: { conceptKey: string }) {
   const t = useT();
+  const to = useAdminPath();
   const q = useApiQuery('adminConceptUsage', { params: { key: conceptKey } });
+  const refs = q.data ? usageRefs(q.data) : [];
   return (
     <div className="adm-card">
       <h2>{t('concepts.usage')}</h2>
       <ErrorBox error={q.error} />
-      {q.data && (q.data.topicKeys.length ? (
+      {q.data && (refs.length ? (
         <ul className="adm-plain">
-          {q.data.topicKeys.map((k) => (
-            <li key={k}>
-              <code>{k}</code>
+          {refs.map((r) => (
+            <li key={`${r.type}:${r.key}`}>
+              <span className="adm-muted">{t(`concepts.usedBy.${r.type}`, { defaultValue: r.type })}</span>{' '}
+              {USAGE_PATH[r.type] ? (
+                <Link to={to(USAGE_PATH[r.type](r.key))}>
+                  <code>{r.key}</code>
+                </Link>
+              ) : (
+                <code>{r.key}</code>
+              )}
             </li>
           ))}
         </ul>
@@ -89,7 +116,7 @@ export function ConceptEdit() {
 
 function UsageProbe({ conceptKey, onCount }: { conceptKey: string; onCount(n: number): void }) {
   const q = useApiQuery('adminConceptUsage', { params: { key: conceptKey } });
-  const n = q.data?.topicKeys.length;
+  const n = q.data ? usageRefs(q.data).length : undefined;
   useEffect(() => {
     if (n !== undefined) onCount(n);
   }, [n, onCount]);

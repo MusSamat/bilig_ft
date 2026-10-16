@@ -10,7 +10,7 @@ import { useApiQuery } from '../api/hooks';
 import { useT } from '../i18n';
 import { Icon } from '../lib/icons';
 import { EmptyState, ErrorBox } from '../shell/ui';
-import { pickQuery, supportsServerSort, type ListParams } from './useListParams';
+import { pickQuery, serverSortable, type ListParams } from './useListParams';
 
 export interface Column<R> {
   key: string;
@@ -18,6 +18,8 @@ export interface Column<R> {
   render(row: R): ReactNode;
   /** Value used for sorting (absent → not sortable). */
   sortValue?(row: R): string | number | undefined;
+  /** Server sort field when it differs from `key` (the server sorts whenever the list accepts it). */
+  sortField?: string;
   className?: string;
 }
 
@@ -30,9 +32,17 @@ export interface BulkAction<R> {
 
 type PageOf<N extends EndpointName> = Resp<N> extends { items: (infer I)[]; nextCursor: string | null } ? I : never;
 
+/** The server field the list's current sort maps to, when the endpoint can sort by it. */
+export function serverSortField<R>(name: EndpointName, list: ListParams, columns: readonly Column<R>[] = []): string | undefined {
+  if (!list.sort) return undefined;
+  const col = columns.find((c) => c.key === list.sort!.field);
+  const field = col?.sortField ?? list.sort.field;
+  return serverSortable(name, field) ? field : undefined;
+}
+
 /** Fetch one cursor page of `name` with the list's URL state (+ fixed query). */
-export function useCursorList<N extends EndpointName>(name: N, list: ListParams, extra: Record<string, unknown> = {}, opts: Omit<CallOpts<N>, 'query'> = {}) {
-  const query = pickQuery(name, { ...list.query(supportsServerSort(name)), ...extra });
+export function useCursorList<N extends EndpointName>(name: N, list: ListParams, extra: Record<string, unknown> = {}, opts: Omit<CallOpts<N>, 'query'> = {}, sortField = serverSortField(name, list)) {
+  const query = pickQuery(name, { ...list.query(sortField ?? false), ...extra });
   return useApiQuery(name, { ...opts, query: query as CallOpts<N>['query'] }, { placeholderData: keepPreviousData });
 }
 
@@ -60,7 +70,7 @@ export interface ListViewProps<N extends EndpointName, R = PageOf<N>> {
   params?: Record<string, string>;
   bulkActions?: BulkAction<R>[];
   onRowClick?(row: R): void;
-  /** Client-side refinement of the loaded page (filters the API cannot do). */
+  /** Client-side refinement of the loaded page (only for filters the API cannot do). */
   refine?(rows: R[]): R[];
   empty?: ReactNode;
   caption?: ReactNode;
@@ -69,15 +79,17 @@ export interface ListViewProps<N extends EndpointName, R = PageOf<N>> {
 export function ListView<N extends EndpointName, R = PageOf<N>>(props: ListViewProps<N, R>) {
   const t = useT();
   const { list, columns, rowKey, bulkActions = [] } = props;
-  const q = useCursorList(props.endpoint, list, props.extraQuery, props.params ? ({ params: props.params } as never) : {});
+  const sortField = serverSortField(props.endpoint, list, columns);
+  const q = useCursorList(props.endpoint, list, props.extraQuery, props.params ? ({ params: props.params } as never) : {}, sortField);
   const data = q.data as { items: R[]; nextCursor: string | null } | undefined;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
-  const serverSort = supportsServerSort(props.endpoint);
   const rows = useMemo(() => {
     const items = data?.items ?? [];
-    return sortRows(props.refine ? props.refine(items) : items, columns, list.sort);
-  }, [data, columns, list.sort, props.refine]);
+    const refined = props.refine ? props.refine(items) : items;
+    // The server already returns the page in order; re-sorting could disagree with its collation.
+    return sortField ? refined : sortRows(refined, columns, list.sort);
+  }, [data, columns, list.sort, props.refine, sortField]);
   const selRows = rows.filter((r) => selected.has(rowKey(r)));
   const allSel = rows.length > 0 && selRows.length === rows.length;
 
@@ -161,7 +173,7 @@ export function ListView<N extends EndpointName, R = PageOf<N>>(props: ListViewP
         </table>
       </div>
       <Pager list={list} nextCursor={data?.nextCursor ?? null} fetching={q.isFetching} />
-      {list.sort && !serverSort && <p className="adm-hint">{t('list.sortPageOnly')}</p>}
+      {list.sort && !sortField && <p className="adm-hint">{t('list.sortPageOnly')}</p>}
       {bulkActions.length > 0 && selRows.length > 0 && (
         <div className="adm-bulk" role="region" aria-label={t('list.bulk')} aria-live="polite">
           <span className="adm-bulk__count">

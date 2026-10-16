@@ -3,7 +3,7 @@ import { AA_LARGE, AA_NORMAL, contrastChecks, contrastRatio, tokensFromHue } fro
 import { csvRecords, parseCsv, toCsv } from './csv';
 import { diffJson } from './diff';
 import { parseObjectivesCsv } from '../modules/Programme';
-import { composeReason, docPaths } from '../modules/Review';
+import { docPaths, legacyToCreate } from '../modules/Review';
 import { cellValue, setManual } from '../modules/topics/ComparisonEditor';
 import { moveItem } from '../modules/topics/TourEditor';
 import { localToIso } from '../modules/Publishing';
@@ -88,10 +88,9 @@ describe('A-13 / A-14 / A-17 / A-05 helpers', () => {
     expect(localToIso('')).toBeUndefined();
     expect(localToIso('2026-11-01T09:00')).toMatch(/^2026-1[01]-\d\dT\d\d:00:00\.000Z$/);
   });
-  it('reject reason carries the review comments, capped at 2000 chars', () => {
-    const c = { id: '1', authorId: 'u1', targetType: 'topic' as const, targetId: 't', path: 'title.ky', body: 'Опечатка', createdAt: '' };
-    expect(composeReason('Доработать', [c, { ...c, path: 'scene', anchor3d: [1, 2, 3] as [number, number, number], body: 'Метка' }])).toBe('Доработать\n\n• title.ky: Опечатка\n• scene @(1.00, 2.00, 3.00): Метка');
-    expect(composeReason('x'.repeat(3000), []).length).toBe(2000);
+  it('legacy local review comments map to create bodies ($ = the whole topic)', () => {
+    expect(legacyToCreate('t', { path: 'title.ky', body: 'Опечатка' })).toEqual({ targetType: 'topic', targetId: 't', path: 'title.ky', body: 'Опечатка' });
+    expect(legacyToCreate('t', { path: '$', anchor3d: [1, 2, 3], body: 'x'.repeat(5000) })).toEqual({ targetType: 'topic', targetId: 't', path: '', anchor3d: [1, 2, 3], body: 'x'.repeat(4000) });
   });
   it('doc paths stop at localized values', () => {
     expect(docPaths({ title: { ky: '', ru: '', en: '' }, scene: { modes: ['a'] } })).toEqual(['title', 'scene.modes.0']);

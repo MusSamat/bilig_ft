@@ -57,7 +57,16 @@ describe('admin lists: cursor pagination, URL filters, sorting, permissions', ()
   });
 
   it('sorts by a column on the server and keeps the sort in the URL', async () => {
-    const api = mockApi({ 'GET /admin/concepts': { body: page([rec(concept('b.two', 'z-kind')), rec(concept('a.one', 'a-kind'))]) } });
+    const rows = [rec(concept('b.two', 'z-kind')), rec(concept('a.one', 'a-kind'))];
+    // The server owns the order: the mock sorts by `sort` / `order`, the page is shown as returned.
+    const api = mockApi({
+      'GET /admin/concepts': (c) => {
+        const sort = c.query.get('sort');
+        if (!sort) return { body: page(rows) };
+        const dir = c.query.get('order') === 'desc' ? -1 : 1;
+        return { body: page([...rows].sort((x, y) => (x.data.kind < y.data.kind ? -1 : 1) * dir)) };
+      },
+    });
     renderAdmin('/admin/concepts');
     await screen.findByText('b.two');
     const keys = () => screen.getAllByRole('row').slice(1).map((r) => within(r).getAllByRole('cell')[2]?.textContent);

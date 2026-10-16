@@ -1,13 +1,15 @@
 /**
  * A-15 schools & licences: school (name, region, state/private, language of
  * instruction, status), licences (subjects, grades, seats, period), invite a
- * school admin. School and licence writes have no version in contract 0.2.1,
- * so they are last-write-wins (see CONTRACT_REQUESTS.md).
+ * school admin. Schools and licences carry a version since contract 0.3.0:
+ * edits and licence deletes send it as If-Match, and a 409 opens the conflict
+ * dialog (the server keeps last-write-wins only for callers without a version).
  */
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { LicenseSchema, SchoolCreateSchema, type License, type School } from '@bilig/content-model/api';
+import { LicenseSchema, SchoolCreateSchema, problem, type License, type School } from '@bilig/content-model/api';
+import { ApiError, isConflict } from '../api/client';
 import { useApiMutation, useApiQuery, useCanCall } from '../api/hooks';
 import { api } from '../api/session';
 import { SchemaForm, useValidation } from '../forms/SchemaForm';
@@ -15,18 +17,26 @@ import { useAdminLang, useT } from '../i18n';
 import { useSuggestions } from '../lib/suggest';
 import { ListView, type Column } from '../lists/ListView';
 import { useListParams } from '../lists/useListParams';
+import { ConflictDialog, DraftBanner, SaveBar, useVersionedEditor, type Versioned } from '../lib/versioned';
 import { useAdminPath } from '../shell/base';
-import { Dialog, ErrorBox, PageHeader, StatusBadge, fmtDate } from '../shell/ui';
+import { Dialog, ErrorBox, FilterSelect, FilterText, PageHeader, StatusBadge, fmtDate } from '../shell/ui';
 import { Icon } from '../lib/icons';
 import { navIcon } from '../shell/Layout';
 
-const emptySchool = (): Omit<School, 'id'> => ({ name: '', region: '', type: 'state', language: 'ky', status: 'active' });
+type SchoolValue = Omit<School, 'id' | 'version'>;
+type LicenseValue = Omit<License, 'version'>;
+
+const emptySchool = (): SchoolValue => ({ name: '', region: '', type: 'state', language: 'ky', status: 'active' });
+const schoolVersioned = ({ id: _i, version, ...value }: School): Versioned<SchoolValue> => ({ value, version: version ?? 0 });
+const licenseVersioned = ({ version, ...value }: License): Versioned<LicenseValue> => ({ value, version: version ?? 0 });
+/** 0 = the server sent no version (pre-0.3.0): save without a precondition. */
+const ifMatch = (version: number) => (version > 0 ? version : undefined);
 
 export function SchoolsList() {
   const t = useT();
   const to = useAdminPath();
   const nav = useNavigate();
-  const list = useListParams([]);
+  const list = useListParams(['q', 'region', 'status']);
   const canCreate = useCanCall('adminSchoolCreate');
   const [creating, setCreating] = useState(false);
   const columns = useMemo<Column<School>[]>(
@@ -49,6 +59,11 @@ export function SchoolsList() {
           </button>
         )}
       </PageHeader>
+      <div className="adm-filters">
+        <FilterText label={t('list.search')} value={list.filters.q} onApply={(v) => list.setFilter('q', v)} />
+        <FilterText label={t('fields.region')} value={list.filters.region} onApply={(v) => list.setFilter('region', v)} />
+        <FilterSelect label={t('fields.status')} value={list.filters.status} options={['active', 'suspended'].map((s) => ({ value: s, label: t(`enum.${s}`) }))} onApply={(v) => list.setFilter('status', v)} />
+      </div>
       <ListView endpoint="adminSchoolList" list={list} columns={columns} rowKey={(s: School) => s.id} onRowClick={(s: School) => nav(to(`schools/${s.id}`))} />
       {creating && <SchoolCreate onClose={() => setCreating(false)} onCreated={(s) => nav(to(`schools/${s.id}`))} />}
     </section>
@@ -80,40 +95,45 @@ function LicenseEditor({ schoolId, license, onDone }: { schoolId: string; licens
   const t = useT();
   const qc = useQueryClient();
   const suggest = useSuggestions(['subjects']);
-  const now = new Date();
-  const [v, setV] = useState<License>(
-    license ?? { id: crypto.randomUUID(), schoolId, subjects: [], grades: [], seats: 30, startsAt: now.toISOString(), endsAt: new Date(now.getTime() + 365 * 86400_000).toISOString() },
-  );
+  const server = useMemo<Versioned<LicenseValue>>(() => {
+    if (license) return licenseVersioned(license);
+    const now = new Date();
+    return { value: { id: crypto.randomUUID(), schoolId, subjects: [], grades: [], seats: 30, startsAt: now.toISOString(), endsAt: new Date(now.getTime() + 365 * 86400_000).toISOString() }, version: 0 };
+  }, [license, schoolId]);
+  const editor = useVersionedEditor<LicenseValue>({
+    draftKey: null,
+    server,
+    save: async (value, version) => {
+      if (!license) return licenseVersioned(await api.call('adminLicenseCreate', { body: value }));
+      const { id: _i, schoolId: _s, ...patch } = value;
+      return licenseVersioned(await api.call('adminLicensePatch', { params: { id: license.id }, body: patch, ifMatch: ifMatch(version) }));
+    },
+    reload: async () => {
+      const r = await api.call('adminLicenseList', { query: { schoolId, limit: 100 } });
+      const l = r.items.find((x) => x.id === license?.id);
+      if (!l) throw new ApiError(404, problem('not_found'), 'adminLicenseList');
+      return licenseVersioned(l);
+    },
+    onSaved: () => {
+      void qc.invalidateQueries({ queryKey: ['adminLicenseList'] });
+      onDone();
+    },
+  });
+  const v = editor.value ?? server.value;
   const issues = useValidation(LicenseSchema, v);
-  const [error, setError] = useState<unknown>(null);
   return (
     <Dialog
       title={license ? t('schools.editLicense') : t('schools.newLicense')}
       onClose={onDone}
       actions={
-        <button
-          type="button"
-          className="adm-btn adm-btn--primary"
-          disabled={issues.length > 0}
-          onClick={async () => {
-            try {
-              if (license) {
-                const { id: _i, schoolId: _s, ...patch } = v;
-                await api.call('adminLicensePatch', { params: { id: license.id }, body: patch });
-              } else await api.call('adminLicenseCreate', { body: v });
-              void qc.invalidateQueries({ queryKey: ['adminLicenseList'] });
-              onDone();
-            } catch (e) {
-              setError(e);
-            }
-          }}
-        >
+        <button type="button" className="adm-btn adm-btn--primary" disabled={issues.length > 0 || editor.saving} onClick={() => void editor.save()}>
           {t('common.save')}
         </button>
       }
     >
-      <SchemaForm schema={LicenseSchema} value={v} onChange={setV} hidden={['id', 'schoolId']} suggest={suggest} />
-      <ErrorBox error={error} />
+      <SchemaForm schema={LicenseSchema} value={v} onChange={editor.setValue} hidden={['id', 'schoolId', 'version']} suggest={suggest} />
+      <ErrorBox error={editor.error} />
+      <ConflictDialog editor={editor} />
     </Dialog>
   );
 }
@@ -141,19 +161,35 @@ export function SchoolDetail() {
   const t = useT();
   const lang = useAdminLang((s) => s.lang);
   const to = useAdminPath();
+  const qc = useQueryClient();
   const { id = '' } = useParams();
   const q = useApiQuery('adminSchoolGet', { params: { id } });
   const licenses = useApiQuery('adminLicenseList', { query: { schoolId: id, limit: 100 } });
   const canPatch = useCanCall('adminSchoolPatch');
   const canLicense = useCanCall('adminLicenseCreate');
   const canInvite = useCanCall('adminInviteCreate');
-  const patch = useApiMutation('adminSchoolPatch', ['adminSchoolList', 'adminSchoolGet']);
   const del = useApiMutation('adminLicenseDelete', ['adminLicenseList']);
-  const [edit, setEdit] = useState<Omit<School, 'id'> | null>(null);
   const [lic, setLic] = useState<License | 'new' | null>(null);
   const s = q.data;
-  const value = edit ?? (s ? { name: s.name, region: s.region, type: s.type, language: s.language, status: s.status } : null);
-  const issues = useValidation(SchoolCreateSchema, value);
+  const server = useMemo(() => (s ? schoolVersioned(s) : undefined), [s]);
+  const editor = useVersionedEditor<SchoolValue>({
+    draftKey: `school:${id}`,
+    server,
+    save: async (value, version) => schoolVersioned(await api.call('adminSchoolPatch', { params: { id }, body: value, ifMatch: ifMatch(version) })),
+    reload: async () => schoolVersioned(await api.call('adminSchoolGet', { params: { id } })),
+    onSaved: () => {
+      void qc.invalidateQueries({ queryKey: ['adminSchoolList'] });
+      void qc.invalidateQueries({ queryKey: ['adminSchoolGet'] });
+    },
+  });
+  const issues = useValidation(SchoolCreateSchema, editor.value);
+  const removeLicense = (l: License) =>
+    window.confirm(t('common.confirmDelete', { count: 1 })) &&
+    del.mutate(
+      { params: { id: l.id }, ifMatch: ifMatch(l.version ?? 0) },
+      // Stale version: someone changed or removed it meanwhile — show the fresh list with the error.
+      { onError: (e) => isConflict(e) && void qc.invalidateQueries({ queryKey: ['adminLicenseList'] }) },
+    );
   return (
     <section>
       <PageHeader title={`${t('nav.schools')} · ${s?.name ?? ''}`}>
@@ -161,16 +197,12 @@ export function SchoolDetail() {
           {t('common.back')}
         </Link>
       </PageHeader>
-      <ErrorBox error={q.error ?? patch.error ?? del.error} />
-      {value && (
+      <ErrorBox error={q.error ?? del.error} />
+      {editor.value && (
         <div className="adm-card">
-          <SchemaForm schema={SchoolCreateSchema} value={value} onChange={setEdit} readOnly={!canPatch} />
-          {canPatch && (
-            <button type="button" className="adm-btn adm-btn--primary" disabled={!edit || issues.length > 0 || patch.isPending} onClick={() => edit && patch.mutate({ params: { id }, body: edit }, { onSuccess: () => setEdit(null) })}>
-              {t('common.save')}
-            </button>
-          )}
-          <p className="adm-hint">{t('schools.noLock')}</p>
+          <DraftBanner editor={editor} />
+          <SchemaForm schema={SchoolCreateSchema} value={editor.value} onChange={editor.setValue} readOnly={!canPatch} />
+          <SaveBar editor={editor} disabled={issues.length > 0} canSave={canPatch} />
         </div>
       )}
       <div className="adm-card">
@@ -201,7 +233,7 @@ export function SchoolDetail() {
                       <button type="button" className="adm-btn adm-btn--small" onClick={() => setLic(l)}>
                         {t('common.edit')}
                       </button>
-                      <button type="button" className="adm-btn adm-btn--small adm-btn--danger" onClick={() => window.confirm(t('common.confirmDelete', { count: 1 })) && del.mutate({ params: { id: l.id } })}>
+                      <button type="button" className="adm-btn adm-btn--small adm-btn--danger" onClick={() => removeLicense(l)}>
                         {t('common.delete')}
                       </button>
                     </>

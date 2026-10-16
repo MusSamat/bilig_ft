@@ -18,6 +18,7 @@ import {
 import {
   AdminTopicCreateSchema,
   AssetUploadRequestSchema,
+  AssetVersionCreateRequestSchema,
   InviteCreateRequestSchema,
   LicenseSchema,
   SchoolCreateSchema,
@@ -44,6 +45,7 @@ export const FORM_SCHEMAS: z.ZodTypeAny[] = [
   QuizSpecSchema,
   AdminTopicCreateSchema,
   AssetUploadRequestSchema,
+  AssetVersionCreateRequestSchema,
   SchoolCreateSchema,
   LicenseSchema,
   InviteCreateRequestSchema,
