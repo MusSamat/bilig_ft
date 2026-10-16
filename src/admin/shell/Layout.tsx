@@ -39,6 +39,7 @@ export const NAV: NavItem[] = [
   { path: 'glossary', titleKey: 'nav.glossary', endpoint: 'adminGlossaryList', section: 'translations', icon: 'a-glossary' },
   { path: 'publishing', titleKey: 'nav.publishing', endpoint: 'adminTopicList', section: 'publishing', icon: 'a-publish' },
   { path: 'review', titleKey: 'nav.review', endpoint: 'adminTopicList', section: 'publishing', icon: 'a-review' },
+  { path: 'generated', titleKey: 'nav.generated', endpoint: 'adminGeneratedList', section: 'publishing', icon: 'wand' },
   { path: 'schools', titleKey: 'nav.schools', endpoint: 'adminSchoolList', section: 'org', icon: 'school' },
   { path: 'users', titleKey: 'nav.users', endpoint: 'adminUsers', section: 'org', icon: 'users' },
   { path: 'analytics', titleKey: 'nav.analytics', endpoint: 'adminAnalyticsOverview', section: 'ops', icon: 'chart' },

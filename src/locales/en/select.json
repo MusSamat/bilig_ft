@@ -1,0 +1,19 @@
+{
+  "label": "Actions for the selected text",
+  "explain": "Explain",
+  "simpler": "Simpler",
+  "example": "Example",
+  "translate": "Translate",
+  "ask": "Ask…",
+  "noGlossary": "These words are not in the topic glossary.",
+  "lang": {
+    "ky": "Кыргызча",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "q": {
+    "explain": "Explain: “{{quote}}”",
+    "simpler": "Explain more simply: “{{quote}}”",
+    "example": "Give an example: “{{quote}}”"
+  }
+}

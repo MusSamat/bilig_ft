@@ -1,0 +1,12 @@
+{
+  "title": "Questions for the class",
+  "about": "About “{{name}}”",
+  "hint": "AI writes questions from the topic materials. Show a question, let the class answer, then reveal the answer.",
+  "generate": "Write 3 questions",
+  "counter": "Question {{n}} of {{total}}",
+  "reveal": "Show the answer",
+  "next": "Next",
+  "prev": "Back",
+  "more": "More questions",
+  "correct": "correct answer"
+}

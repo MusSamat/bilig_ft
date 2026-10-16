@@ -34,7 +34,7 @@ export function ProcessPanel({ ready }: { ready: boolean }): JSX.Element | null 
   if (!proc) return null;
 
   return (
-    <section className="sec panel glass procs" aria-labelledby="procs-title">
+    <section className="sec panel glass procs" aria-labelledby="procs-title" data-ask="process">
       <div className="sec-h">
         <Icon name="activity" className="lg" />
         <h2 id="procs-title">{t('activities.process')}</h2>

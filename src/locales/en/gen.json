@@ -1,0 +1,21 @@
+{
+  "ai": "AI",
+  "aiHint": "Made by AI from the topic materials. Check it before showing it to the class.",
+  "reviewed": "Reviewed",
+  "reviewedHint": "Made by AI and checked by an editor.",
+  "good": "Good example",
+  "report": "Report",
+  "reportWhy": "What is wrong?",
+  "reason": {
+    "wrong": "Wrong",
+    "unclear": "Unclear",
+    "inappropriate": "Inappropriate",
+    "off_topic": "Off topic"
+  },
+  "moreSimple": "More examples",
+  "moreStem": "More STEM examples",
+  "loading": "Preparing…",
+  "exhausted": "No more examples",
+  "failed": "Could not get examples. Please try again.",
+  "listLabel": "Examples from AI"
+}

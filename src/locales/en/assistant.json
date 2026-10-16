@@ -1,7 +1,6 @@
 {
   "title": "Assistant",
   "greeting": "Hi! Ask me anything about “{{topic}}”.",
-  "placeholder": "What does… do, Where is…, How big is…",
   "inputLabel": "Question for the assistant",
   "send": "Send",
   "suggestions": "Suggestions",
@@ -22,5 +21,11 @@
   "open": "Open the assistant",
   "expand": "Enlarge the chat",
   "shrink": "Make the chat smaller",
-  "minimize": "Minimise the assistant"
+  "minimize": "Minimise the assistant",
+  "context": "Question context",
+  "about": "About:",
+  "dropFocus": "Ask about the whole topic, not “{{name}}”",
+  "dropQuote": "Remove the quote",
+  "placeholderAbout": "A question about “{{name}}”…",
+  "placeholderQuote": "What would you like to ask about the selected text?"
 }

@@ -6,6 +6,7 @@
 import { grantedPermissions, type Principal, type RoleGrant } from '@bilig/permissions';
 import type { Lang } from '@bilig/content-model';
 import type {
+  AdminGenerated,
   Assignment,
   Attempt,
   Presentation,
@@ -56,6 +57,8 @@ export interface MockState {
   /** Every POST /sync batch received (for e2e assertions). */
   syncLog: { key: string; attempts: number }[];
   flags: { offline: boolean; tutorDown: boolean; latencyMs: number };
+  /** v0.4.0: generated examples / questions (pool + review state). */
+  generated: AdminGenerated[];
 }
 
 export const SCHOOL_ID = '0192a000-0000-7000-8000-000000000001';
@@ -113,6 +116,7 @@ function seed(): MockState {
     idempotency: {},
     syncLog: [],
     flags: { offline: false, tutorDown: false, latencyMs: 0 },
+    generated: [],
   };
 }
 
@@ -123,7 +127,11 @@ function load(): MockState {
   if (canPersist()) {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw) as MockState;
+      if (raw) {
+        const state = JSON.parse(raw) as MockState;
+        state.generated ??= [];
+        return state;
+      }
     } catch {
       /* fall through */
     }

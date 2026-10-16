@@ -2501,3 +2501,28 @@
 .admin-root .adm-conflict-cell > .adm-muted {
   flex-basis: 100%;
 }
+
+/* v0.4.0: «ИИ-контент» review queue */
+.admin-root .adm-gen {
+  display: grid;
+  gap: 4px;
+  max-width: 62ch;
+}
+.admin-root .adm-gen__opts {
+  margin: 2px 0;
+  padding-inline-start: 1.4em;
+}
+.admin-root .adm-gen__opts .is-answer {
+  font-weight: 700;
+  color: var(--ok);
+}
+.admin-root .adm-gen__rating {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.admin-root .adm-gen__rating .is-bad {
+  color: var(--bad);
+  font-weight: 700;
+}

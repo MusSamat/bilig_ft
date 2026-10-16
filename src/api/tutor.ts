@@ -4,8 +4,16 @@
  * (`tutor_unavailable`) or a network error is surfaced as ApiError so the UI
  * shows a localized «assistant unavailable» message.
  */
-import { TutorAskResponseSchema, parseSseEvents, type TutorAskRequest, type TutorStreamEvent } from '@bilig/content-model/api';
-import { ApiError, rawCall } from './client';
+import {
+  TutorAskResponseSchema,
+  parseSseEvents,
+  type GeneratedFeedbackRequest,
+  type TutorAskRequest,
+  type TutorGenerateRequest,
+  type TutorGenerateResponse,
+  type TutorStreamEvent,
+} from '@bilig/content-model/api';
+import { ApiError, api, rawCall } from './client';
 
 export async function askTutor(req: TutorAskRequest, onEvent: (ev: TutorStreamEvent) => void, signal?: AbortSignal): Promise<void> {
   const res = await rawCall('tutorAsk', { body: req, headers: { Accept: 'text/event-stream' }, signal });
@@ -15,6 +23,7 @@ export async function askTutor(req: TutorAskRequest, onEvent: (ev: TutorStreamEv
     if (!parsed.success) throw new ApiError(res.status, 'invalid_response', 'errors.invalid_response');
     onEvent({ type: 'token', text: parsed.data.answer });
     parsed.data.citations.forEach((conceptKey) => onEvent({ type: 'citation', conceptKey }));
+    if (parsed.data.suggestions?.length) onEvent({ type: 'suggestions', items: parsed.data.suggestions });
     onEvent({ type: 'done', threadId: parsed.data.threadId });
     return;
   }
@@ -30,3 +39,9 @@ export async function askTutor(req: TutorAskRequest, onEvent: (ev: TutorStreamEv
     if (done) break;
   }
 }
+
+/** «Ещё примеры» / «Ещё вопросы» (v0.4.0): pool first, topped up by the model. */
+export const generateMore = (body: TutorGenerateRequest): Promise<TutorGenerateResponse> => api('tutorGenerate', { body });
+
+/** A teacher's verdict on a generated item («Хороший пример» / a report). */
+export const sendGeneratedFeedback = (id: string, body: GeneratedFeedbackRequest): Promise<unknown> => api('tutorGeneratedFeedback', { params: { id }, body });

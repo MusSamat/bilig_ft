@@ -77,6 +77,7 @@ add that origin to bilig_back's `CORS_ORIGIN` / `ADMIN_URL`.
 | A-16 | Users | Search + role/status/school filters, grants editor, invites, block/unblock (bulk), password reset, 2FA reset, revoke sessions; pupils pseudonymised by the server; invites with status, revoke and resend; reveal a pupil «с основанием» (superadmin, audited, nothing kept). |
 | A-17 | Analytics | Period in URL; KPIs, daily charts (with table view), by school/region, popular topics/structures, hardest items, tutor usage, unanswered questions, tokens. |
 | A-18 | Tutor settings | Generated form; PUT with If-Match and the conflict dialog. Regression run over the saved questions (per-question answer, citations, missing concepts, outcome, tokens). |
+| 0.4.0 | ИИ-контент | Review queue for AI-generated examples and practice questions: filters (status, kind, reports, topic), teacher ratings and report reasons, times served. Approve (served first, «Проверено»), dismiss, or move into the content: a question opens the item editor prefilled, an example is appended to its concept as a local draft. The other languages are then translated as usual. |
 | A-19 | Audit log | Read-only; actor (ID prefix) / action / target type / target ID / date range filters in the URL, server sort; diff expand. |
 
 All admin contract requests were resolved in contract 0.3.0; see [CONTRACT_REQUESTS.md](./CONTRACT_REQUESTS.md).

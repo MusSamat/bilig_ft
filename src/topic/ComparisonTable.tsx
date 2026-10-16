@@ -57,7 +57,7 @@ export function ComparisonTable(): JSX.Element | null {
   };
 
   return (
-    <section className="sec panel glass cmp-sec" aria-labelledby="cmp-title">
+    <section className="sec panel glass cmp-sec" aria-labelledby="cmp-title" data-ask="topic">
       <div className="sec-h">
         <Icon name="columns" className="lg" />
         <h2 id="cmp-title">{t('activities.compare')}</h2>

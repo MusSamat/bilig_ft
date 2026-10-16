@@ -79,6 +79,21 @@ CI (`.github/workflows/ci.yml`) runs typecheck, tests, build, size check and e2e
 - **Readouts** come from the plugin's `readouts()` or the process engine in
   scene-core — never hand-written numbers.
 - **Permissions** come from `GET /me`; the client only hides buttons.
+- **Assistant in the classroom** (contract 0.4.0). The users are teachers who
+  explain a topic to the class on a screen:
+  - Each question carries a context envelope (`src/topic/tutorContext.ts`:
+    mode, process step, sample, focus concept). The chat shows that context as
+    chips the teacher can remove, and offers follow-ups from the contract's
+    `suggestQuestions`.
+  - Selecting learning text (`[data-ask]` regions) opens the selection toolbar
+    (`SelectionMenu.tsx`): Explain / Simpler / Example ask the assistant with
+    the selection as a quote, Translate looks the words up in the topic
+    glossary offline, and «Ask…» attaches the quote to a typed question.
+  - «Ещё примеры» under each example block and «Вопросы для класса»
+    (`PracticeQuiz.tsx`: one question at a time, reveal the answer, nothing
+    saved) fetch AI-made material from `/tutor/generate`. Everything generated
+    carries an «ИИ» badge and the teacher's verdict buttons.
+  - The assistant stays available in lesson mode.
 - **i18n**: `src/i18n.test.ts` checks equal key sets, plural categories per
   `Intl.PluralRules`, that used keys exist, and that src has no literal UI strings.
 - **Out of scope for now**: offline downloads and the results sync queue

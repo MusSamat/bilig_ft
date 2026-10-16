@@ -133,6 +133,11 @@ export const ICONS: Record<string, string> = {
   fullscreen: "<path d='M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4'/><rect x='8' y='8' width='8' height='8' rx='1.5'/>",
   fullscreenExit: "<path d='M9 4v4a1 1 0 0 1-1 1H4M20 9h-4a1 1 0 0 1-1-1V4M15 20v-4a1 1 0 0 1 1-1h4M4 15h4a1 1 0 0 1 1 1v4'/>",
   sidebar: "<rect x='3' y='4' width='18' height='16' rx='2'/><path d='M15 4v16'/>",
+  // v0.4.0: generated content — «хороший пример», report, AI-made, translate
+  thumb: "<path d='M7 10v11'/><path d='M15 5.9 14 10h5.8a2 2 0 0 1 2 2.3l-1.4 7A2 2 0 0 1 18.5 21H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h2.8a2 2 0 0 0 1.8-1.1L12 2a3 3 0 0 1 3 3.9z'/>",
+  flag: "<path d='M4 22V4'/><path d='M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1'/>",
+  wand: "<path d='M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M17.8 6.2 19 5M12.2 6.2 11 5'/><path d='m3 21 9-9'/>",
+  translate: "<path d='m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1'/><path d='m22 22-5-10-5 10M14 18h6'/>",
 };
 
 /** Content / legacy ids → icon ids (same meaning = same glyph as the prototype). */

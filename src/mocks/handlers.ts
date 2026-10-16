@@ -8,7 +8,11 @@ import { HttpResponse, delay, http, type HttpHandler } from 'msw';
 import { z } from 'zod';
 import {
   checkAnswer,
+  draftSignature,
+  groundedAnswer,
+  groundedGenerate,
   sampleItems,
+  suggestQuestions,
   t,
   type ContentPackage,
   type Lang,
@@ -21,6 +25,8 @@ import {
   HEADERS,
   encodeSseEvent,
   problem,
+  type AdminGenerated,
+  type EndpointBody,
   type EndpointName,
   type EndpointResponse,
   type ErrorCode,
@@ -148,25 +154,19 @@ const progressKey = (userId: string, topicKey: string) => `${userId}:${topicKey}
 
 // --- Tutor -----------------------------------------------------------------
 
-function tutorAnswer(question: string, topicKey: string, lang: Lang, conceptKey?: string) {
+/** Mock tutor: the contract's grounded answer, `[[key]]` markers turned into citations (like the server's parser). */
+function tutorAnswer(question: string, topicKey: string, lang: Lang, conceptKey?: string, quote?: string, intent?: 'ask' | 'explain' | 'simpler' | 'example') {
   const pkg = packageByKey(topicKey);
-  if (!pkg) return { text: '', cite: [] as string[] };
-  const q = question.toLowerCase();
-  const scored = pkg.concepts
-    .map((c) => ({
-      c,
-      score: (['ky', 'ru', 'en'] as const).reduce(
-        (n, l) => n + (q.includes(c.title[l].toLowerCase().slice(0, Math.max(4, c.title[l].length - 2))) ? 2 : 0),
-        0,
-      ) + (c.key === conceptKey ? 1 : 0),
-    }))
-    .sort((a, b) => b.score - a.score);
-  const best = scored[0]?.score ? scored[0].c : pkg.concepts.find((c) => c.key === conceptKey) ?? pkg.concepts.find((c) => !c.isContainer) ?? pkg.concepts[0];
-  const text = [t(best.title, lang) + ' — ' + t(best.description, lang), best.funFact ? t(best.funFact, lang) : '']
-    .filter(Boolean)
-    .join(' ');
-  return { text, cite: [best.key] };
+  if (!pkg) return { text: '', cite: [] as string[], suggestions: [] as string[] };
+  const a = groundedAnswer(pkg, lang, { question, conceptKey, quote, intent });
+  const valid = new Set(pkg.concepts.map((c) => c.key));
+  const cite = [...new Set([...a.text.matchAll(/\[\[([^\]]+)\]\]/g)].map((m) => m[1]).filter((k) => valid.has(k)))];
+  const text = a.text.replace(/\s?\[\[[^\]]+\]\]/g, '').trim();
+  return { text, cite, suggestions: a.noAnswer ? suggestQuestions(pkg, lang, { conceptKey }) : [] };
 }
+
+/** Pool rule shared with the server: approved unless heavily reported, new until the first report. */
+const servable = (g: AdminGenerated) => (g.status === 'approved' && g.bad < 3) || (g.status === 'new' && g.bad === 0);
 
 // --- Search ------------------------------------------------------------------
 
@@ -484,10 +484,10 @@ export const handlers: HttpHandler[] = [
   // Tutor (SSE) -----------------------------------------------------------------
   route('tutorAsk', ({ body, req }) => {
     if (mockDb.flags.tutorDown) return fail('tutor_unavailable');
-    const b = body as { topicKey: string; question: string; lang: Lang; conceptKey?: string };
-    const { text, cite } = tutorAnswer(b.question, b.topicKey, b.lang, b.conceptKey);
+    const b = body as EndpointBody<'tutorAsk'>;
+    const { text, cite, suggestions } = tutorAnswer(b.question, b.topicKey, b.lang, b.conceptKey ?? b.context?.quote?.conceptKey, b.context?.quote?.text, b.intent);
     if (!req.headers.get('Accept')?.includes('text/event-stream')) {
-      return { answer: text, citations: cite };
+      return { answer: text, citations: cite, ...(suggestions.length ? { suggestions } : {}) };
     }
     const enc = new TextEncoder();
     const words = text.split(/(\s+)/);
@@ -498,11 +498,83 @@ export const handlers: HttpHandler[] = [
           if (mockDb.flags.latencyMs) await delay(10);
         }
         for (const k of cite) ctrl.enqueue(enc.encode(encodeSseEvent({ type: 'citation', conceptKey: k })));
+        if (suggestions.length) ctrl.enqueue(enc.encode(encodeSseEvent({ type: 'suggestions', items: suggestions })));
         ctrl.enqueue(enc.encode(encodeSseEvent({ type: 'done', threadId: newId() })));
         ctrl.close();
       },
     });
     return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } });
+  }),
+
+  // v0.4.0: generated examples / questions — pool first, then the grounded generator.
+  route('tutorGenerate', ({ body }) => {
+    if (mockDb.flags.tutorDown) return fail('tutor_unavailable');
+    const b = body as z.output<(typeof ENDPOINTS)['tutorGenerate']['body']>;
+    const pkg = packageByKey(b.topicKey);
+    if (!pkg) return fail('not_found');
+    const pool = (mockDb.generated ??= []).filter((g) => g.topicKey === b.topicKey && (g.conceptKey ?? null) === (b.conceptKey ?? null) && g.kind === b.kind && g.lang === b.lang);
+    const picked = pool.filter((g) => servable(g) && !b.exclude.includes(g.id)).slice(0, b.count);
+    const need = b.count - picked.length;
+    const fresh: AdminGenerated[] = [];
+    if (need > 0) {
+      const avoid = pool.map((g) => draftSignature(g.quiz?.prompt ?? g.example?.text ?? ''));
+      const r = groundedGenerate(pkg, b.lang, b.kind, { conceptKey: b.conceptKey, count: need, avoid });
+      const base = { kind: b.kind, topicKey: b.topicKey, ...(b.conceptKey ? { conceptKey: b.conceptKey } : {}), lang: b.lang, status: 'new' as const, good: 0, bad: 0, reasons: {}, served: 0, createdAt: now() };
+      for (const q of r.quiz) {
+        const id = newId();
+        fresh.push({ ...base, id, quiz: { id, ...q } });
+      }
+      for (const e of r.examples) {
+        const id = newId();
+        fresh.push({ ...base, id, example: { id, ...e } });
+      }
+      mockDb.generated.push(...fresh);
+    }
+    const out = [...picked, ...fresh];
+    for (const g of out) g.served++;
+    const reviewed = (g: AdminGenerated) => (g.status === 'approved' ? { reviewed: true } : {});
+    return {
+      kind: b.kind,
+      lang: b.lang,
+      examples: b.kind === 'quiz' ? [] : out.map((g) => ({ ...g.example!, ...reviewed(g) })),
+      quiz: b.kind === 'quiz' ? out.map((g) => ({ ...g.quiz!, ...reviewed(g) })) : [],
+      exhausted: out.length < b.count,
+    };
+  }),
+  route('tutorGeneratedFeedback', ({ body, params }) => {
+    const g = (mockDb.generated ??= []).find((x) => x.id === params.id);
+    if (!g) return fail('not_found');
+    const v = body as EndpointBody<'tutorGeneratedFeedback'>;
+    if (v.vote === 'good') g.good++;
+    else {
+      g.bad++;
+      g.reasons = { ...g.reasons, [v.reason]: (g.reasons[v.reason] ?? 0) + 1 };
+    }
+    return { ok: true as const };
+  }),
+  route('adminGeneratedList', ({ url }) => {
+    const q = Object.fromEntries(url.searchParams);
+    const rows = (mockDb.generated ??= []).filter(
+      (g) => (!q.status || g.status === q.status) && (!q.kind || g.kind === q.kind) && (!q.topicKey || g.topicKey === q.topicKey) && (!q.reported || (g.bad > 0) === (q.reported === 'true')),
+    );
+    return page(rows, url);
+  }),
+  route('adminGeneratedPatch', ({ body, params, user }) => {
+    const g = (mockDb.generated ??= []).find((x) => x.id === params.id);
+    if (!g) return fail('not_found');
+    const p = body as EndpointBody<'adminGeneratedPatch'>;
+    if (p.status === 'promoted' && !p.promotedTo) return fail('validation_failed');
+    g.status = p.status;
+    if (p.status === 'new') {
+      delete g.reviewedAt;
+      delete g.reviewedBy;
+    } else {
+      g.reviewedAt = now();
+      g.reviewedBy = user!.id;
+    }
+    if (p.promotedTo) g.promotedTo = p.promotedTo;
+    else delete g.promotedTo;
+    return g;
   }),
 
   // Decks ---------------------------------------------------------------------

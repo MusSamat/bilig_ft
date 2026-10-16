@@ -43,6 +43,7 @@ import {
   UnitsList,
 } from './modules/Dictionary';
 import { AuditLog, TutorSettingsPage } from './modules/Ops';
+import { Generated } from './modules/Generated';
 import { Programme } from './modules/Programme';
 import { PublishingDetail, PublishingList } from './modules/Publishing';
 import { ReviewList, ReviewTopic } from './modules/Review';
@@ -104,6 +105,7 @@ export function AdminRoutes() {
         <Route path="users/:id" element={<UserDetail />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="tutor" element={<TutorSettingsPage />} />
+        <Route path="generated" element={<Generated />} />
         <Route path="audit" element={<AuditLog />} />
         <Route path="*" element={<Navigate to="." replace />} />
       </Route>

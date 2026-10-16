@@ -2,8 +2,11 @@
  * Topic page (TZ W-10…W-55), Workbench layout: the hero panel (crumbs, title,
  * goal, status tiles, specimen strip), the work area (3D stage with overlaid
  * structure chips, «Вид модели» card and toolbar | inspector + tutor), the
- * processes section and the comparison + quiz row. Lesson mode (W-50) switches
- * to projector typography and hides the tutor and the quiz. Everything is
+ * processes section, the comparison + quiz row and «Вопросы для класса».
+ * Lesson mode (W-50) switches to projector typography and hides the
+ * self-check quiz; the assistant (closed by default), the selection toolbar
+ * and the class questions stay, since the teacher explains on the screen.
+ * Everything is
  * built from the content package and the scene plugin — no subject or topic
  * names in code.
  */
@@ -28,8 +31,10 @@ import { ChatDock } from './ChatDock';
 import { ComparisonTable } from './ComparisonTable';
 import { ConceptCard } from './ConceptCard';
 import { TopicContext, type TopicCtx } from './context';
+import { PracticeQuiz } from './PracticeQuiz';
 import { ProcessPanel } from './ProcessPanel';
 import { Quiz } from './Quiz';
+import { SelectionMenu } from './SelectionMenu';
 import { Stage } from './Stage';
 import { useStageView } from './stageView';
 import { TopicHero } from './TopicHeader';
@@ -170,8 +175,10 @@ export default function TopicPage(): JSX.Element {
             {showQuiz && <Quiz ready={ready} />}
           </div>
         )}
+        <PracticeQuiz />
       </div>
-      {!lesson && <ChatDock />}
+      <ChatDock />
+      <SelectionMenu />
     </TopicContext.Provider>
   );
 }

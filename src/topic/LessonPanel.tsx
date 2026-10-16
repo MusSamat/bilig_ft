@@ -74,7 +74,7 @@ export function LessonPanel({ ready }: { ready: boolean }): JSX.Element | null {
   const stepText = tr(frame.step.text, lang);
   const showText = !!stepText && (!focusConcept || stepText !== tr(focusConcept.description, lang));
   return (
-    <div className="lesson" role="group" aria-label={t('lesson.region')}>
+    <div className="lesson" role="group" aria-label={t('lesson.region')} data-ask="lesson">
       {showText && (
         <p className="lesson__text" aria-live="polite">
           {stepText}
