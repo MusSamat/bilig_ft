@@ -65,15 +65,18 @@ function Geometry({ shape }: { shape: PartShape }): JSX.Element | null {
 
 function Mat({ look, part, clip, container }: { look: ConceptLook; part: Part; clip?: Plane[]; container: boolean }) {
   return (
-    <meshStandardMaterial
+    <meshPhysicalMaterial
       color={look.color}
+      clearcoat={container ? (look.opacity < 0.15 ? 0 : 0.6) : 0.55}
+      envMapIntensity={container && look.opacity < 0.15 ? 0.15 : 1}
+      clearcoatRoughness={0.3}
       emissive={look.emissive}
       emissiveIntensity={Math.max(look.emissiveIntensity, part.glow ?? 0)}
       transparent={look.transparent}
       opacity={look.opacity}
       depthWrite={look.depthWrite}
       side={container || part.shape.kind === 'polygon' ? DoubleSide : undefined}
-      roughness={part.roughness ?? (container ? 0.25 : 0.45)}
+      roughness={part.roughness ?? (container ? 0.2 : 0.38)}
       metalness={part.metalness ?? 0.05}
       clippingPlanes={clip}
       polygonOffset={part.shape.kind === 'polygon'}

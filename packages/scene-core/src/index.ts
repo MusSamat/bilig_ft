@@ -35,6 +35,8 @@ export interface ViewerState {
   lang: Lang;
   /** Selected concept key, or null in overview (W-30/W-31). */
   selectedConceptKey: string | null;
+  /** Structure under the pointer: a light highlight and its name label. */
+  hoveredConceptKey?: string | null;
   modes: ModeState;
   /** Per-concept visibility (toolbar / tour step). Absent key = normal. */
   visibility?: Record<string, ConceptVisibility>;

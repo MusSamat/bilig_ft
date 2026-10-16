@@ -73,3 +73,25 @@ describe('contrast math', () => {
     );
   });
 });
+
+describe('Workbench prototype formula (backgrounds and glass are verbatim)', () => {
+  it('light, hue 168', () => {
+    const tk = tokensFromHue(168, 'light');
+    expect([tk.g1, tk.g2, tk.g3, tk.g4]).toEqual(['hsl(168 58% 82%)', 'hsl(203 55% 86%)', 'hsl(168 42% 96%)', 'hsl(160 36% 90%)']);
+    expect([tk.panel, tk.edge, tk.chip]).toEqual(['rgb(255 255 255 / 0.58)', 'rgb(255 255 255 / 0.85)', 'rgb(255 255 255 / 0.55)']);
+    expect([tk.line, tk.soft, tk.on]).toEqual(['hsl(168 40% 15% / 0.12)', 'hsl(168 70% 35% / 0.09)', 'hsl(0 0% 100%)']);
+    expect(tk.ink).toBe('hsl(168 45% 13%)');
+    expect(tk.muted).toBe('hsl(168 18% 33%)');
+  });
+  it('dark, hue 236', () => {
+    const tk = tokensFromHue(236, 'dark');
+    expect([tk.g1, tk.g2, tk.g3, tk.g4]).toEqual(['hsl(236 48% 24%)', 'hsl(271 48% 19%)', 'hsl(236 40% 7%)', 'hsl(228 35% 11%)']);
+    expect([tk.panel, tk.edge, tk.line, tk.chip]).toEqual(['hsl(236 35% 13% / 0.56)', 'rgb(255 255 255 / 0.12)', 'rgb(255 255 255 / 0.12)', 'rgb(255 255 255 / 0.05)']);
+    expect([tk.ink, tk.muted, tk.accent, tk.on]).toEqual(['hsl(236 30% 93%)', 'hsl(236 16% 70%)', 'hsl(236 70% 70%)', 'hsl(236 60% 9%)']);
+    expect(tk.sh).toBe('0 16px 40px rgb(0 0 0 / 0.35)');
+  });
+  it('hue wraps for g2 / g4 (h+35, h-8)', () => {
+    expect(tokensFromHue(350, 'light').g2).toBe('hsl(25 55% 86%)');
+    expect(tokensFromHue(3, 'dark').g4).toBe('hsl(355 35% 11%)');
+  });
+});

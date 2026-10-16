@@ -24,6 +24,15 @@ describe('lookFor', () => {
     expect(lookFor('b', st({ selectedConceptKey: 'a' })).highlighted).toBe(false);
     expect(lookFor(undefined, st()).highlighted).toBe(false);
   });
+  it('dims the rest while a structure is in focus; hover glows lightly', () => {
+    const sel = st({ selectedConceptKey: 'a', hoveredConceptKey: 'c' });
+    expect(lookFor('b', sel).dimmed).toBe(true);
+    expect(lookFor('b', sel).opacity).toBeLessThan(1);
+    expect(lookFor('a', sel).dimmed).toBe(false);
+    expect(lookFor('a', sel).emissiveIntensity).toBeGreaterThan(lookFor('c', sel).emissiveIntensity);
+    expect(lookFor('c', sel).hovered).toBe(true);
+    expect(lookFor('b', st()).dimmed).toBe(false);
+  });
   it('conceptColor wraps hue', () => {
     expect(conceptColor(370)).toBe(conceptColor(10));
   });

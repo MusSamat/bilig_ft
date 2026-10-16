@@ -37,7 +37,7 @@ interface Box {
 const GAP = 6;
 
 /** Candidate top-left offsets relative to the anchor (label size w×h). */
-function candidates(x: number, y: number, w: number, h: number): Box[] {
+function candidates(x: number, y: number, w: number, h: number, GAP: number): Box[] {
   const offs: [number, number][] = [
     [-w / 2, -h - GAP], // above
     [GAP, -h / 2], // right
@@ -58,7 +58,9 @@ const overlaps = (a: Box, b: Box) => a.l < b.r && b.l < a.r && a.t < b.b && b.t 
 export function placeLabels(
   labels: readonly LabelInput[],
   viewport: { width: number; height: number },
+  opts: { gap?: number } = {},
 ): LabelPlacement[] {
+  const gap = opts.gap ?? GAP;
   const order = [...labels].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0) || a.key.localeCompare(b.key));
   const placed: Box[] = [];
   const out = new Map<string, LabelPlacement>();
@@ -67,7 +69,7 @@ export function placeLabels(
       out.set(lab.key, { key: lab.key, left: lab.x, top: lab.y, visible: false });
       continue;
     }
-    const fit = candidates(lab.x, lab.y, lab.width, lab.height).find(
+    const fit = candidates(lab.x, lab.y, lab.width, lab.height, gap).find(
       (c) =>
         c.l >= 0 &&
         c.t >= 0 &&

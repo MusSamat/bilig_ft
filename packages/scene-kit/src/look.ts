@@ -26,16 +26,24 @@ export interface ConceptLook {
   emissiveIntensity: number;
   /** Selected / step-highlighted / cited by the tutor. */
   highlighted: boolean;
+  /** Under the pointer. */
+  hovered: boolean;
+  /** Another structure is in focus: this one steps back. */
+  dimmed: boolean;
 }
 
 export const GHOST_OPACITY = 0.12;
 export const CONTAINER_OPACITY = 0.22;
+/** Opacity of solids that step back while another structure is in focus. */
+export const DIM_OPACITY = 0.32;
+/** Selection glow (Workbench gold) and its strengths. */
+export const GLOW_COLOR = '#ffc24b';
+export const GLOW_INTENSITY = 0.42;
+export const HOVER_INTENSITY = 0.2;
 
-/** Concept colour from its hue (HSL, CSS string accepted by THREE.Color). */
-export function conceptColor(hue: number, lightness = 60, saturation = 65): string {
-  const h = ((Math.round(hue) % 360) + 360) % 360;
-  return `hsl(${h}, ${saturation}%, ${lightness}%)`;
-}
+/** Concept colour from its hue (HSL, CSS string accepted by THREE.Color) — shared with the UI dots. */
+export { conceptColor } from '@bilig/scene-core';
+import { conceptColor } from '@bilig/scene-core';
 
 /** Is the concept highlighted by selection, the current process step or a tutor citation? */
 export function isHighlighted(conceptKey: string | undefined, state: ViewerState): boolean {
@@ -52,11 +60,16 @@ export function lookFor(conceptKey: string | undefined, state: ViewerState, opts
   const vis = (conceptKey && state.visibility?.[conceptKey]) || 'normal';
   const color = opts.baseColor ?? conceptColor(opts.hue ?? 210);
   const highlighted = isHighlighted(conceptKey, state);
+  const hovered = !!conceptKey && state.hoveredConceptKey === conceptKey;
+  const focusActive = !!(state.selectedConceptKey || state.highlightConceptKey);
+  const dimmed = focusActive && !highlighted && !hovered;
   const base = {
     color,
-    emissive: color,
-    emissiveIntensity: highlighted ? 0.55 : 0.04,
+    emissive: highlighted || hovered ? GLOW_COLOR : color,
+    emissiveIntensity: highlighted ? GLOW_INTENSITY : hovered ? HOVER_INTENSITY : 0.04,
     highlighted,
+    hovered,
+    dimmed: false,
   };
   if (vis === 'hidden') {
     return { ...base, visible: false, opacity: 0, transparent: true, depthWrite: false };
@@ -66,7 +79,9 @@ export function lookFor(conceptKey: string | undefined, state: ViewerState, opts
   }
   if (opts.container) {
     const o = opts.containerOpacity ?? CONTAINER_OPACITY;
-    return { ...base, visible: true, opacity: highlighted ? Math.min(0.45, o * 1.8) : o, transparent: true, depthWrite: false };
+    const op = highlighted ? Math.min(0.45, o * 1.8) : dimmed ? o * 0.5 : o;
+    return { ...base, dimmed, visible: true, opacity: op, transparent: true, depthWrite: false };
   }
+  if (dimmed) return { ...base, dimmed, visible: true, opacity: DIM_OPACITY, transparent: true, depthWrite: false, emissiveIntensity: 0 };
   return { ...base, visible: true, opacity: 1, transparent: false, depthWrite: true };
 }

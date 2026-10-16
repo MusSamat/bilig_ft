@@ -137,5 +137,6 @@ export const nameSafe = (s: string) => s.replace(/[^A-Za-z0-9]+/g, '_').replace(
 /** Atom display radius (Å) for a representation. */
 export function atomRadius(el: string, rep: 'ball-stick' | 'spacefill'): number {
   const e = element(el);
-  return rep === 'spacefill' ? e.vdw * 0.8 : Math.max(0.18, e.covalent * 0.42);
+  // Ball-and-stick proportions of the Workbench prototype (atoms read as balls, bonds as sticks).
+  return rep === 'spacefill' ? e.vdw * 0.8 : Math.max(0.22, e.covalent * 0.62);
 }

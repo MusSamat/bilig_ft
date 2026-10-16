@@ -1,19 +1,26 @@
 /**
  * GLB scene (TZ W-20/W-21/W-25): loads the topic asset with meshopt + KTX2
  * support, binds nodes to concepts by name masks (`Mito_*`) from the topic
- * overrides, and applies the shared concept look. Falls back to the
- * procedural scene — named with the same node masks — when there is no asset
- * or it fails to load (404, parse error); failures are remembered per URL so
- * a missing file is not refetched on every mount.
+ * overrides, and applies the shared concept look (selection glow, hover,
+ * dimming of the rest, ghost/hide). Falls back to a procedural scene — named
+ * with the same node masks — when there is no asset or it fails to load (404,
+ * parse error): a ported Workbench cell for cell topics, generic blobs
+ * otherwise. Failures are remembered per URL so a missing file is not
+ * refetched on every mount.
+ *
+ * Nested containers: textured shells (a planet's crust) stay opaque with their
+ * texture; in «whole» view only the outermost one is drawn, the inner layers
+ * appear in «section». Untextured shells (membranes) stay translucent.
  */
 import { Component, Suspense, useEffect, useMemo, type ReactNode } from 'react';
 import { useThree } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { DoubleSide, Material, Mesh, MeshStandardMaterial, Plane, Vector3, type Object3D } from 'three';
+import { Box3, Color, DoubleSide, Material, Mesh, MeshStandardMaterial, Plane, Sphere, Vector3, type Object3D } from 'three';
 import { KTX2Loader, type GLTFLoader } from 'three-stdlib';
 import { conceptForNode, type ResolvedConcept } from '@bilig/content-model';
-import { CONCEPT_KEY_USERDATA, type SceneProps } from '@bilig/scene-core';
-import { PartsView, hoverHandlers, lookFor, usePick } from '@bilig/scene-kit';
+import { CONCEPT_KEY_USERDATA, type SceneProps, type ViewerState } from '@bilig/scene-core';
+import { DIM_OPACITY, GHOST_OPACITY, GLOW_COLOR, PartsView, hoverHandlers, lookFor, usePick } from '@bilig/scene-kit';
+import { buildCell, cellKind } from './cells.js';
 import { proceduralParts } from './layout.js';
 
 export interface GltfPluginOptions {
@@ -44,6 +51,7 @@ class LoadBoundary extends Component<{ fallback: ReactNode; url: string; childre
 /** Concept bound to a node: the node's own name or the nearest named ancestor. */
 function conceptOf(obj: Object3D, concepts: readonly ResolvedConcept[]): string | null {
   for (let o: Object3D | null = obj; o; o = o.parent) {
+    if (o.userData?.noPick) return null;
     if (o.name) {
       const k = conceptForNode(o.name, concepts);
       if (k) return k;
@@ -52,9 +60,110 @@ function conceptOf(obj: Object3D, concepts: readonly ResolvedConcept[]): string 
   return null;
 }
 
+interface MatBase {
+  opacity: number;
+  transparent: boolean;
+  depthWrite: boolean;
+  emissive: Color;
+  emissiveIntensity: number;
+  textured: boolean;
+}
+const baseOf = (m: Material): MatBase => {
+  const ud = m.userData as { __base?: MatBase; baseOpacity?: number };
+  if (!ud.__base) {
+    const std = m as MeshStandardMaterial;
+    ud.__base = {
+      opacity: ud.baseOpacity ?? m.opacity,
+      transparent: m.transparent,
+      depthWrite: m.depthWrite,
+      emissive: std.emissive ? std.emissive.clone() : new Color(0),
+      emissiveIntensity: std.emissiveIntensity ?? 0,
+      textured: !!std.map,
+    };
+  }
+  return ud.__base;
+};
+
+/**
+ * Apply the concept look to every mesh of a bound model. `procedural` models
+ * carry their own designed opacities; loaded GLBs get the shared container
+ * opacity for untextured shells.
+ */
+function applyLooks(root: Object3D, concepts: readonly ResolvedConcept[], state: ViewerState, clip: Plane[] | undefined, procedural: boolean): void {
+  const byKey = new Map(concepts.map((c) => [c.key, c]));
+  const section = state.modes.view === 'section';
+  // Containers by size, outermost first. When any of them carries a texture
+  // (a planet surface), all containers are solid layers rather than glass.
+  const sizes = new Map<string, number>();
+  let anyTextured = false;
+  root.updateMatrixWorld(true);
+  root.traverse((o) => {
+    const key = conceptOf(o, concepts);
+    if (!key || !(o instanceof Mesh) || !byKey.get(key)?.isContainer) return;
+    const mats = (Array.isArray(o.material) ? o.material : [o.material]) as Material[];
+    if (!procedural && mats.some((m) => baseOf(m).textured)) anyTextured = true;
+    const r = new Box3().setFromObject(o).getBoundingSphere(new Sphere()).radius;
+    sizes.set(key, Math.max(sizes.get(key) ?? 0, r));
+  });
+  const shells = anyTextured ? [...sizes].map(([key, r]) => ({ key, r })).sort((a, b) => b.r - a.r) : [];
+  const outerShell = shells[0]?.key;
+  const innerShells = new Set(shells.slice(1).map((s) => s.key));
+
+  root.traverse((o) => {
+    const key = conceptOf(o, concepts);
+    if (key) o.userData[CONCEPT_KEY_USERDATA] = key;
+    else delete o.userData[CONCEPT_KEY_USERDATA];
+    if (!(o instanceof Mesh)) return;
+    const c = key ? byKey.get(key) : undefined;
+    const textured = !!key && (key === outerShell || innerShells.has(key));
+    const container = !!c?.isContainer && !textured;
+    const look = lookFor(key ?? undefined, state, { hue: c?.hue, container });
+    let visible = look.visible;
+    if (key && innerShells.has(key) && !section) visible = false;
+    o.visible = visible;
+    const mats = (Array.isArray(o.material) ? o.material : [o.material]) as Material[];
+    for (const m of mats) {
+      const b = baseOf(m);
+      let opacity = b.opacity;
+      if (!key) {
+        // Decorative parts follow the focus: they step back when something is selected.
+        const focus = !!(state.selectedConceptKey || state.highlightConceptKey);
+        opacity = focus ? b.opacity * 0.35 : b.opacity;
+      } else if (look.opacity === GHOST_OPACITY) opacity = Math.min(b.opacity, GHOST_OPACITY);
+      else if (container) opacity = procedural ? (look.dimmed ? b.opacity * 0.5 : look.highlighted ? Math.min(0.45, b.opacity * 1.8) : b.opacity) : look.opacity;
+      else if (look.dimmed) opacity = Math.min(b.opacity, DIM_OPACITY);
+      m.opacity = opacity;
+      m.transparent = opacity < 1 || b.transparent;
+      m.depthWrite = opacity >= 0.6 ? true : false;
+      if (c?.isContainer && !textured) m.side = DoubleSide;
+      m.clippingPlanes = clip ?? null;
+      if (m instanceof MeshStandardMaterial) {
+        if (look.highlighted || look.hovered) {
+          m.emissive.set(GLOW_COLOR);
+          m.emissiveIntensity = look.emissiveIntensity * (procedural ? 0.75 : 1);
+        } else {
+          m.emissive.copy(b.emissive);
+          m.emissiveIntensity = b.emissiveIntensity;
+        }
+      }
+      m.needsUpdate = true;
+    }
+  });
+}
+
+/** A bound object graph (loaded GLB or procedural cell) with picking and looks. */
+function BoundModel({ root, concepts, state, onSelectConcept, clip, procedural }: SceneProps & { root: Object3D; clip?: Plane[]; procedural: boolean }): JSX.Element {
+  useEffect(() => {
+    applyLooks(root, concepts, state, clip, procedural);
+  }, [root, concepts, state, clip, procedural]);
+  const onClick = usePick(concepts, onSelectConcept);
+  return <primitive object={root} onClick={onClick} {...hoverHandlers} />;
+}
+
 let ktx2: KTX2Loader | null = null;
 
-function LoadedModel({ url, opts, clip, concepts, state, onSelectConcept }: SceneProps & { url: string; opts: GltfPluginOptions; clip?: Plane[] }): JSX.Element {
+function LoadedModel(props: SceneProps & { url: string; opts: GltfPluginOptions; clip?: Plane[] }): JSX.Element {
+  const { url, opts } = props;
   const gl = useThree((s) => s.gl);
   const gltf = useGLTF(url, false, true, (loader: GLTFLoader) => {
     if (opts.ktx2TranscoderPath) {
@@ -62,7 +171,6 @@ function LoadedModel({ url, opts, clip, concepts, state, onSelectConcept }: Scen
       loader.setKTX2Loader(ktx2);
     }
   });
-
   // Own copy with per-mesh materials so concept looks never leak between meshes.
   const root = useMemo(() => {
     const scene = gltf.scene.clone(true);
@@ -74,36 +182,23 @@ function LoadedModel({ url, opts, clip, concepts, state, onSelectConcept }: Scen
     });
     return scene;
   }, [gltf.scene]);
+  return <BoundModel {...props} root={root} procedural={false} />;
+}
 
-  const byKey = useMemo(() => new Map(concepts.map((c) => [c.key, c])), [concepts]);
-
-  useEffect(() => {
-    root.traverse((o) => {
-      const key = conceptOf(o, concepts);
-      if (key) o.userData[CONCEPT_KEY_USERDATA] = key;
-      else delete o.userData[CONCEPT_KEY_USERDATA];
-      if (!(o instanceof Mesh)) return;
-      const c = key ? byKey.get(key) : undefined;
-      const look = lookFor(key ?? undefined, state, { hue: c?.hue, container: c?.isContainer });
-      o.visible = look.visible;
-      const mats = (Array.isArray(o.material) ? o.material : [o.material]) as Material[];
-      for (const m of mats) {
-        m.transparent = look.transparent;
-        m.opacity = look.opacity;
-        m.depthWrite = look.depthWrite;
-        if (c?.isContainer) m.side = DoubleSide;
-        m.clippingPlanes = clip ?? null;
-        if (m instanceof MeshStandardMaterial) {
-          m.emissive.set(look.highlighted ? look.emissive : '#000000');
-          m.emissiveIntensity = look.highlighted ? look.emissiveIntensity : 0;
+function ProceduralCell(props: SceneProps & { clip?: Plane[]; kind: 'animal' | 'plant' }): JSX.Element {
+  const { kind, concepts } = props;
+  const root = useMemo(() => buildCell(kind, concepts), [kind, concepts]);
+  useEffect(
+    () => () =>
+      root.traverse((o) => {
+        if (o instanceof Mesh) {
+          o.geometry.dispose();
+          (Array.isArray(o.material) ? o.material : [o.material]).forEach((m: Material) => m.dispose());
         }
-        m.needsUpdate = true;
-      }
-    });
-  }, [root, concepts, byKey, state, clip]);
-
-  const onClick = usePick(concepts, onSelectConcept);
-  return <primitive object={root} onClick={onClick} {...hoverHandlers} />;
+      }),
+    [root],
+  );
+  return <BoundModel {...props} root={root} procedural />;
 }
 
 /** Plugin component: section mode = local clipping plane through the model's centre (z ≤ 0 kept). */
@@ -116,9 +211,12 @@ export function makeGltfScene(opts: GltfPluginOptions) {
     }, [gl]);
     const clip = useMemo(() => (section ? [new Plane(new Vector3(0, 0, -1), 0)] : undefined), [section]);
     const parts = useMemo(() => proceduralParts(props.concepts), [props.concepts]);
+    const kind = useMemo(() => cellKind(props.concepts), [props.concepts]);
     const asset = props.topic.scene.asset;
     const url = asset && props.assetBaseUrl ? props.assetBaseUrl.replace(/\/?$/, '/') + asset : null;
-    const fallback = (
+    const fallback = kind ? (
+      <ProceduralCell {...props} clip={clip} kind={kind} />
+    ) : (
       <PartsView parts={parts} concepts={props.concepts} state={props.state} onSelectConcept={props.onSelectConcept} clippingPlanes={clip} containerOpacity={0.2} />
     );
     if (!url || failed.has(url)) return fallback;
