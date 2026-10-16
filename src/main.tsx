@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './i18n';
-import './styles.css';
+import './styles/index.css';
 import { MOCK_API } from './config';
 import { App } from './App';
 import { bootstrapSession } from './api/session';

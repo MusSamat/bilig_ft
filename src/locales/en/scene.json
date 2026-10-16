@@ -16,5 +16,19 @@
   "findMode": "Pick on the model to answer",
   "snapshotAdded": "Snapshot added to the presentation",
   "snapshotFailed": "Could not take a snapshot",
-  "openDeck": "Open presentation"
+  "openDeck": "Open presentation",
+  "coach": {
+    "title": "How to use the model",
+    "rotate": "Drag with the mouse to turn the model",
+    "zoom": "Scroll the wheel to zoom in or out",
+    "select": "Click a part of the model to open its card",
+    "rotateTouch": "Swipe with a finger to turn the model",
+    "zoomTouch": "Pinch with two fingers to zoom",
+    "selectTouch": "Tap a part of the model to open its card",
+    "ok": "Got it"
+  },
+  "credits": "Sources and licences",
+  "license": "Licence",
+  "author": "Author",
+  "source": "Source"
 }

@@ -1,5 +1,24 @@
 /** Shared slide rendering for exports: snapshot images to PNG, slide → canvas (PDF). */
 import type { Slide } from '@bilig/content-model/api';
+import { tokensFromHue } from '@bilig/scene-core';
+import { LOGO_SVG } from '../components/Logo';
+
+/** Slide accent colours from the subject hue tokens (light theme: printable). */
+export const slideColors = (hue: number) => {
+  const tk = tokensFromHue(hue, 'light');
+  return { accent: tk.accent, ink: tk.ink, muted: tk.muted, wash: tk.g3 };
+};
+
+/** The Bilig mark as a PNG data URL (title slides of PPTX/PDF). */
+export async function logoPng(size = 256): Promise<string> {
+  const img = new Image();
+  img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(LOGO_SVG.replace('<svg ', `<svg width="${size}" height="${size}" `))}`;
+  await img.decode();
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  c.getContext('2d')!.drawImage(img, 0, 0, size, size);
+  return c.toDataURL('image/png');
+}
 
 export interface ExportContext {
   title: string;
@@ -47,17 +66,28 @@ export async function drawSlide(s: Slide, ctx: ExportContext): Promise<HTMLCanva
   c.width = W;
   c.height = H;
   const g = c.getContext('2d')!;
+  const col = slideColors(ctx.hue);
   g.fillStyle = '#ffffff';
   g.fillRect(0, 0, W, H);
-  g.fillStyle = `hsl(${ctx.hue} 60% 40%)`;
+  g.fillStyle = col.accent;
   g.fillRect(0, 0, W, 12);
   const font = (px: number, bold = false) => `${bold ? '700 ' : ''}${px}px "Noto Sans", system-ui, sans-serif`;
+  const serif = (px: number) => `700 ${px}px "Noto Serif", Georgia, serif`;
   const title = s.kind === 'snapshot' ? s.caption ?? ctx.title : s.title;
-  g.fillStyle = `hsl(${ctx.hue} 60% 25%)`;
-  g.font = font(s.kind === 'title' ? 60 : 44, true);
+  if (s.kind === 'title') {
+    const logo = new Image();
+    logo.src = await logoPng(128).catch(() => '');
+    await logo.decode().catch(() => undefined);
+    if (logo.width) g.drawImage(logo, 70, 150, 72, 72);
+    g.fillStyle = col.ink;
+    g.font = serif(36);
+    g.fillText('Bilig', 156, 198);
+  }
+  g.fillStyle = col.accent;
+  g.font = s.kind === 'title' ? serif(60) : serif(44);
   const titleLines = wrap(g, title, W - 140);
   titleLines.forEach((l, i) => g.fillText(l, 70, (s.kind === 'title' ? 300 : 100) + i * 56));
-  g.fillStyle = '#222';
+  g.fillStyle = col.ink;
   let y = (s.kind === 'title' ? 300 : 100) + titleLines.length * 56 + 20;
   const imgId = slideImageId(s);
   const img = imgId ? ctx.images.get(imgId) : undefined;

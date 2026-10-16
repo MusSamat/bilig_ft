@@ -12,6 +12,8 @@ export default defineConfig({
     environment: 'node',
     environmentMatchGlobs: [['src/**/*.test.tsx', 'jsdom']],
     setupFiles: ['./src/test/setup.ts'],
+    // Component tests render whole pages (MSW, Dexie); under a parallel full run 5 s is too tight.
+    testTimeout: 20_000,
     css: false,
     coverage: {
       provider: 'v8',

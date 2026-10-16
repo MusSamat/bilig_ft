@@ -3,5 +3,7 @@
   "lead": "Pick a subject, rotate the 3D model and explore its structures.",
   "openCatalog": "Open the catalog",
   "recent": "Recently opened topics",
-  "featured": "Topics"
+  "featured": "Topics",
+  "subjects": "Subjects",
+  "allTopics": "All topics"
 }

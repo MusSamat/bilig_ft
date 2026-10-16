@@ -1,4 +1,4 @@
-/** Toast notifications (W-51 «показывает уведомление»), announced politely to screen readers. */
+/** Toast notifications (W-51 «показывает уведомление»): ink pills announced politely (role=status). */
 import { useTranslation } from 'react-i18next';
 import { useUi } from '../state/ui';
 import { Icon } from './Icon';
@@ -11,7 +11,7 @@ export function Toasts(): JSX.Element {
     <div className="toasts" role="status" aria-live="polite" aria-label={t('a11y.toasts')}>
       {toasts.map((x) => (
         <div key={x.id} className={`toast toast--${x.kind ?? 'info'}`}>
-          <Icon name={x.kind === 'error' ? 'info' : 'check'} />
+          <Icon name={x.kind === 'error' ? 'warn' : 'check'} className="sm" />
           <p>{t(x.key, x.params)}</p>
           {x.action && (
             <button type="button" className="btn btn--sm" onClick={() => { x.action!.onClick(); dismiss(x.id); }}>
@@ -19,7 +19,7 @@ export function Toasts(): JSX.Element {
             </button>
           )}
           <button type="button" className="icon-btn" onClick={() => dismiss(x.id)} aria-label={t('common.dismiss')}>
-            <Icon name="close" size={16} />
+            <Icon name="x" className="sm" />
           </button>
         </div>
       ))}

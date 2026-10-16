@@ -131,14 +131,22 @@ export async function api<N extends EndpointName>(name: N, opts: CallOptions = {
 }
 
 /** Fetch a server-provided URL (CDN package, files) and validate with a schema. */
-export async function fetchJson<T>(url: string, schema: z.ZodType<T>, signal?: AbortSignal): Promise<T> {
+export async function fetchJson<T>(url: string, schema: z.ZodType<T>, signal?: AbortSignal, retried = false): Promise<T> {
+  const abs = apiUrl(url);
+  // Licensed packages are served by our API (the manifest gives its absolute URL): send the bearer
+  // token to API paths only — never to a static CDN path (/cdn/…), which must work without auth.
+  const ours = new URL(abs).pathname.startsWith(`${API_PREFIX}/`);
+  const headers = new Headers();
+  const token = ours ? tokens.get() : null;
+  if (token) headers.set(HEADERS.authorization, `Bearer ${token}`);
   let res: Response;
   try {
-    res = await fetch(apiUrl(url), { signal, credentials: 'include' });
+    res = await fetch(abs, { signal, credentials: 'include', headers });
   } catch (e) {
     if ((e as Error)?.name === 'AbortError') throw e;
     throw new ApiError(0, 'offline', 'errors.offline');
   }
+  if (res.status === 401 && ours && !retried && (await tokens.refresh())) return fetchJson(url, schema, signal, true);
   if (!res.ok) throw await problemFrom(res);
   const parsed = schema.safeParse(await res.json());
   if (!parsed.success) throw new ApiError(res.status, 'invalid_response', 'errors.invalid_response');

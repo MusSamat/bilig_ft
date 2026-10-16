@@ -93,7 +93,7 @@ export function AssignmentsTab({ cls }: { cls: SchoolClass }): JSX.Element {
         </p>
         <div>
           <button type="submit" className="btn btn--primary" disabled={busy}>
-            <Icon name="plus" size={16} />
+            <Icon name="plus" className="sm" />
             {t('teacher.give')}
           </button>
         </div>

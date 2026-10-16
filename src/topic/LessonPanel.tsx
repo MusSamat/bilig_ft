@@ -1,8 +1,9 @@
 /**
- * Lesson mode for the projector (W-50): large text, «Шаг N из M», Back/Next,
- * keyboard arrows and presentation remotes (PageUp/PageDown). Steps come from
- * the topic's `tour` activity (camera, visibility, modes, focus, text,
- * teacher note, alt text); without a tour the structures are stepped through.
+ * Lesson mode stepper for the projector (W-50), inside the inspector: the
+ * tour step text, the teacher note, «Шаг N из M» with Back / Next, keyboard
+ * arrows and presentation remotes (PageUp/PageDown). Steps come from the
+ * topic's `tour` activity (camera, visibility, modes, focus, text, teacher
+ * note, alt text); without a tour the structures are stepped through.
  */
 import { useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -15,7 +16,7 @@ import { useViewer } from '../state/viewer';
 import { takeSnapshot } from './actions';
 import { useTopic } from './context';
 
-export function LessonPanel({ ready }: { ready: boolean }): JSX.Element {
+export function LessonPanel({ ready }: { ready: boolean }): JSX.Element | null {
   const { t } = useTranslation();
   const lang = useLang();
   const navigate = useNavigate();
@@ -47,14 +48,17 @@ export function LessonPanel({ ready }: { ready: boolean }): JSX.Element {
 
   const go = (cmd: stepper.StepCommand | null) => setLessonStep(stepper.applyStepCommand(s, cmd).index);
 
-  useKeydown((e) => {
-    const target = e.target as HTMLElement | null;
-    if ((e.key === ' ' || e.key === 'Enter') && target?.closest('button, a, [role="treeitem"], [role="tab"]')) return;
-    const cmd = stepper.keyToStepCommand(e.key);
-    if (!cmd) return;
-    e.preventDefault();
-    go(cmd);
-  }, { enabled: ready });
+  useKeydown(
+    (e) => {
+      const target = e.target as HTMLElement | null;
+      if ((e.key === ' ' || e.key === 'Enter') && target?.closest('button, a, [role="treeitem"], [role="tab"]')) return;
+      const cmd = stepper.keyToStepCommand(e.key);
+      if (!cmd) return;
+      e.preventDefault();
+      go(cmd);
+    },
+    { enabled: ready },
+  );
 
   const exit = () => {
     const next = new URLSearchParams(params);
@@ -62,39 +66,52 @@ export function LessonPanel({ ready }: { ready: boolean }): JSX.Element {
     next.delete('lesson');
     setParams(next);
   };
+  if (!frame) return null;
   const label = stepper.stepLabel(s);
-  if (!frame) return <div />;
+  const focusConcept = concepts.find((c) => c.key === frame.focus);
+  const stepText = tr(frame.step.text, lang);
+  const showText = !!stepText && (!focusConcept || stepText !== tr(focusConcept.description, lang));
   return (
-    <section className="card lesson-panel" aria-label={t('lesson.region')} aria-live="polite">
-      {!pkg.topic.activities.tour && <p className="muted small">{t('lesson.noTour')}</p>}
-      <span className="lesson-step">{t('lesson.step', label)}</span>
-      <p>{tr(frame.step.text, lang)}</p>
-      <p className="visually-hidden">{tr(frame.step.altText ?? L(''), lang)}</p>
-      {frame.step.teacherNote && (
-        <p className="teacher-note">
-          <b>{t('lesson.teacherNote')}:</b> {tr(frame.step.teacherNote, lang)}
+    <div className="lesson" role="group" aria-label={t('lesson.region')}>
+      {showText && (
+        <p className="lesson__text" aria-live="polite">
+          {stepText}
         </p>
       )}
-      <div className="lesson-nav">
-        <button type="button" className="btn" onClick={() => go('prev')} disabled={stepper.isFirst(s)}>
-          <Icon name="arrow-left" />
+      <p className="visually-hidden">{tr(frame.step.altText ?? L(''), lang)}</p>
+      {frame.step.teacherNote && (
+        <p className="lesson__note">
+          <Icon name="grad" className="sm" />
+          <span>
+            <b>{t('lesson.teacherNote')}:</b> {tr(frame.step.teacherNote, lang)}
+          </span>
+        </p>
+      )}
+      <div className="lstep">
+        <span aria-live="polite">{t('lesson.step', label)}</span>
+        <button type="button" className="btn2" onClick={() => go('prev')} disabled={stepper.isFirst(s)}>
+          <Icon name="prev" className="sm" />
           {t('lesson.prev')}
         </button>
-        <button type="button" className="btn btn--primary" onClick={() => go('next')} disabled={stepper.isLast(s)}>
+        <button type="button" className="cta" onClick={() => go('next')} disabled={stepper.isLast(s)}>
           {t('lesson.next')}
-          <Icon name="arrow-right" />
-        </button>
-        <button type="button" className="btn" onClick={() => void takeSnapshot(pkg, lang, true, navigate)}>
-          <Icon name="camera" />
-          {t('scene.snapshot')}
-        </button>
-        <button type="button" className="btn btn--ghost" onClick={exit}>
-          {t('lesson.exit')}
+          <Icon name="next" className="sm" />
         </button>
       </div>
-      <span className="muted small">
-        <Icon name="keyboard" size={16} /> {t('lesson.remoteHint')}
-      </span>
-    </section>
+      <div className="lesson__tools">
+        <button type="button" className="btn2 btn--sm" onClick={() => void takeSnapshot(pkg, lang, true, navigate)}>
+          <Icon name="camera" className="sm" />
+          {t('scene.snapshot')}
+        </button>
+        <button type="button" className="btn2 btn--sm btn--ghost" onClick={exit}>
+          <Icon name="book" className="sm" />
+          {t('lesson.exit')}
+        </button>
+        <span className="muted small lesson__hint">
+          <Icon name="keyboard" className="sm" /> {t('lesson.remoteHint')}
+          {!pkg.topic.activities.tour && <> · {t('lesson.noTour')}</>}
+        </span>
+      </div>
+    </div>
   );
 }

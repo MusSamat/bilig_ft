@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { t as tr } from '@bilig/content-model';
 import type { Slide } from '@bilig/content-model/api';
 import { snapshotUrl } from '@bilig/scene-core';
 import { api, isApiError } from '../api/client';
@@ -15,14 +16,13 @@ import { useTopicPackage } from '../api/content';
 import { useSession } from '../api/session';
 import { Icon } from '../components/Icon';
 import { db, type SnapshotRow } from '../lib/db';
-import { Formula } from '../lib/formula';
 import { useLang } from '../lib/hooks';
 import { useDeck } from '../state/deck';
 import { toast, useUi } from '../state/ui';
 import { templateSlides } from './template';
+import { SlideView, slideTitle } from './SlideView';
 import { slideImageId, type ExportContext } from './render';
 
-const slideTitle = (s: Slide): string => (s.kind === 'snapshot' ? s.caption ?? '' : s.title);
 
 export default function PresentationPage(): JSX.Element {
   const { t } = useTranslation();
@@ -106,97 +106,123 @@ export default function PresentationPage(): JSX.Element {
     }
   };
 
+  const kicker = loaded ? tr(loaded.pkg.topic.title, lang) : deck.title;
   return (
     <div className="page">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1 style={{ margin: 0 }}>{t('deck.title')}</h1>
-        <span className="muted">{t('deck.slides', { count: slides.length })}</span>
-      </div>
-      <div className="row">
-        <label className="field" style={{ flex: '1 1 260px' }}>
+      <header className="page-h panel glass">
+        <span className="orb s" aria-hidden="true">
+          <Icon name="deck" />
+        </span>
+        <div>
+          <h1 className="page-title">{t('deck.title')}</h1>
+          <p>{t('deck.slides', { count: slides.length })}</p>
+        </div>
+        <div className="deck-bar no-print">
+          <span className="tip" data-tip={loaded ? undefined : t('deck.fromTopicNeedsTopic')}>
+            <button type="button" className="btn2" disabled={!loaded} onClick={fromTopic} title={t('deck.fromTopicHint')} aria-describedby={loaded ? undefined : 'deck-need-topic'}>
+              <Icon name="layers" className="sm" />
+              {t('deck.fromTopic')}
+            </button>
+          </span>
+          <span id="deck-need-topic" className="visually-hidden">
+            {t('deck.fromTopicNeedsTopic')}
+          </span>
+          <button type="button" className="cta" disabled={!slides.length || !!busy} onClick={() => void doExport('pptx')}>
+            <Icon name="download" className="sm" />
+            {busy === 'pptx' ? t('deck.exporting') : t('deck.exportPptx')}
+          </button>
+          <button type="button" className="btn2" disabled={!slides.length || !!busy} onClick={() => void doExport('pdf')}>
+            <Icon name="download" className="sm" />
+            {busy === 'pdf' ? t('deck.exporting') : t('deck.exportPdf')}
+          </button>
+          {authed ? (
+            <button type="button" className="btn2" disabled={!slides.length || !!busy || !deck.topicKey} onClick={() => void saveServer()}>
+              <Icon name="upload" className="sm" />
+              {t('deck.saveServer')}
+            </button>
+          ) : (
+            <span className="pill pill--muted">
+              <Icon name="info" className="sm" />
+              {t('deck.savedLocal')}
+            </span>
+          )}
+          {slides.length > 0 && (
+            <button type="button" className="btn2 btn--ghost" onClick={() => deck.clear()}>
+              <Icon name="trash" className="sm" />
+              {t('deck.clear')}
+            </button>
+          )}
+        </div>
+      </header>
+
+      <section className="card stack" aria-label={t('deck.deckTitle')}>
+        <label className="field">
           <span>{t('deck.deckTitle')}</span>
           <input className="input" value={deck.title} onChange={(e) => deck.setMeta({ title: e.target.value })} />
         </label>
-      </div>
-      <div className="row no-print">
-        <button type="button" className="btn" disabled={!loaded} onClick={fromTopic} title={t('deck.fromTopicHint')}>
-          <Icon name="layers" />
-          {t('deck.fromTopic')}
-        </button>
-        <button type="button" className="btn btn--primary" disabled={!slides.length || !!busy} onClick={() => void doExport('pptx')}>
-          <Icon name="download" />
-          {busy === 'pptx' ? t('deck.exporting') : t('deck.exportPptx')}
-        </button>
-        <button type="button" className="btn" disabled={!slides.length || !!busy} onClick={() => void doExport('pdf')}>
-          <Icon name="download" />
-          {busy === 'pdf' ? t('deck.exporting') : t('deck.exportPdf')}
-        </button>
-        {authed ? (
-          <button type="button" className="btn" disabled={!slides.length || !!busy || !deck.topicKey} onClick={() => void saveServer()}>
-            <Icon name="upload" />
-            {t('deck.saveServer')}
-          </button>
-        ) : (
-          <span className="muted small">{t('deck.savedLocal')}</span>
-        )}
-        {slides.length > 0 && (
-          <button type="button" className="btn btn--ghost" onClick={() => deck.clear()}>
-            <Icon name="trash" />
-            {t('deck.clear')}
-          </button>
-        )}
-      </div>
+      </section>
 
       {!slides.length ? (
-        <p className="card">{t('deck.empty')}</p>
+        <section className="card">
+          <div className="state">
+            <Icon name="deck" />
+            <b>{t('deck.emptyTitle')}</b>
+            <span>{t('deck.empty')}</span>
+            <Link className="btn2" to={`/${lang}`}>
+              <Icon name="home" className="sm" />
+              {t('notFound.home')}
+            </Link>
+          </div>
+        </section>
       ) : (
-        <div className="deck">
-          <ol className="slide-list" aria-label={t('deck.slides', { count: slides.length })}>
-            {slides.map((s, i) => (
-              <li key={s.id} className="slide-item" aria-current={i === current ? 'true' : undefined}>
-                <button type="button" onClick={() => setCurrent(i)}>
-                  <span className="muted small">
-                    {t('deck.slideN', { n: i + 1 })} · {t(`deck.kind.${s.kind}`)}
+        <div className="deck-ed">
+          <section className="card" aria-labelledby="slides-list-title">
+            <h2 id="slides-list-title" className="panel-title">
+              <Icon name="layers" />
+              {t('deck.slides', { count: slides.length })}
+            </h2>
+            <ol className="slide-list">
+              {slides.map((s, i) => (
+                <li key={s.id} className="slide-item" aria-current={i === current ? 'true' : undefined}>
+                  <button type="button" onClick={() => setCurrent(i)}>
+                    <small>
+                      {t('deck.slideN', { n: i + 1 })} · {t(`deck.kind.${s.kind}`)}
+                    </small>
+                    <b>{slideTitle(s) || t(`deck.kind.${s.kind}`)}</b>
+                  </button>
+                  <span className="slide-item__tools">
+                    <button type="button" className="icon-btn" disabled={i === 0} onClick={() => { deck.moveSlide(s.id, -1); setCurrent(i - 1); }} aria-label={t('deck.moveUp')} title={t('deck.moveUp')}>
+                      <Icon name="up" className="sm" />
+                    </button>
+                    <button type="button" className="icon-btn" disabled={i === slides.length - 1} onClick={() => { deck.moveSlide(s.id, 1); setCurrent(i + 1); }} aria-label={t('deck.moveDown')} title={t('deck.moveDown')}>
+                      <Icon name="down" className="sm" />
+                    </button>
+                    <button type="button" className="icon-btn" onClick={() => { deck.removeSlide(s.id); setCurrent(Math.max(0, i - 1)); }} aria-label={t('deck.remove')} title={t('deck.remove')}>
+                      <Icon name="trash" className="sm" />
+                    </button>
                   </span>
-                  <b>{slideTitle(s) || t(`deck.kind.${s.kind}`)}</b>
-                </button>
-                <span className="row" style={{ flexWrap: 'nowrap', gap: 4 }}>
-                  <button type="button" className="icon-btn" disabled={i === 0} onClick={() => { deck.moveSlide(s.id, -1); setCurrent(i - 1); }} aria-label={t('deck.moveUp')}>
-                    <Icon name="up" size={18} />
-                  </button>
-                  <button type="button" className="icon-btn" disabled={i === slides.length - 1} onClick={() => { deck.moveSlide(s.id, 1); setCurrent(i + 1); }} aria-label={t('deck.moveDown')}>
-                    <Icon name="down" size={18} />
-                  </button>
-                  <button type="button" className="icon-btn" onClick={() => { deck.removeSlide(s.id); setCurrent(Math.max(0, i - 1)); }} aria-label={t('deck.remove')}>
-                    <Icon name="trash" size={18} />
-                  </button>
-                </span>
-              </li>
-            ))}
-          </ol>
+                </li>
+              ))}
+            </ol>
+          </section>
           {sel && (
             <div className="stack">
-              <SlidePreview slide={sel} image={slideImageId(sel) ? images.get(slideImageId(sel)!) : undefined} hue={hue} />
-              <div className="row no-print">
-                <button type="button" className="icon-btn" disabled={current === 0} onClick={() => setCurrent(current - 1)} aria-label={t('deck.prevSlide')}>
-                  <Icon name="arrow-left" />
+              <SlideView slide={sel} image={slideImageId(sel) ? images.get(slideImageId(sel)!) : undefined} kicker={kicker} icon={loaded?.pkg.subject.icon} />
+              <div className="dfoot no-print">
+                <small>{t('deck.slideN', { n: current + 1 })}</small>
+                {sel.kind === 'snapshot' && <SnapshotLiveLink snapshot={snapshots.find((x) => x.id === sel.snapshotId)} onOpen={(u) => navigate(u)} />}
+                <button type="button" className="ibtn glass" disabled={current === 0} onClick={() => setCurrent(current - 1)} aria-label={t('deck.prevSlide')}>
+                  <Icon name="prev" />
                 </button>
-                <span>{t('deck.slideN', { n: current + 1 })}</span>
-                <button type="button" className="icon-btn" disabled={current >= slides.length - 1} onClick={() => setCurrent(current + 1)} aria-label={t('deck.nextSlide')}>
-                  <Icon name="arrow-right" />
+                <button type="button" className="ibtn glass" disabled={current >= slides.length - 1} onClick={() => setCurrent(current + 1)} aria-label={t('deck.nextSlide')}>
+                  <Icon name="next" />
                 </button>
-                {sel.kind === 'snapshot' && (
-                  <SnapshotLiveLink snapshot={snapshots.find((x) => x.id === sel.snapshotId)} onOpen={(u) => navigate(u)} />
-                )}
               </div>
               <SlideEditor slide={sel} onChange={(patch) => deck.updateSlide(sel.id, patch)} />
             </div>
           )}
         </div>
       )}
-      <Link to={`/${lang}`} className="muted small no-print">
-        {t('notFound.home')}
-      </Link>
     </div>
   );
 }
@@ -205,32 +231,10 @@ function SnapshotLiveLink({ snapshot, onOpen }: { snapshot?: SnapshotRow; onOpen
   const { t } = useTranslation();
   if (!snapshot) return null;
   return (
-    <button type="button" className="btn btn--sm" onClick={() => onOpen(snapshotUrl({ image: snapshot.image, sceneState: snapshot.sceneState }))}>
-      <Icon name="eye" size={18} />
+    <button type="button" className="btn2" onClick={() => onOpen(snapshotUrl({ image: snapshot.image, sceneState: snapshot.sceneState }))}>
+      <Icon name="eye" className="sm" />
       {t('deck.openLive')}
     </button>
-  );
-}
-
-function SlidePreview({ slide, image, hue }: { slide: Slide; image?: string; hue: number }): JSX.Element {
-  const { t } = useTranslation();
-  return (
-    <div className="slide-preview" style={{ ['--deck-hue' as string]: String(hue) }} aria-label={t('deck.preview')} role="group">
-      <h3>{slideTitle(slide)}</h3>
-      {slide.kind === 'title' && slide.subtitle && <p>{slide.subtitle}</p>}
-      {(slide.kind === 'concept' || slide.kind === 'text') && <p style={{ whiteSpace: 'pre-line' }}>{slide.text}</p>}
-      {slide.kind === 'process' && (
-        <>
-          {slide.equation && <Formula tex={slide.equation} />}
-          <ol>
-            {slide.steps.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ol>
-        </>
-      )}
-      {image && <img src={image} alt={t('deck.snapshotAlt')} />}
-    </div>
   );
 }
 

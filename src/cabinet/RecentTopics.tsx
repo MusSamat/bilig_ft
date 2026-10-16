@@ -6,6 +6,8 @@ import { t as tr } from '@bilig/content-model';
 import { db, type RecentRow } from '../lib/db';
 import { useLang } from '../lib/hooks';
 import { Icon } from '../components/Icon';
+import { subjectSwatch } from '@bilig/scene-core';
+import { useUi } from '../state/ui';
 
 export function useRecentTopics(limit = 6): RecentRow[] {
   const [rows, setRows] = useState<RecentRow[]>([]);
@@ -19,20 +21,28 @@ export function RecentTopics({ limit = 6 }: { limit?: number }): JSX.Element | n
   const { t } = useTranslation();
   const lang = useLang();
   const rows = useRecentTopics(limit);
+  const theme = useUi((s) => s.theme);
   if (!rows.length) return null;
   return (
-    <section className="card stack" aria-labelledby="recent-title">
-      <h2 id="recent-title" className="panel-title">
-        <Icon name="star" />
-        {t('home.recent')}
-      </h2>
+    <section className="card" aria-labelledby="recent-title">
+      <div className="home-section-h">
+        <Icon name="clock" className="lg" />
+        <h2 id="recent-title">{t('home.recent')}</h2>
+      </div>
       <div className="topic-grid">
-        {rows.map((r) => (
-          <Link key={r.topicKey} className="topic-tile" to={`/${lang}${r.path}`} style={{ gridTemplateColumns: 'auto minmax(0,1fr)' }}>
-            <span className="dot" style={{ background: `hsl(${r.hue} 65% 55%)`, width: 16, height: 16 }} />
-            <b>{tr(r.title, lang)}</b>
-          </Link>
-        ))}
+        {rows.map((r) => {
+          const sw = subjectSwatch(r.hue, theme);
+          return (
+            <Link key={r.topicKey} className="topic-tile" to={`/${lang}${r.path}`}>
+              <span className="th" style={{ background: sw.bg, color: sw.fg }} aria-hidden="true">
+                <Icon name="cube" className="lg" />
+              </span>
+              <span>
+                <b>{tr(r.title, lang)}</b>
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );

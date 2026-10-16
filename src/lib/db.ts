@@ -1,6 +1,7 @@
 /**
  * Local device storage (IndexedDB via Dexie): guest progress (W-11), recent
- * topics (W-54), snapshots (W-51) and the draft presentation (W-52).
+ * topics (W-54), snapshots (W-51), the draft presentation (W-52) and live
+ * specimen previews.
  * (Offline downloads and the result sync queue are out of scope for now.)
  */
 import Dexie, { type Table } from 'dexie';
@@ -46,11 +47,19 @@ export interface DeckRow {
   serverVersion?: number;
 }
 
+/** Live 3D preview of a topic (specimen strip) when the package has no rendered WebP. */
+export interface ThumbRow {
+  topicKey: string;
+  image: string;
+  updatedAt: string;
+}
+
 class BiligDb extends Dexie {
   progress!: Table<ProgressRow, string>;
   recent!: Table<RecentRow, string>;
   snapshots!: Table<SnapshotRow, string>;
   decks!: Table<DeckRow, string>;
+  thumbs!: Table<ThumbRow, string>;
 
   constructor() {
     super('bilig');
@@ -60,6 +69,7 @@ class BiligDb extends Dexie {
       snapshots: 'id, topicKey, createdAt',
       decks: 'id, topicKey, updatedAt',
     });
+    this.version(2).stores({ thumbs: 'topicKey' });
   }
 }
 

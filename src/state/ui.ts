@@ -19,6 +19,9 @@ export interface Toast {
 export interface ShellContext {
   subject: Subject;
   topicTitle?: Localized;
+  /** Section the topic belongs to (unit), shown under the subject name. */
+  unitTitle?: Localized;
+  topicKey?: string;
 }
 
 interface UiState {
@@ -27,12 +30,17 @@ interface UiState {
   theme: Theme;
   hue: number;
   catalogOpen: boolean;
+  /** Subject to show when the catalog opens (its course tree), or null for the overview. */
+  catalogSubject: string | null;
+  slidesOpen: boolean;
   toasts: Toast[];
   setTheme(theme: Theme): void;
   toggleTheme(): void;
   setHue(hue: number): void;
-  openCatalog(): void;
+  openCatalog(subjectKey?: string): void;
   closeCatalog(): void;
+  openSlides(): void;
+  closeSlides(): void;
   toast(t: Omit<Toast, 'id'>): void;
   dismiss(id: number): void;
 }
@@ -47,7 +55,8 @@ function initialTheme(): Theme {
   } catch {
     /* ignore */
   }
-  return typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  // The approved design is light-first; dark follows the OS preference.
+  return typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 let nextId = 1;
@@ -58,6 +67,8 @@ export const useUi = create<UiState>((set, get) => ({
   theme: initialTheme(),
   hue: NEUTRAL_HUE,
   catalogOpen: false,
+  catalogSubject: null,
+  slidesOpen: false,
   toasts: [],
   setTheme(theme) {
     try {
@@ -71,8 +82,10 @@ export const useUi = create<UiState>((set, get) => ({
     get().setTheme(get().theme === 'dark' ? 'light' : 'dark');
   },
   setHue: (hue) => set({ hue }),
-  openCatalog: () => set({ catalogOpen: true }),
+  openCatalog: (subjectKey) => set({ catalogOpen: true, catalogSubject: typeof subjectKey === 'string' ? subjectKey : null }),
   closeCatalog: () => set({ catalogOpen: false }),
+  openSlides: () => set({ slidesOpen: true, catalogOpen: false }),
+  closeSlides: () => set({ slidesOpen: false }),
   toast(t) {
     const id = nextId++;
     set((s) => ({ toasts: [...s.toasts.slice(-3), { ...t, id }] }));

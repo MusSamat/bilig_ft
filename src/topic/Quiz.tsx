@@ -31,7 +31,7 @@ type Draft = { [itemKey: string]: ItemResponse | undefined };
 /** Parse a numeric answer typed with a comma or a dot (ky/ru use a decimal comma). */
 export const parseNumber = (s: string): number => (s.trim() ? Number(s.trim().replace(/\s/g, '').replace(',', '.')) : Number.NaN);
 
-export function Quiz({ ready }: { ready: boolean }): JSX.Element {
+export function Quiz({ ready }: { ready: boolean }): JSX.Element | null {
   const { t } = useTranslation();
   const lang = useLang();
   const { pkg, progress, assignmentId } = useTopic();
@@ -56,7 +56,7 @@ export function Quiz({ ready }: { ready: boolean }): JSX.Element {
   }, [findAnswer]);
   useEffect(() => () => setFindItem(null), [setFindItem]);
 
-  if (!spec) return <p className="muted">{t('quiz.empty')}</p>;
+  if (!spec) return null;
 
   const start = async () => {
     const clientId = uuid();
@@ -98,47 +98,77 @@ export function Quiz({ ready }: { ready: boolean }): JSX.Element {
     }
   };
 
+  const head = (
+    <div className="sec-h">
+      <Icon name="help" className="lg" />
+      <h2 id="quiz-title">{t('activities.quiz')}</h2>
+      {attempt && items.length > 0 && (
+        <span className="pill">
+          <Icon name="check" className="sm" />
+          {t('quiz.scoreShort', { correct, total: items.length })}
+        </span>
+      )}
+    </div>
+  );
+
   if (!attempt) {
     return (
-      <div className="quiz">
-        <p>{t('quiz.intro', { count: spec.sampleSize })}</p>
-        {!canSave && <p className="muted small">{t('quiz.guestNote')}</p>}
-        <div>
-          <button type="button" className="btn btn--primary" onClick={() => void start()} disabled={!ready}>
-            {t('quiz.start')}
-          </button>
+      <section id="quizS" className="sec panel glass quiz" aria-labelledby="quiz-title">
+        {head}
+        <div className="quiz__intro">
+          <p>{t('quiz.intro', { count: spec.sampleSize })}</p>
+          {!canSave && (
+            <p className="muted small">
+              <Icon name="info" className="sm" /> {t('quiz.guestNote')}
+            </p>
+          )}
+          <span className="tip" data-tip={ready ? undefined : t('scene.loading')}>
+            <button type="button" className="cta" onClick={() => void start()} disabled={!ready} aria-describedby={ready ? undefined : 'quiz-wait'}>
+              <Icon name="play" className="sm" />
+              {t('quiz.start')}
+            </button>
+          </span>
+          {!ready && (
+            <span id="quiz-wait" className="visually-hidden">
+              {t('scene.loading')}
+            </span>
+          )}
         </div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="quiz">
-      <ol>
+    <section id="quizS" className="sec panel glass quiz" aria-labelledby="quiz-title">
+      {head}
+      <ol className="qs">
         {items.map((item, idx) => {
           const res = results[item.key];
           const response = draft[item.key];
           const set = (r: ItemResponse) => !res && setDraft((d) => ({ ...d, [item.key]: r }));
           return (
-            <li key={item.key} className="question" data-testid={`question-${item.type}`}>
+            <li key={item.key} className={`q question${res ? (res.correct ? ' is-ok' : ' is-bad') : ''}`} data-testid={`question-${item.type}`}>
               <fieldset disabled={!!res}>
                 <legend>
-                  <span className="muted small">{t('quiz.question', { n: idx + 1, m: items.length })}</span>
-                  <br />
+                  <span className="q__n" aria-hidden="true">
+                    {idx + 1}
+                  </span>
+                  <span className="visually-hidden">{t('quiz.question', { n: idx + 1, m: items.length })}. </span>
                   {tr(item.prompt, lang)}
                 </legend>
                 <ItemInput item={item} response={response} onChange={set} seed={attempt.clientId} finding={findItemKey === item.key} onFind={() => setFindItem(findItemKey === item.key ? null : item.key)} />
               </fieldset>
               {!res ? (
-                <div>
-                  <button type="button" className="btn btn--sm btn--primary" disabled={!isComplete(item, response)} onClick={() => check(item)}>
+                <div className="q__act">
+                  <button type="button" className="btn2 btn--sm" disabled={!isComplete(item, response)} onClick={() => check(item)} title={isComplete(item, response) ? undefined : t('quiz.answerFirst')}>
+                    <Icon name="check" className="sm" />
                     {t('quiz.check')}
                   </button>
                 </div>
               ) : (
-                <div role="status">
+                <div role="status" className="why">
                   <p className={`verdict ${res.correct ? 'verdict--ok' : 'verdict--bad'}`}>
-                    <Icon name={res.correct ? 'check' : 'x'} />
+                    <Icon name={res.correct ? 'check' : 'x'} className="sm" />
                     {res.correct ? t('quiz.correct') : res.score > 0 ? t('quiz.partial') : t('quiz.incorrect')}
                   </p>
                   <p>
@@ -151,18 +181,19 @@ export function Quiz({ ready }: { ready: boolean }): JSX.Element {
         })}
       </ol>
       {done && (
-        <div className="row" role="status">
-          <span className="score">{t('quiz.score', { correct, total: items.length })}</span>
-          <button type="button" className="btn btn--primary" onClick={() => void finish()}>
+        <div className="score" role="status">
+          <span className="score__v">{t('quiz.score', { correct, total: items.length })}</span>
+          <button type="button" className="cta" onClick={() => void finish()}>
+            <Icon name="target" className="sm" />
             {t('quiz.finish')}
           </button>
-          <button type="button" className="btn" onClick={() => void start()}>
-            <Icon name="reset" />
+          <button type="button" className="btn2" onClick={() => void start()}>
+            <Icon name="reset" className="sm" />
             {t('quiz.retake')}
           </button>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -191,7 +222,7 @@ function ItemInput(props: { item: Item; response: ItemResponse | undefined; onCh
       return (
         <>
           {item.options.map((o) => (
-            <label key={o.key} className="option">
+            <label key={o.key} className="opt">
               <input type="radio" name={name} checked={response?.value === o.key} onChange={() => onChange({ type: 'single', value: o.key })} />
               {tr(o.text, lang)}
             </label>
@@ -203,7 +234,7 @@ function ItemInput(props: { item: Item; response: ItemResponse | undefined; onCh
       return (
         <>
           {item.options.map((o) => (
-            <label key={o.key} className="option">
+            <label key={o.key} className="opt">
               <input
                 type="checkbox"
                 checked={cur.includes(o.key)}
@@ -221,7 +252,7 @@ function ItemInput(props: { item: Item; response: ItemResponse | undefined; onCh
       return (
         <>
           {item.pairs.map((p) => (
-            <div key={p.key} className="match-row">
+            <div key={p.key} className="match">
               <span>{tr(p.left, lang)}</span>
               <select
                 className="input"
@@ -245,8 +276,8 @@ function ItemInput(props: { item: Item; response: ItemResponse | undefined; onCh
       const picked = concepts.find((c) => c.key === response?.value);
       return (
         <div className="row">
-          <button type="button" className="btn btn--sm" aria-pressed={finding} onClick={onFind}>
-            <Icon name="focus" size={18} />
+          <button type="button" className="btn2 btn--sm" aria-pressed={finding} onClick={onFind}>
+            <Icon name="focus" className="sm" />
             {t('quiz.findPick')}
           </button>
           {finding && <span className="muted small">{t('quiz.findHint')}</span>}

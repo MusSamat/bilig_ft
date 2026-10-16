@@ -1,0 +1,108 @@
+/*
+ * Design tokens. Hue-derived colors (--g1…--g4, --ink, --muted, --accent,
+ * --on, --panel, --edge, --line, --soft, --chip, --sh, --ok, --bad) are set
+ * on <html> at runtime by src/lib/theme.ts from @bilig/scene-core
+ * tokensFromHue (the Workbench prototype formula, AA-tested for hue 0–359).
+ * The values below are only the first-paint fallback (neutral hue 220) for
+ * when /theme-boot.js has no cached tokens yet; nothing else hardcodes color.
+ */
+@layer tokens {
+  :root {
+    /* Type */
+    --font: 'Noto Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    --serif: 'Noto Serif', Georgia, 'Times New Roman', serif;
+    --mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+    --fs-xs: 12px;
+    --fs-sm: 13.5px;
+    --fs-base: 15px;
+    --fs-md: 16px;
+    --fs-lg: 19px;
+    --fs-xl: 24px;
+    --fs-2xl: 27px;
+    --fs-h1: clamp(34px, 4.2vw, 54px);
+    --lh: 1.55;
+
+    /* Spacing (4px grid) */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+    --sp-7: 28px;
+    --sp-8: 32px;
+    --gap: 20px;
+
+    /* Radii (prototype) */
+    --r-xl: 26px;
+    --r-lg: 20px;
+    --r-md: 14px;
+    --r-sm: 10px;
+    --r-pill: 999px;
+    --r-thumb: 16px;
+    --r-thumb-sm: 12px;
+    --r-num: 10px;
+    --r-label: 8px;
+    --r-bar: 9px;
+    --r-bubble: 16px;
+
+    /* Controls */
+    --tap: 44px;
+    --ctl: 38px;
+    --ctl-lg: 46px;
+
+    /* Brand / status constants (not hue-derived) */
+    --gold: #ffc24b;
+
+    /* Glass */
+    --blur: blur(18px) saturate(1.25);
+    --blur-top: blur(16px) saturate(1.3);
+
+    /* Motion */
+    --t-fast: 0.15s;
+    --t: 0.25s;
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+    /* Hue tokens — first-paint fallback (hue 220, light). */
+    --g1: hsl(220 58% 82%);
+    --g2: hsl(255 55% 86%);
+    --g3: hsl(220 42% 96%);
+    --g4: hsl(212 36% 90%);
+    --ink: hsl(220 45% 13%);
+    --muted: hsl(220 18% 33%);
+    --accent: hsl(220 72% 29%);
+    --on: hsl(0 0% 100%);
+    --panel: rgb(255 255 255 / 0.58);
+    --edge: rgb(255 255 255 / 0.85);
+    --line: hsl(220 40% 15% / 0.12);
+    --soft: hsl(220 70% 35% / 0.09);
+    --chip: rgb(255 255 255 / 0.55);
+    --sh: 0 16px 40px hsl(220 50% 30% / 0.14);
+    --ok: hsl(153 63% 28%);
+    --bad: hsl(3 54% 45%);
+    --surface: hsl(220 50% 92%);
+    color-scheme: light;
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']):not([style*='--g1']) {
+      --g1: hsl(220 48% 24%);
+      --g2: hsl(255 48% 19%);
+      --g3: hsl(220 40% 7%);
+      --g4: hsl(212 35% 11%);
+      --ink: hsl(220 30% 93%);
+      --muted: hsl(220 16% 70%);
+      --accent: hsl(220 70% 70%);
+      --on: hsl(220 60% 9%);
+      --panel: hsl(220 35% 13% / 0.56);
+      --edge: rgb(255 255 255 / 0.12);
+      --line: rgb(255 255 255 / 0.12);
+      --soft: hsl(220 70% 70% / 0.14);
+      --chip: rgb(255 255 255 / 0.05);
+      --sh: 0 16px 40px rgb(0 0 0 / 0.35);
+      color-scheme: dark;
+    }
+  }
+}

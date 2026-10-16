@@ -2,7 +2,7 @@
   "manifest": {
     "topicKey": "cube-pyramid",
     "version": "1.0.0",
-    "hash": "2b7456a9d11730bc4594b5de16e3e5c20857c64d5e9445545ec169ea74bf5f17",
+    "hash": "bc67ff91e8b15212817e5f1ec7f29b25cdffb341c4644397a8a3c251489485d0",
     "files": [
       {
         "path": "thumbs/cube.webp",
@@ -29,8 +29,8 @@
   },
   "subject": {
     "key": "math",
-    "icon": "sigma",
-    "hue": 45,
+    "icon": "shape",
+    "hue": 205,
     "group": "exact",
     "order": 3,
     "status": "live",
@@ -87,6 +87,7 @@
     "key": "cube-pyramid",
     "unitKey": "math.g10.solids",
     "status": "published",
+    "demo": true,
     "title": {
       "ky": "Куб жана пирамида",
       "ru": "Куб и пирамида",

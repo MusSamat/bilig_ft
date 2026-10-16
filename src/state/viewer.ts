@@ -30,6 +30,8 @@ export interface ViewerStore {
   conceptKeys: string[];
   modeDefs: ModeDef[];
   selected: string | null;
+  /** Structure under the pointer (hover highlight + name label). */
+  hovered: string | null;
   modes: ModeState;
   toolbar: ToolbarMode;
   /** Visibility forced by a tour step (lesson mode); toolbar applies otherwise. */
@@ -48,6 +50,7 @@ export interface ViewerStore {
 
   initTopic(topic: Topic, concepts: ResolvedConcept[], defs: ModeDef[], init: { focus?: string | null; modeTokens?: string[] }): void;
   select(key: string | null): void;
+  setHovered(key: string | null): void;
   setModes(modes: ModeState): void;
   toggleMode(id: string): void;
   applyModePatch(patch: Record<string, boolean | string>): void;
@@ -69,6 +72,7 @@ export const useViewer = create<ViewerStore>((set, get) => ({
   conceptKeys: [],
   modeDefs: [],
   selected: null,
+  hovered: null,
   modes: {},
   toolbar: 'none',
   stepVisibility: null,
@@ -89,6 +93,7 @@ export const useViewer = create<ViewerStore>((set, get) => ({
       modeDefs: defs,
       modes,
       selected: selectByKey(concepts, init.focus ?? null),
+      hovered: null,
       toolbar: 'none',
       stepVisibility: null,
       stepCamera: null,
@@ -104,6 +109,9 @@ export const useViewer = create<ViewerStore>((set, get) => ({
     const next = key && conceptKeys.includes(key) ? key : null;
     // Toolbar isolation follows the selection; without a focus it switches off (W-24).
     set({ selected: next, toolbar: next ? toolbar : 'none', cited: next === selected ? get().cited : [] });
+  },
+  setHovered: (hovered) => {
+    if (get().hovered !== hovered) set({ hovered });
   },
   setModes: (modes) => set({ modes }),
   toggleMode(id) {

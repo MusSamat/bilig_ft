@@ -12,7 +12,8 @@ import { usePermission, useSession } from '../api/session';
 import { askTutor } from '../api/tutor';
 import { Icon } from '../components/Icon';
 import { GUEST_TUTOR_LIMIT } from '../config';
-import { useLang } from '../lib/hooks';
+import { conceptColor } from '@bilig/scene-core';
+import { useLang, useOnline } from '../lib/hooks';
 import { useViewer } from '../state/viewer';
 import { useAssistantBus } from './assistantBus';
 import { useTopic } from './context';
@@ -47,6 +48,7 @@ export function AssistantPanel(): JSX.Element | null {
   const [busy, setBusy] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const online = useOnline();
   const pending = useAssistantBus((s) => s.pending);
   const nonce = useAssistantBus((s) => s.nonce);
 
@@ -113,26 +115,41 @@ export function AssistantPanel(): JSX.Element | null {
     void ask(input);
   };
 
+  const unavailable = msgs.some((m, i) => i === msgs.length - 1 && m.errorKey === 'errors.tutor_unavailable') || !online;
+
   return (
-    <section id="assistant" className="card assistant" aria-labelledby="assistant-title">
-      <h2 id="assistant-title" className="panel-title">
+    <section id="tutor" className="tutor panel glass" aria-labelledby="assistant-title">
+      <h2 id="assistant-title" className="th2">
         <Icon name="chat" />
         {t('assistant.title')}
+        {unavailable && (
+          <span className="pill pill--bad">
+            <Icon name="wifioff" />
+            {t('assistant.unavailable')}
+          </span>
+        )}
       </h2>
-      <div className="assistant__log" ref={logRef} role="log" aria-live="polite" aria-label={t('assistant.history')}>
-        <p className="msg msg--assistant">{t('assistant.greeting', { topic: tr(pkg.topic.title, lang) })}</p>
+      <div className="msgs" ref={logRef} role="log" aria-live="polite" aria-label={t('assistant.history')}>
+        <p className="m b">{t('assistant.greeting', { topic: tr(pkg.topic.title, lang) })}</p>
         {msgs.map((m, i) => (
-          <div key={i} className={`msg msg--${m.role}`}>
+          <div key={i} className={`m ${m.role === 'user' ? 'u' : 'b'}${m.errorKey ? ' m--err' : ''}`}>
             <span className="visually-hidden">{m.role === 'user' ? t('assistant.you') : t('assistant.bot')}: </span>
-            {m.errorKey ? <span className="error-text">{t(m.errorKey)}</span> : m.text || (busy && i === msgs.length - 1 ? t('assistant.thinking') : '')}
+            {m.errorKey ? (
+              <span className="m__err">
+                <Icon name="warn" className="sm" />
+                {t(m.errorKey)}
+              </span>
+            ) : (
+              m.text || (busy && i === msgs.length - 1 ? <span className="typing">{t('assistant.thinking')}</span> : '')
+            )}
             {m.cites.length > 0 && (
-              <div className="msg__cites">
+              <div className="m__cites">
                 {m.cites.map((k) => {
                   const c = concepts.find((x) => x.key === k) ?? pkg.concepts.find((x) => x.key === k);
                   if (!c) return null;
                   return (
-                    <button key={k} type="button" className="chip" onClick={() => { pick(k); setCited([k]); }} aria-label={`${t('assistant.cited')}: ${tr(c.title, lang)}`}>
-                      <span className="dot" style={{ background: `hsl(${c.hue} 70% 58%)` }} />
+                    <button key={k} type="button" className="chip sm" onClick={() => { pick(k); setCited([k]); }} aria-label={`${t('assistant.cited')}: ${tr(c.title, lang)}`}>
+                      <i className="dot sm" style={{ background: conceptColor(c.hue) }} aria-hidden="true" />
                       {tr(c.title, lang)}
                     </button>
                   );
@@ -143,25 +160,24 @@ export function AssistantPanel(): JSX.Element | null {
         ))}
       </div>
       {suggestions.length > 0 && (
-        <div className="chips" role="group" aria-label={t('assistant.suggestions')}>
+        <div className="prompts" role="group" aria-label={t('assistant.suggestions')}>
           {suggestions.map((s) => (
-            <button key={s} type="button" className="chip" disabled={busy} onClick={() => void ask(s)}>
+            <button key={s} type="button" disabled={busy} onClick={() => void ask(s)}>
               {s}
             </button>
           ))}
         </div>
       )}
-      <form className="assistant__form" onSubmit={onSubmit}>
+      <form className="ask" onSubmit={onSubmit}>
         <input
           ref={inputRef}
-          className="input"
           value={input}
           maxLength={2000}
           onChange={(e) => setInput(e.target.value)}
           placeholder={t('assistant.placeholder')}
           aria-label={t('assistant.inputLabel')}
         />
-        <button type="submit" className="btn btn--primary" disabled={busy || !input.trim()} aria-label={t('assistant.send')}>
+        <button type="submit" disabled={busy || !input.trim()} aria-label={t('assistant.send')} title={input.trim() ? t('assistant.send') : t('assistant.typeFirst')}>
           <Icon name="send" />
         </button>
       </form>

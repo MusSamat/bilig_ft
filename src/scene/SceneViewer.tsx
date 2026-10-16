@@ -1,19 +1,23 @@
 /**
  * The shared 3D viewer core (TZ W-20..W-26) — identical for every plugin.
- * It owns the canvas, environment lighting, contact shadow, orbit controls
- * (mouse, touch, wheel, pinch), the camera flight to the selected structure,
- * label placement without overlaps, adaptive resolution (PerformanceMonitor)
- * and snapshot capture. Plugins only draw meshes tagged with
- * `userData.conceptKey`. Loaded as a lazy chunk with three.js.
+ * It owns the canvas, room-environment lighting with a hue rim light, the
+ * contact shadow, orbit controls (mouse, touch, wheel, pinch), framing the
+ * whole model, the camera flight to the selected structure, hover probing
+ * (highlight + name), generous hit areas (a miss near a structure's anchor
+ * still picks it), labels with leader lines placed without overlaps, adaptive
+ * resolution (PerformanceMonitor) and snapshot capture. Plugins only draw
+ * meshes tagged with `userData.conceptKey`. Loaded as a lazy chunk with three.js.
  */
-import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ContactShadows, Environment, Lightformer, OrbitControls, PerformanceMonitor } from '@react-three/drei';
+import { ContactShadows, OrbitControls, PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { t as tr, type Camera, type ResolvedConcept, type Topic, type Vec3 } from '@bilig/content-model';
-import { CONCEPT_KEY_USERDATA, placeLabels, type ScenePlugin, type ViewerState } from '@bilig/scene-core';
+import { CONCEPT_KEY_USERDATA, conceptColor, pickConcept, placeLabels, type Hit, type ScenePlugin, type ViewerState } from '@bilig/scene-core';
 import { sceneHandle } from '../state/viewer';
+import { isSoftwareGL } from './webgl';
 
 export interface SceneViewerProps {
   topic: Topic;
@@ -21,14 +25,17 @@ export interface SceneViewerProps {
   plugin: ScenePlugin;
   state: ViewerState;
   onPick(key: string | null): void;
+  onHover?(key: string | null): void;
   onMiss(): void;
   assetBaseUrl?: string;
-  /** Show labels for every structure («Подписи» mode); otherwise only the selected one. */
+  /** Show labels for every structure («Подписи» mode); otherwise the selected / hovered / current-step one. */
   labelsAll: boolean;
   autoRotate: boolean;
   reducedMotion: boolean;
   resetNonce: number;
   stepCamera: Camera | null;
+  /** Subject hue for the rim light. */
+  hue?: number;
 }
 
 interface AnchorInfo {
@@ -36,81 +43,126 @@ interface AnchorInfo {
   radius: number;
 }
 type Anchors = Map<string, AnchorInfo>;
+interface Bounds {
+  center: THREE.Vector3;
+  radius: number;
+}
 
 const DEFAULT_CAMERA: Camera = { position: [0, 1.5, 6], target: [0, 0, 0], fov: 45 };
+/** A click or hover this close (px) to a structure's anchor counts as that structure. */
+const NEAR_PX = 26;
 
 export default function SceneViewer(props: SceneViewerProps): JSX.Element {
-  const { topic, concepts, plugin, state, onPick, onMiss, assetBaseUrl, labelsAll, autoRotate, reducedMotion, resetNonce, stepCamera } = props;
+  const { topic, concepts, plugin, state, onPick, onHover, onMiss, assetBaseUrl, labelsAll, autoRotate, reducedMotion, resetNonce, stepCamera, hue = 200 } = props;
   const cam = topic.scene.camera ?? DEFAULT_CAMERA;
-  const maxDpr = typeof window === 'undefined' ? 1 : Math.min(2, window.devicePixelRatio || 1);
+  const lowPower = useMemo(isSoftwareGL, []);
+  const maxDpr = typeof window === 'undefined' ? 1 : lowPower ? 0.7 : Math.min(2, window.devicePixelRatio || 1);
   const [dpr, setDpr] = useState(Math.min(1.5, maxDpr));
   const anchors = useRef<Anchors>(new Map());
+  const bounds = useRef<Bounds | null>(null);
+  const projected = useRef(new Map<string, { x: number; y: number }>());
   const labelEls = useRef(new Map<string, HTMLSpanElement>());
+  const leaderEls = useRef(new Map<string, SVGLineElement>());
   const Plugin = plugin.Component;
 
   const labelKeys = useMemo(() => {
     const vis = state.visibility ?? {};
-    const keys = labelsAll ? concepts.map((c) => c.key) : state.selectedConceptKey ? [state.selectedConceptKey] : [];
+    const focus = [state.selectedConceptKey, state.highlightConceptKey, state.hoveredConceptKey].filter((k): k is string => !!k);
+    const keys = labelsAll ? [...new Set([...focus, ...concepts.map((c) => c.key)])] : [...new Set(focus)];
     return keys.filter((k) => vis[k] !== 'hidden');
-  }, [labelsAll, concepts, state.selectedConceptKey, state.visibility]);
+  }, [labelsAll, concepts, state.selectedConceptKey, state.highlightConceptKey, state.hoveredConceptKey, state.visibility]);
+
+  const visRef = useRef(state.visibility);
+  visRef.current = state.visibility;
+  const nearest = useCallback((clientX: number, clientY: number, el: HTMLElement): string | null => {
+    const r = el.getBoundingClientRect();
+    const x = clientX - r.left;
+    const y = clientY - r.top;
+    let best: string | null = null;
+    let bestD = NEAR_PX;
+    for (const [k, p] of projected.current) {
+      if ((visRef.current?.[k] ?? 'normal') === 'hidden') continue;
+      const d = Math.hypot(p.x - x, p.y - y);
+      if (d < bestD) {
+        bestD = d;
+        best = k;
+      }
+    }
+    return best;
+  }, []);
 
   return (
     <>
       <Canvas
         dpr={dpr}
         camera={{ position: cam.position, fov: cam.fov ?? 45, near: 0.05, far: 200 }}
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        gl={{ antialias: !lowPower, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
         onCreated={({ gl }) => {
           gl.localClippingEnabled = true;
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.05;
+          gl.setClearColor(0x000000, 0);
         }}
-        onPointerMissed={(e) => e.type === 'click' && onMiss()}
+        onPointerMissed={(e) => {
+          if (e.type !== 'click') return;
+          const k = nearest(e.clientX, e.clientY, e.target as HTMLElement);
+          if (k) onPick(k);
+          else onMiss();
+        }}
       >
         {/* W-26: lower the resolution when the frame rate drops. */}
         <PerformanceMonitor
           flipflops={4}
-          onDecline={() => setDpr((d) => Math.max(0.6, +(d * 0.75).toFixed(2)))}
+          onDecline={() => setDpr((d) => Math.max(0.5, +(d * 0.75).toFixed(2)))}
           onIncline={() => setDpr((d) => Math.min(maxDpr, +(d * 1.2).toFixed(2)))}
           onFallback={() => setDpr(0.75)}
         />
-        <ambientLight intensity={0.35} />
-        <directionalLight position={[4, 6, 5]} intensity={1.1} />
-        <directionalLight position={[-5, -2, -4]} intensity={0.25} />
-        {/* W-25: image-based lighting from procedural light formers (works offline, no HDR download). */}
-        <Environment resolution={128} frames={1}>
-          <Lightformer intensity={2.2} position={[0, 5, -6]} scale={[12, 4, 1]} />
-          <Lightformer intensity={1.2} position={[-6, 1, 2]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} />
-          <Lightformer intensity={0.8} position={[6, -1, 2]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} color="#cfe0ff" />
-          <Lightformer form="ring" intensity={1.5} position={[0, 6, 4]} scale={3} />
-        </Environment>
+        <RoomLighting hue={hue} />
         <Suspense fallback={null}>
           <Plugin topic={topic} concepts={concepts} state={state} onSelectConcept={onPick} assetBaseUrl={assetBaseUrl} />
           <Grounding />
         </Suspense>
-        <AnchorIndex anchors={anchors} concepts={concepts} />
+        <AnchorIndex anchors={anchors} bounds={bounds} concepts={concepts} />
         <CameraRig
           anchors={anchors}
+          bounds={bounds}
           selected={state.selectedConceptKey}
           initial={cam}
           resetKey={`${topic.key}:${resetNonce}`}
           stepCamera={stepCamera}
           instant={reducedMotion}
         />
-        <LabelProjector anchors={anchors} labelEls={labelEls} keys={labelKeys} selected={state.selectedConceptKey} />
+        <HoverProbe concepts={concepts} onHover={onHover} nearest={nearest} />
+        <LabelProjector anchors={anchors} projected={projected} labelEls={labelEls} leaderEls={leaderEls} keys={labelKeys} selected={state.selectedConceptKey} />
         <CaptureHandle />
         <OrbitControls
           makeDefault
           enablePan={false}
           enableDamping={!reducedMotion}
+          dampingFactor={0.08}
           autoRotate={autoRotate && !reducedMotion}
-          autoRotateSpeed={0.6}
+          autoRotateSpeed={0.8}
           minDistance={0.8}
-          maxDistance={30}
+          maxDistance={40}
         />
       </Canvas>
-      <div className="viewer__labels" aria-hidden="true">
+      <div className="labs" aria-hidden="true">
+        <svg className="labs__leaders">
+          {labelKeys.map((k) => (
+            <line
+              key={k}
+              ref={(el) => {
+                if (el) leaderEls.current.set(k, el);
+                else leaderEls.current.delete(k);
+              }}
+              style={{ visibility: 'hidden' }}
+            />
+          ))}
+        </svg>
         {labelKeys.map((k) => {
           const c = concepts.find((x) => x.key === k);
           if (!c) return null;
+          const on = k === state.selectedConceptKey || k === state.highlightConceptKey;
           return (
             <span
               key={k}
@@ -118,10 +170,10 @@ export default function SceneViewer(props: SceneViewerProps): JSX.Element {
                 if (el) labelEls.current.set(k, el);
                 else labelEls.current.delete(k);
               }}
-              className={`scene-label${k === state.selectedConceptKey ? ' is-selected' : ''}`}
-              style={{ visibility: 'hidden', left: 0, top: 0 }}
+              className={`lab${on ? ' on' : ''}${k === state.hoveredConceptKey && !on ? ' hov' : ''}`}
+              style={{ visibility: 'hidden' }}
             >
-              <span className="dot" style={{ background: `hsl(${c.hue} 70% 58%)` }} />
+              <i className="dot sm" style={{ background: conceptColor(c.hue) }} />
               {tr(c.title, state.lang)}
             </span>
           );
@@ -131,22 +183,54 @@ export default function SceneViewer(props: SceneViewerProps): JSX.Element {
   );
 }
 
+/** Prototype lighting: a PMREM room environment, hemisphere + key light, and a rim light in the subject hue. */
+function RoomLighting({ hue }: { hue: number }): JSX.Element {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  useEffect(() => {
+    let tex: THREE.Texture | null = null;
+    try {
+      const pm = new THREE.PMREMGenerator(gl);
+      tex = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+      pm.dispose();
+      scene.environment = tex;
+    } catch {
+      /* lights alone still render */
+    }
+    return () => {
+      if (scene.environment === tex) scene.environment = null;
+      tex?.dispose();
+    };
+  }, [gl, scene]);
+  const rim = useMemo(() => new THREE.Color().setHSL(hue / 360, 0.7, 0.6), [hue]);
+  return (
+    <>
+      <hemisphereLight args={[0xffffff, 0x8fa0b8, 0.45]} />
+      <directionalLight position={[4, 7, 6]} intensity={1.1} />
+      <pointLight position={[-6, 3, -5]} color={rim} intensity={0.9} decay={0} />
+    </>
+  );
+}
+
 /**
  * W-22 fallback anchors: the centre of the FIRST instance of each concept
- * (topic `anchor` overrides win). Re-indexed periodically because assets load
- * asynchronously and modes can swap geometry.
+ * (topic `anchor` overrides win), plus the bounds of the whole model for
+ * framing. Re-indexed periodically because assets load asynchronously and
+ * modes can swap geometry.
  */
-function AnchorIndex({ anchors, concepts }: { anchors: MutableRefObject<Anchors>; concepts: ResolvedConcept[] }): null {
+function AnchorIndex({ anchors, bounds, concepts }: { anchors: MutableRefObject<Anchors>; bounds: MutableRefObject<Bounds | null>; concepts: ResolvedConcept[] }): null {
   const scene = useThree((s) => s.scene);
   const frame = useRef(0);
   const box = useMemo(() => new THREE.Box3(), []);
+  const all = useMemo(() => new THREE.Box3(), []);
   const m = useMemo(() => new THREE.Matrix4(), []);
   useFrame(() => {
     if (frame.current++ % 30 !== 0) return;
     const found: Anchors = new Map();
+    all.makeEmpty();
     scene.traverse((obj) => {
       const key = obj.userData?.[CONCEPT_KEY_USERDATA] as string | undefined;
-      if (!key || found.has(key) || !obj.visible) return;
+      if (!key || !obj.visible) return;
       const mesh = obj as THREE.Mesh;
       if (!mesh.geometry) return;
       if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
@@ -157,13 +241,32 @@ function AnchorIndex({ anchors, concepts }: { anchors: MutableRefObject<Anchors>
         box.applyMatrix4(m);
       }
       box.applyMatrix4(obj.matrixWorld);
+      if (inst.isInstancedMesh && inst.boundingSphere) {
+        const s = inst.boundingSphere.clone().applyMatrix4(obj.matrixWorld);
+        all.expandByPoint(s.center.clone().addScalar(s.radius)).expandByPoint(s.center.clone().subScalar(s.radius));
+      } else all.union(box);
+      if (found.has(key)) return;
       const sphere = box.getBoundingSphere(new THREE.Sphere());
       found.set(key, { position: sphere.center.clone(), radius: Math.max(0.05, sphere.radius) });
     });
-    for (const c of concepts) {
-      if (c.anchor) found.set(c.key, { position: new THREE.Vector3(...c.anchor), radius: found.get(c.key)?.radius ?? 0.4 });
+    // Content anchors are for the generic stand-in / GLBs; a model that places its own structures
+    // (the procedural cells) marks itself with userData.ownAnchors and keeps mesh-derived anchors.
+    let own = false;
+    scene.traverse((o) => {
+      if (o.userData?.ownAnchors) own = true;
+    });
+    if (!own) {
+      for (const c of concepts) {
+        if (c.anchor) found.set(c.key, { position: new THREE.Vector3(...c.anchor), radius: found.get(c.key)?.radius ?? 0.4 });
+      }
     }
     anchors.current = found;
+    if (!all.isEmpty()) {
+      // Framing radius from the box half-extents (a sphere around the box overestimates by up to √3).
+      const size = all.getSize(new THREE.Vector3());
+      const radius = Math.max(size.x, size.y, size.z) / 2;
+      bounds.current = { center: all.getCenter(new THREE.Vector3()), radius: Math.max(0.3, radius) };
+    }
   });
   return null;
 }
@@ -181,33 +284,57 @@ function Grounding(): JSX.Element | null {
     });
     if (box.isEmpty()) return;
     const size = box.getSize(new THREE.Vector3());
-    const next = { y: +(box.min.y - 0.05).toFixed(2), scale: +(Math.max(size.x, size.z) * 2.2 + 1).toFixed(1) };
+    const next = { y: +(box.min.y - 0.3).toFixed(2), scale: +(Math.max(size.x, size.z) * 1.6 + 1).toFixed(1) };
     if (!ground || Math.abs(ground.y - next.y) > 0.02 || Math.abs(ground.scale - next.scale) > 0.1) setGround(next);
   });
   if (!ground) return null;
-  return <ContactShadows position={[0, ground.y, 0]} scale={ground.scale} opacity={0.45} blur={2.4} far={Math.max(2, ground.scale / 2)} resolution={512} frames={Infinity} />;
+  return <ContactShadows position={[0, ground.y, 0]} scale={ground.scale} opacity={0.38} blur={2.6} far={Math.max(2, ground.scale / 2)} resolution={256} frames={1} key={`${ground.y}:${ground.scale}`} />;
 }
 
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
-/** W-20: smooth camera flight to the selected structure, a tour step camera, or the topic view. */
+/**
+ * W-20: frame the whole model (keeping the topic camera's direction), fly to
+ * the selected structure, to a tour step camera, or back to the framed view.
+ */
 function CameraRig(props: {
   anchors: MutableRefObject<Anchors>;
+  bounds: MutableRefObject<Bounds | null>;
   selected: string | null;
   initial: Camera;
   resetKey: string;
   stepCamera: Camera | null;
   instant: boolean;
 }): null {
-  const { anchors, selected, initial, resetKey, stepCamera, instant } = props;
-  const camera = useThree((s) => s.camera);
+  const { anchors, bounds, selected, initial, resetKey, stepCamera, instant } = props;
+  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const size = useThree((s) => s.size);
   const controls = useThree((s) => s.controls) as OrbitControlsImpl | null;
   const flight = useRef<{ fromP: THREE.Vector3; fromT: THREE.Vector3; toP: THREE.Vector3; toT: THREE.Vector3; t: number } | null>(null);
-  const pendingFocus = useRef<string | null>(null);
+  /** What the camera currently shows: a structure key, 'home', or nothing yet. */
+  const shown = useRef<string | null>(null);
+  const homeFor = useRef<string | null>(null);
+  const stepFor = useRef<Camera | null>(null);
 
-  const flyTo = (pos: THREE.Vector3, target: THREE.Vector3) => {
+  const flyTo = (pos: THREE.Vector3, target: THREE.Vector3, now = instant) => {
     if (!controls) return;
-    flight.current = { fromP: camera.position.clone(), fromT: controls.target.clone(), toP: pos, toT: target, t: instant ? 1 : 0 };
+    flight.current = { fromP: camera.position.clone(), fromT: controls.target.clone(), toP: pos, toT: target, t: now ? 1 : 0 };
+  };
+
+  /** Camera pose that fits the model bounds in the viewport (both axes), from the topic camera direction. */
+  const homePose = (): { pos: THREE.Vector3; target: THREE.Vector3 } | null => {
+    const b = bounds.current;
+    if (!b) return null;
+    const dir = new THREE.Vector3(...initial.position).sub(new THREE.Vector3(...initial.target));
+    if (dir.lengthSq() === 0) dir.set(0.55, 0.32, 1);
+    dir.normalize();
+    const vfov = THREE.MathUtils.degToRad(camera.fov);
+    const aspect = size.width / Math.max(1, size.height);
+    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
+    const fit = Math.min(vfov, hfov);
+    // Leave room for the overlaid chips, «Вид модели» card and toolbar.
+    const dist = (b.radius / Math.tan(fit / 2)) * 1.4;
+    return { pos: b.center.clone().add(dir.multiplyScalar(dist)), target: b.center.clone() };
   };
 
   // Cancel the flight when the user grabs the model.
@@ -220,34 +347,42 @@ function CameraRig(props: {
     return () => controls.removeEventListener('start', stop);
   }, [controls]);
 
-  useEffect(() => {
-    if (!controls) return;
-    flyTo(new THREE.Vector3(...initial.position), new THREE.Vector3(...initial.target));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resetKey, controls]);
-
-  useEffect(() => {
-    if (stepCamera && controls) flyTo(new THREE.Vector3(...stepCamera.position), new THREE.Vector3(...stepCamera.target));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stepCamera, controls]);
-
-  useEffect(() => {
-    pendingFocus.current = selected;
-  }, [selected]);
-
+  // Decided every frame from the latest props, so no transition is missed while assets load.
   useFrame((_, dt) => {
     if (!controls) return;
-    const key = pendingFocus.current;
-    if (key) {
-      const a = anchors.current.get(key);
-      if (a) {
-        pendingFocus.current = null;
-        const dir = camera.position.clone().sub(controls.target).normalize();
+    if (stepCamera && stepFor.current !== stepCamera) {
+      stepFor.current = stepCamera;
+      shown.current = 'step';
+      flyTo(new THREE.Vector3(...stepCamera.position), new THREE.Vector3(...stepCamera.target));
+    } else if (!stepCamera) stepFor.current = null;
+
+    const wantHome = homeFor.current !== resetKey;
+    if (selected && shown.current !== selected && !stepCamera) {
+      const a = anchors.current.get(selected);
+      if (a && bounds.current) {
+        const firstView = shown.current === null;
+        shown.current = selected;
+        homeFor.current = resetKey;
+        const home = homePose();
+        const dir = (firstView && home ? home.pos.clone().sub(home.target) : camera.position.clone().sub(controls.target)).normalize();
         if (dir.lengthSq() === 0) dir.set(0, 0.3, 1).normalize();
-        const dist = THREE.MathUtils.clamp(a.radius * 4.5, 1.6, 9);
-        flyTo(a.position.clone().add(dir.multiplyScalar(dist)), a.position.clone());
+        const r = bounds.current.radius;
+        const dist = THREE.MathUtils.clamp(a.radius * 3.6, r * 1.05, r * 2.2);
+        flyTo(a.position.clone().add(dir.multiplyScalar(dist)), a.position.clone(), firstView || instant);
       }
+    } else if (!selected && !stepCamera && (shown.current !== 'home' || wantHome)) {
+      const pose = homePose();
+      if (pose) {
+        const firstView = shown.current === null;
+        shown.current = 'home';
+        homeFor.current = resetKey;
+        flyTo(pose.pos, pose.target, firstView || instant);
+      }
+    } else if (selected && wantHome && shown.current === selected) {
+      // «Reset» with a selection kept by the store: frame the whole model again.
+      homeFor.current = resetKey;
     }
+
     const f = flight.current;
     if (!f) return;
     f.t = Math.min(1, f.t + dt / 0.9);
@@ -260,14 +395,74 @@ function CameraRig(props: {
   return null;
 }
 
-/** Projects anchors to the screen and positions DOM labels without overlaps (W-22). */
+/** Pointer hover: the structure under the cursor (or near its anchor) is highlighted and named. */
+function HoverProbe({ concepts, onHover, nearest }: { concepts: ResolvedConcept[]; onHover?: (k: string | null) => void; nearest(x: number, y: number, el: HTMLElement): string | null }): null {
+  const gl = useThree((s) => s.gl);
+  const camera = useThree((s) => s.camera);
+  const scene = useThree((s) => s.scene);
+  const ray = useMemo(() => new THREE.Raycaster(), []);
+  const last = useRef<string | null>(null);
+  useEffect(() => {
+    if (!onHover) return;
+    const el = gl.domElement;
+    let raf = 0;
+    let ev: PointerEvent | null = null;
+    const set = (k: string | null) => {
+      if (k === last.current) return;
+      last.current = k;
+      el.style.cursor = k ? 'pointer' : '';
+      onHover(k);
+    };
+    const run = () => {
+      raf = 0;
+      if (!ev) return;
+      if (ev.buttons) return set(null);
+      const r = el.getBoundingClientRect();
+      const p = new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(p, camera);
+      const hits: Hit[] = [];
+      for (const i of ray.intersectObject(scene, true)) {
+        let k: string | undefined;
+        let visible = true;
+        for (let o: THREE.Object3D | null = i.object; o; o = o.parent) {
+          if (!o.visible) visible = false;
+          k ??= o.userData?.[CONCEPT_KEY_USERDATA] as string | undefined;
+        }
+        if (k && visible) hits.push({ conceptKey: k, distance: i.distance });
+      }
+      set(pickConcept(hits, concepts) ?? nearest(ev.clientX, ev.clientY, el));
+    };
+    const move = (e: PointerEvent) => {
+      if (e.pointerType === 'touch') return;
+      ev = e;
+      if (!raf) raf = requestAnimationFrame(run);
+    };
+    const leave = () => {
+      ev = null;
+      set(null);
+    };
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerleave', leave);
+    return () => {
+      cancelAnimationFrame(raf);
+      el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerleave', leave);
+      el.style.cursor = '';
+    };
+  }, [gl, camera, scene, ray, concepts, onHover, nearest]);
+  return null;
+}
+
+/** Projects anchors to the screen and positions DOM labels (with leader lines) without overlaps (W-22). */
 function LabelProjector(props: {
   anchors: MutableRefObject<Anchors>;
+  projected: MutableRefObject<Map<string, { x: number; y: number }>>;
   labelEls: MutableRefObject<Map<string, HTMLSpanElement>>;
+  leaderEls: MutableRefObject<Map<string, SVGLineElement>>;
   keys: string[];
   selected: string | null;
 }): null {
-  const { anchors, labelEls, keys, selected } = props;
+  const { anchors, projected, labelEls, leaderEls, keys, selected } = props;
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
   const v = useMemo(() => new THREE.Vector3(), []);
@@ -276,26 +471,38 @@ function LabelProjector(props: {
     if (frame.current++ % 2 !== 0) return;
     const w = gl.domElement.clientWidth;
     const h = gl.domElement.clientHeight;
-    const inputs = keys.map((key) => {
-      const a = anchors.current.get(key);
-      const el = labelEls.current.get(key);
-      if (!a || !el) return { key, x: 0, y: 0, width: 0, height: 0, hidden: true };
+    const proj = new Map<string, { x: number; y: number }>();
+    for (const [k, a] of anchors.current) {
       v.copy(a.position).project(camera);
-      return {
-        key,
-        x: ((v.x + 1) / 2) * w,
-        y: ((1 - v.y) / 2) * h,
-        width: el.offsetWidth,
-        height: el.offsetHeight,
-        hidden: v.z > 1 || v.z < -1,
-        priority: key === selected ? 100 : -v.z,
-      };
+      if (v.z <= 1 && v.z >= -1) proj.set(k, { x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h });
+    }
+    projected.current = proj;
+    const inputs = keys.map((key) => {
+      const p = proj.get(key);
+      const el = labelEls.current.get(key);
+      if (!p || !el) return { key, x: 0, y: 0, width: 0, height: 0, hidden: true };
+      return { key, x: p.x, y: p.y, width: el.offsetWidth, height: el.offsetHeight, hidden: false, priority: key === selected ? 100 : 0 };
     });
-    for (const p of placeLabels(inputs, { width: w, height: h })) {
+    for (const p of placeLabels(inputs, { width: w, height: h }, { gap: 18 })) {
       const el = labelEls.current.get(p.key);
+      const line = leaderEls.current.get(p.key);
       if (!el) continue;
       el.style.visibility = p.visible ? 'visible' : 'hidden';
       el.style.transform = `translate(${Math.round(p.left)}px, ${Math.round(p.top)}px)`;
+      const a = proj.get(p.key);
+      if (!line) continue;
+      if (!p.visible || !a) {
+        line.style.visibility = 'hidden';
+        continue;
+      }
+      // Leader from the anchor to the nearest point of the label box.
+      const bx = Math.min(Math.max(a.x, p.left), p.left + el.offsetWidth);
+      const by = Math.min(Math.max(a.y, p.top), p.top + el.offsetHeight);
+      line.setAttribute('x1', String(Math.round(a.x)));
+      line.setAttribute('y1', String(Math.round(a.y)));
+      line.setAttribute('x2', String(Math.round(bx)));
+      line.setAttribute('y2', String(Math.round(by)));
+      line.style.visibility = 'visible';
     }
   });
   return null;
@@ -307,6 +514,7 @@ function CaptureHandle(): null {
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
   const controls = useThree((s) => s.controls) as OrbitControlsImpl | null;
+  const setFrameloop = useThree((s) => s.setFrameloop);
   useEffect(() => {
     sceneHandle.set({
       capture() {
@@ -324,7 +532,9 @@ function CaptureHandle(): null {
         return { position: p, target: t, fov: (camera as THREE.PerspectiveCamera).fov };
       },
     });
+    // Dev/test hook: inspect the camera, or freeze rendering (visual regression tests).
+    if (import.meta.env.DEV) (window as unknown as { __biligScene?: unknown }).__biligScene = { camera, controls, scene, setFrameloop };
     return () => sceneHandle.set(null);
-  }, [gl, scene, camera, controls]);
+  }, [gl, scene, camera, controls, setFrameloop]);
   return null;
 }

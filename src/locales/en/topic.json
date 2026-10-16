@@ -19,5 +19,7 @@
   },
   "samples": "Samples",
   "current": "Current",
-  "duration": "Duration"
+  "duration": "Duration",
+  "notFoundHint": "Check the address or pick a topic in the catalog.",
+  "nOfM": "{{n}} of {{m}}"
 }

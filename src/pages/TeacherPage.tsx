@@ -18,7 +18,6 @@ import { StudentsTab } from '../cabinet/teacher/StudentsTab';
 import { Icon } from '../components/Icon';
 import { useLang } from '../lib/hooks';
 import { toast, useUi } from '../state/ui';
-import '../cabinet/cabinet.css';
 
 const TABS = ['students', 'joinCode', 'assignments', 'results'] as const;
 type Tab = (typeof TABS)[number];
@@ -33,21 +32,28 @@ export default function TeacherPage(): JSX.Element {
 
   if (status === 'loading') {
     return (
-      <div className="page">
-        <p className="muted">{t('common.loading')}</p>
+      <div className="page" aria-busy="true" aria-label={t('common.loading')}>
+        <span className="panel glass skel" style={{ height: 100 }} />
+        <span className="panel glass skel" style={{ height: 380 }} />
       </div>
     );
   }
   if (!canManage) {
     return (
-      <div className="page narrow stack">
-        <h1>{t('teacher.title')}</h1>
-        <p>{t('teacher.noAccess')}</p>
-        <div>
-          <Link className="btn btn--primary" to={`/${lang}/login`}>
-            {t('teacher.signIn')}
-          </Link>
-        </div>
+      <div className="page page--narrow">
+        <section className="card stack" aria-labelledby="teacher-title">
+          <h1 id="teacher-title" className="page-title">
+            {t('teacher.title')}
+          </h1>
+          <div className="state">
+            <Icon name="lock" />
+            <span>{t('teacher.noAccess')}</span>
+            <Link className="cta" to={`/${lang}/login`}>
+              <Icon name="user" className="sm" />
+              {t('teacher.signIn')}
+            </Link>
+          </div>
+        </section>
       </div>
     );
   }
@@ -70,16 +76,43 @@ function TeacherCabinet(): JSX.Element {
 
   return (
     <div className="page">
-      <h1>{t('teacher.title')}</h1>
+      <header className="page-h panel glass">
+        <span className="orb s" aria-hidden="true">
+          <Icon name="school" />
+        </span>
+        <div>
+          <h1 className="page-title">{t('teacher.title')}</h1>
+          <p>{t('teacher.classes')}: {list.length}</p>
+        </div>
+      </header>
       <div className="teacher-layout">
         <section className="card stack" aria-labelledby="classes-title">
           <h2 id="classes-title" className="panel-title">
             <Icon name="users" />
             {t('teacher.classes')}
           </h2>
-          {classes.isLoading && <p className="muted">{t('common.loading')}</p>}
-          {classes.isError && <p className="error-text">{t('teacher.loadError')}</p>}
-          {!classes.isLoading && list.length === 0 && <p className="muted">{t('teacher.classesEmpty')}</p>}
+          {classes.isLoading && (
+            <div className="stack" aria-busy="true" aria-label={t('common.loading')}>
+              <span className="skel" style={{ height: 52 }} />
+              <span className="skel" style={{ height: 52 }} />
+            </div>
+          )}
+          {classes.isError && (
+            <div className="state state--error" role="alert">
+              <Icon name="warn" />
+              <b>{t('teacher.loadError')}</b>
+              <button type="button" className="btn2" onClick={() => void classes.refetch()}>
+                <Icon name="reset" className="sm" />
+                {t('common.retry')}
+              </button>
+            </div>
+          )}
+          {!classes.isLoading && !classes.isError && list.length === 0 && (
+            <div className="state">
+              <Icon name="users" />
+              <span>{t('teacher.classesEmpty')}</span>
+            </div>
+          )}
           <ul className="class-list">
             {list.map((c) => (
               <li key={c.id}>
@@ -161,7 +194,7 @@ function NewClassForm({ onCreated }: { onCreated: (c: SchoolClass) => void }): J
         {error ?? ''}
       </p>
       <button type="submit" className="btn btn--primary btn--sm" disabled={busy || !name.trim()}>
-        <Icon name="plus" size={16} />
+        <Icon name="plus" className="sm" />
         {t('teacher.create')}
       </button>
     </form>
@@ -177,13 +210,14 @@ function ClassPanel({ cls, onChange }: { cls: SchoolClass; onChange: (c: SchoolC
     requestAnimationFrame(() => document.getElementById(`class-tab-${next}`)?.focus());
   };
   return (
-    <section className="card stack tabs" aria-labelledby="class-title">
+    <section className="card stack" aria-labelledby="class-title">
       <h2 id="class-title" className="panel-title">
         {cls.name}
         <span className="muted small">{t('teacher.gradeN', { n: cls.grade })}</span>
       </h2>
       <div
         role="tablist"
+        className="ptabs"
         aria-label={t('teacher.tabsLabel')}
         onKeyDown={(e) => {
           if (e.key === 'ArrowRight') move(1);
@@ -191,7 +225,7 @@ function ClassPanel({ cls, onChange }: { cls: SchoolClass; onChange: (c: SchoolC
         }}
       >
         {TABS.map((k) => (
-          <button key={k} type="button" role="tab" id={`class-tab-${k}`} aria-selected={tab === k} aria-controls={`class-panel-${k}`} tabIndex={tab === k ? 0 : -1} onClick={() => setTab(k)}>
+          <button key={k} type="button" className="tab" role="tab" id={`class-tab-${k}`} aria-selected={tab === k} aria-controls={`class-panel-${k}`} tabIndex={tab === k ? 0 : -1} onClick={() => setTab(k)}>
             {t(`teacher.tab.${k}`)}
           </button>
         ))}

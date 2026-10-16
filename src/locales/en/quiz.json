@@ -23,5 +23,7 @@
   "guestNote": "Sign in to save your results",
   "empty": "This topic has no quiz",
   "unit": "Unit: {{unit}}",
-  "assignment": "For an assignment"
+  "assignment": "For an assignment",
+  "scoreShort": "Correct answers: {{correct}} / {{total}}",
+  "answerFirst": "Choose an answer first"
 }

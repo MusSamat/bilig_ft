@@ -1,0 +1,16 @@
+/*
+ * Bilig styles — layered CSS with tokens as custom properties.
+ * Order: tokens → base → components → shell → pages → utilities.
+ * Every colour comes from the hue tokens (src/lib/theme.ts ← @bilig/scene-core).
+ */
+@layer tokens, base, components, shell, pages, utilities;
+@import './fonts.css';
+@import './tokens.css';
+@import './base.css';
+@import './components.css';
+@import './shell.css';
+@import './topic.css';
+@import './pages/home.css';
+@import './pages/auth.css';
+@import './pages/cabinet.css';
+@import './pages/deck.css';

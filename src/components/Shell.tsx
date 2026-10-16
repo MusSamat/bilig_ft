@@ -1,9 +1,10 @@
 /**
  * Layout for every `/:lang/*` route: keeps i18next, `<html lang>`, the title
  * and the manifest in sync with the URL language (W-05: the URL is the source
- * of truth), applies hue tokens (W-03), hotkeys for the catalog (W-02).
+ * of truth), applies hue tokens (W-03), hotkeys for the catalog (W-02), and
+ * hosts the catalog sheet, the slides dialog and the toasts.
  */
-import { useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_LANG } from '@bilig/content-model';
@@ -18,6 +19,8 @@ import { Header } from './Header';
 import { IconSprite } from './Icon';
 import { Toasts } from './Toasts';
 
+const SlidesDialog = lazy(() => import('../presentation/SlidesDialog'));
+
 export function Shell(): JSX.Element {
   const { lang } = useParams();
   const location = useLocation();
@@ -26,6 +29,7 @@ export function Shell(): JSX.Element {
   const theme = useUi((s) => s.theme);
   const openCatalog = useUi((s) => s.openCatalog);
   const catalogOpen = useUi((s) => s.catalogOpen);
+  const slidesOpen = useUi((s) => s.slidesOpen);
   const loadDeck = useDeck((s) => s.load);
   const valid = isUiLang(lang);
 
@@ -49,7 +53,7 @@ export function Shell(): JSX.Element {
 
   // W-02 hotkeys: `/` and Ctrl/⌘+K open the catalog.
   useKeydown((e) => {
-    if (catalogOpen) return;
+    if (catalogOpen || slidesOpen) return;
     if (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
       e.preventDefault();
       openCatalog();
@@ -66,9 +70,17 @@ export function Shell(): JSX.Element {
       </a>
       <Header />
       <CatalogModal />
+      {slidesOpen && (
+        <Suspense fallback={null}>
+          <SlidesDialog />
+        </Suspense>
+      )}
       <main id="main" tabIndex={-1}>
         <Outlet />
       </main>
+      <footer className="foot">
+        {t('app.title')} · {t('app.tagline')}
+      </footer>
       <Toasts />
     </div>
   );

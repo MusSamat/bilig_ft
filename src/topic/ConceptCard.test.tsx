@@ -13,14 +13,17 @@ describe('ConceptCard (W-30/W-31)', () => {
     useDeck.setState({ slides: [], title: '', topicKey: '' });
   });
 
-  it('overview shows sample properties, «In the model» chips and the topic STEM / Simply put examples', () => {
+  it('overview shows the hint, «Simply put» then «STEM in life» examples, sample properties and «In the model» chips', () => {
     const { pkg } = renderTopic(<ConceptCard />);
-    expect(screen.getByRole('heading', { name: 'Topic overview' })).toBeInTheDocument();
+    expect(screen.getByText('Topic overview')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Sample properties' })).toBeInTheDocument();
     const stem = screen.getByRole('region', { name: 'STEM in life' });
     expect(within(stem).getByText(tr(pkg.topic.examples.stem[0].title, 'en'))).toBeInTheDocument();
     const simple = screen.getByRole('region', { name: 'Simply put' });
     expect(within(simple).getByText(tr(pkg.topic.examples.simple[0].text, 'en'))).toBeInTheDocument();
+    // Simple examples come first (easier for 10–14-year-olds).
+    expect(simple.compareDocumentPosition(stem) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('selected concept: icons by property type, Intl numbers per language, concept examples, actions work', async () => {
@@ -33,7 +36,7 @@ describe('ConceptCard (W-30/W-31)', () => {
     expect(screen.getByText('3,44')).toBeInTheDocument();
     expect(document.querySelectorAll('.props use').length).toBeGreaterThan(1);
     expect(screen.getByRole('region', { name: 'STEM в жизни' })).toHaveTextContent(tr(oxygen.examples.stem[0].title, 'ru'));
-    expect(screen.getByRole('region', { name: 'Проще говоря' })).toHaveTextContent(tr(oxygen.examples.simple[0].title, 'ru'));
+    expect(screen.getByRole('region', { name: 'Простыми словами' })).toHaveTextContent(tr(oxygen.examples.simple[0].title, 'ru'));
     await user.click(screen.getByRole('button', { name: 'В презентацию' }));
     expect(useDeck.getState().slides).toMatchObject([{ kind: 'concept', conceptKey: 'chem.oxygen' }]);
     expect(useDeck.getState().topicKey).toBe(pkg.topic.key);

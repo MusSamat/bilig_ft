@@ -17,5 +17,6 @@
   "structure": "Structure",
   "readouts": "Readouts",
   "currentStep": "Current step",
-  "none": "This topic has no processes"
+  "none": "This topic has no processes",
+  "sim": "Simulation"
 }

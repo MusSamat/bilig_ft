@@ -21,11 +21,16 @@ export function TopicProgressList({ topicKeys }: { topicKeys: string[] }): JSX.E
   });
   return (
     <section className="card stack" aria-labelledby="progress-title">
-      <h2 id="progress-title" className="panel-title">
-        <Icon name="layers" />
-        {t('cabinet.progress')}
-      </h2>
-      {keys.length === 0 && <p className="muted">{t('cabinet.progressEmpty')}</p>}
+      <div className="home-section-h">
+        <Icon name="target" className="lg" />
+        <h2 id="progress-title">{t('cabinet.progress')}</h2>
+      </div>
+      {keys.length === 0 && (
+        <div className="state">
+          <Icon name="target" />
+          <span>{t('cabinet.progressEmpty')}</span>
+        </div>
+      )}
       <ul className="assignment-list">
         {keys.map((k, i) => {
           const summary = catalog?.topics.find((x) => x.key === k);
@@ -37,7 +42,7 @@ export function TopicProgressList({ topicKeys }: { topicKeys: string[] }): JSX.E
               <b>{summary ? tr(summary.title, lang) : k}</b>
               <span className="muted small">{t('cabinet.learned', { n, m })}</span>
               <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={m} aria-valuenow={n} aria-label={summary ? tr(summary.title, lang) : k}>
-                <span style={{ width: `${pct}%` }} />
+                <i style={{ width: `${pct}%` }} />
               </div>
             </li>
           );

@@ -2,7 +2,7 @@
   "manifest": {
     "topicKey": "solar-system",
     "version": "1.0.0",
-    "hash": "750c249e149d803987018324d6c180da284e40cc452551632f95bd79f04efba8",
+    "hash": "20263b595b7edaca06d8bdbcd42945f59520c18bd1fa86b3f9a373d230e500e7",
     "files": [
       {
         "path": "thumbs/solar-system.webp",
@@ -29,8 +29,8 @@
   },
   "subject": {
     "key": "astro",
-    "icon": "telescope",
-    "hue": 225,
+    "icon": "planet",
+    "hue": 265,
     "group": "earth-space",
     "order": 6,
     "status": "live",
@@ -87,6 +87,7 @@
     "key": "solar-system",
     "unitKey": "astro.g11.solar-system",
     "status": "published",
+    "demo": true,
     "title": {
       "ky": "Күн системасы",
       "ru": "Солнечная система",

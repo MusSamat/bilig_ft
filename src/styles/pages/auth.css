@@ -1,0 +1,110 @@
+/* Sign-in: brand panel + glass form card (student code → name → PIN; adult e-mail). */
+@layer pages {
+  .auth {
+    max-width: 1080px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 460px);
+    gap: var(--gap);
+    align-items: stretch;
+  }
+  .auth__brand {
+    padding: clamp(24px, 4vw, 40px);
+    display: grid;
+    align-content: center;
+    gap: var(--sp-4);
+  }
+  .auth__brand h1 {
+    font: 700 clamp(30px, 3.6vw, 46px) / 1.08 var(--serif);
+    letter-spacing: -0.4px;
+  }
+  .auth__points {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .auth__points li {
+    display: flex;
+    gap: var(--sp-3);
+    align-items: center;
+    font-weight: 500;
+  }
+  .auth__points .ic {
+    color: var(--accent);
+  }
+  .auth__card {
+    padding: 24px;
+    display: grid;
+    gap: var(--sp-4);
+    align-content: start;
+  }
+  .auth__card h2 {
+    font: 700 var(--fs-xl) / 1.2 var(--serif);
+  }
+  .login-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    box-shadow: none;
+  }
+  .login-tabs > button {
+    min-height: var(--tap);
+  }
+  .code-input {
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    font: 700 1.5rem var(--mono);
+    text-align: center;
+    min-height: 56px;
+  }
+  .pin-input {
+    letter-spacing: 0.5em;
+    font-size: 1.6rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    min-height: 56px;
+  }
+  .name-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
+    gap: var(--sp-2);
+  }
+  .name-grid .btn2 {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .auth__steps {
+    display: flex;
+    gap: 6px;
+  }
+  .auth__steps span {
+    flex: 1;
+    height: 6px;
+    border-radius: var(--r-bar);
+    background: var(--line);
+  }
+  .auth__steps span.on {
+    background: var(--accent);
+  }
+  .auth__note {
+    display: flex;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+    color: var(--muted);
+  }
+  .auth__note .ic {
+    color: var(--accent);
+    margin-top: 2px;
+  }
+  @media (max-width: 860px) {
+    .auth {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .auth__brand {
+      padding: 20px;
+    }
+    .auth__points {
+      display: none;
+    }
+  }
+}

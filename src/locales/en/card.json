@@ -20,5 +20,6 @@
     "t": "Technology",
     "e": "Engineering",
     "m": "Mathematics"
-  }
+  },
+  "emptyHint": "Click a structure in the model or a chip above to open its card."
 }

@@ -1,6 +1,6 @@
 /** Routes (TZ W-05 URL shape: `/:lang/:subject[/:grade]/:topic`). Pages are lazy chunks (§10). */
 import { Suspense, lazy } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { detectLang } from './i18n';
 import { Shell } from './components/Shell';
@@ -12,12 +12,14 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const CabinetPage = lazy(() => import('./pages/CabinetPage'));
 const TeacherPage = lazy(() => import('./pages/TeacherPage'));
 const PresentationPage = lazy(() => import('./presentation/PresentationPage'));
+const AdminApp = lazy(() => import('./admin'));
 
 function PageFallback(): JSX.Element {
   const { t } = useTranslation();
   return (
-    <div className="page" aria-busy="true">
-      <p className="muted">{t('common.loading')}</p>
+    <div className="page" aria-busy="true" aria-label={t('common.loading')}>
+      <span className="panel glass skel" style={{ height: 120 }} />
+      <span className="panel glass skel" style={{ height: 360 }} />
     </div>
   );
 }
@@ -29,6 +31,16 @@ const lazyPage = (C: React.ComponentType) => (
 );
 
 export function App(): JSX.Element {
+  // Admin (TZ §5) has its own layout and token audience. Mount it outside the client
+  // route table: React Router ranks deep "/:lang/:subject/:topic" above "/admin/*".
+  const { pathname } = useLocation();
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    return (
+      <Routes>
+        <Route path="/admin/*" element={lazyPage(AdminApp)} />
+      </Routes>
+    );
+  }
   return (
     <Routes>
       <Route path="/" element={<Navigate to={`/${detectLang()}`} replace />} />

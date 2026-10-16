@@ -1,20 +1,22 @@
 /**
- * App header (TZ W-01): logo, current-subject button (icon, subject, topic),
- * Study / Lesson mode, languages from config, Presentation, theme, profile or
- * sign-in. Switching language NAVIGATES to the same page under the new
- * `/:lang` (fixes the old snap-back bug where only the store changed).
+ * App header (TZ W-01), Workbench layout: logo + serif wordmark, the subject
+ * pill (accent circle with the subject icon, subject, current section, chevron),
+ * Study / Lesson segmented control (topic pages), language segmented control
+ * (RU · KY · EN), the slides CTA, theme and profile round buttons. Switching
+ * language NAVIGATES to the same page under the new `/:lang` (W-05).
  */
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { t as tr } from '@bilig/content-model';
-import { UI_LANGS } from '../config';
+import { HEADER_LANGS } from '../config';
 import { logout, useSession, usePermission } from '../api/session';
 import { useDeck } from '../state/deck';
 import { useUi } from '../state/ui';
 import { useLang, useOnline } from '../lib/hooks';
 import { switchLangPath } from '../lib/urls';
 import { Icon } from './Icon';
+import { LogoMark } from './Logo';
 
 export function Header(): JSX.Element {
   const { t } = useTranslation();
@@ -23,6 +25,7 @@ export function Header(): JSX.Element {
   const [params, setParams] = useSearchParams();
   const context = useUi((s) => s.context);
   const openCatalog = useUi((s) => s.openCatalog);
+  const openSlides = useUi((s) => s.openSlides);
   const theme = useUi((s) => s.theme);
   const toggleTheme = useUi((s) => s.toggleTheme);
   const slideCount = useDeck((s) => s.slides.length);
@@ -39,67 +42,90 @@ export function Header(): JSX.Element {
     }
     setParams(next, { replace: false });
   };
+  const subtitle = context?.unitTitle ?? context?.topicTitle;
+  const themeLabel = theme === 'dark' ? t('header.themeToLight') : t('header.themeToDark');
 
   return (
-    <header className="header">
+    <header className="top">
       <Link className="brand" to={`/${lang}`} aria-label={t('header.home')}>
-        <span className="brand__mark" aria-hidden="true" />
-        <span className="brand__text">{t('app.title')}</span>
+        <LogoMark />
+        <b aria-hidden="true">{t('app.title')}</b>
       </Link>
 
-      <button type="button" className="subject-btn" onClick={openCatalog} aria-haspopup="dialog" aria-label={context ? `${t('header.openCatalog')}: ${tr(context.subject.title, lang)}` : t('header.openCatalog')}>
-        <span className="subject-btn__icon">
-          <Icon name={context?.subject.icon ?? 'search'} size={18} />
+      <button
+        type="button"
+        className="subjbtn glass"
+        onClick={() => openCatalog()}
+        aria-haspopup="dialog"
+        aria-label={context ? `${t('header.openCatalog')}: ${tr(context.subject.title, lang)}` : t('header.openCatalog')}
+      >
+        <span className="st">
+          <Icon name={context?.subject.icon ?? 'search'} />
         </span>
-        <span className="subject-btn__text">
+        <span className="subjbtn__text">
           <b>{context ? tr(context.subject.title, lang) : t('header.subject')}</b>
-          {context?.topicTitle ? <small>{tr(context.topicTitle, lang)}</small> : <small className="hide-sm">{t('catalog.hotkey')}</small>}
+          <small>{subtitle ? tr(subtitle, lang) : t('catalog.title')}</small>
         </span>
+        <Icon name="down" className="sm" />
       </button>
 
+      <span className="spacer" />
+
+      {!online && (
+        <span className="pill pill--bad" role="status">
+          <Icon name="wifioff" />
+          {t('header.offlineBadge')}
+        </span>
+      )}
+
       {isTopic && (
-        <div className="segmented" role="group" aria-label={t('header.viewMode')}>
+        <div className="seg" role="group" aria-label={t('header.viewMode')}>
           <button type="button" aria-pressed={!lessonOn} onClick={() => setView(false)}>
+            <Icon name="book" className="sm" />
             {t('header.study')}
           </button>
           <button type="button" aria-pressed={lessonOn} onClick={() => setView(true)}>
+            <Icon name="deck" className="sm" />
             {t('header.lesson')}
           </button>
         </div>
       )}
 
-      <span className="header__spacer" />
+      <nav className="seg" aria-label={t('header.language')}>
+        {HEADER_LANGS.map((l) => (
+          <Link
+            key={l}
+            to={switchLangPath(location.pathname, location.search, location.hash, l)}
+            hrefLang={l}
+            lang={l}
+            aria-current={l === lang ? 'true' : undefined}
+            aria-label={t(`header.langName.${l}`, { lng: l })}
+          >
+            {l.toUpperCase()}
+          </Link>
+        ))}
+      </nav>
 
-      <div className="header__group">
-        {!online && (
-          <span className="offline-pill" role="status">
-            <Icon name="wifi-off" size={16} />
-            {t('header.offlineBadge')}
+      <button
+        type="button"
+        className="cta top__slides"
+        onClick={openSlides}
+        aria-haspopup="dialog"
+        aria-label={slideCount ? t('header.presentCount', { count: slideCount }) : t('header.present')}
+      >
+        <Icon name="deck" />
+        <span className="top__label">{t('header.present')}</span>
+        {slideCount > 0 && (
+          <span className="count-badge" aria-hidden="true">
+            {slideCount}
           </span>
         )}
-        <nav className="segmented" aria-label={t('header.language')}>
-          {UI_LANGS.map((l) => (
-            <Link
-              key={l}
-              to={switchLangPath(location.pathname, location.search, location.hash, l)}
-              hrefLang={l}
-              lang={l}
-              aria-current={l === lang ? 'true' : undefined}
-              aria-label={t(`header.langName.${l}`, { lng: l })}
-            >
-              {l.toUpperCase()}
-            </Link>
-          ))}
-        </nav>
-        <Link to={`/${lang}/presentation`} className="icon-btn rel" aria-label={slideCount ? t('header.presentCount', { count: slideCount }) : t('header.present')} title={t('header.present')}>
-          <Icon name="presentation" />
-          {slideCount > 0 && <span className="count-badge" aria-hidden="true">{slideCount}</span>}
-        </Link>
-        <button type="button" className="icon-btn" onClick={toggleTheme} aria-label={theme === 'dark' ? t('header.themeToLight') : t('header.themeToDark')} title={theme === 'dark' ? t('header.themeToLight') : t('header.themeToDark')}>
-          <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
-        </button>
-        <ProfileButton />
-      </div>
+      </button>
+
+      <button type="button" className="ibtn glass" onClick={toggleTheme} aria-label={themeLabel} title={themeLabel}>
+        <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
+      </button>
+      <ProfileButton />
     </header>
   );
 }
@@ -128,28 +154,38 @@ function ProfileButton(): JSX.Element {
 
   if (!me) {
     return (
-      <Link className="btn btn--primary btn--sm" to={`/${lang}/login`}>
-        <Icon name="user" size={18} />
-        {t('header.login')}
+      <Link className="btn2 top__login" to={`/${lang}/login`} aria-label={t('header.login')}>
+        <Icon name="user" />
+        <span className="top__label">{t('header.login')}</span>
       </Link>
     );
   }
   return (
     <div className="rel" ref={ref}>
-      <button type="button" className="btn btn--sm" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-        <Icon name="user" size={18} />
-        <span className="hide-sm">{me.displayName}</span>
-        <span className="visually-hidden">{t('header.profile')}</span>
+      <button
+        type="button"
+        className="ibtn glass"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`${t('header.profile')}: ${me.displayName}`}
+        title={me.displayName}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <Icon name="user" />
       </button>
       {open && (
         <div className="menu" role="menu">
+          <div className="menu__head" role="presentation">
+            <b>{me.displayName}</b>
+            <small>{t('header.profile')}</small>
+          </div>
           <Link role="menuitem" to={`/${lang}/cabinet`} onClick={() => setOpen(false)}>
-            <Icon name="graduation" size={18} />
+            <Icon name="grad" />
             {t('header.cabinet')}
           </Link>
           {canTeach && (
             <Link role="menuitem" to={`/${lang}/teacher`} onClick={() => setOpen(false)}>
-              <Icon name="users" size={18} />
+              <Icon name="users" />
               {t('header.teacher')}
             </Link>
           )}
@@ -162,7 +198,7 @@ function ProfileButton(): JSX.Element {
               navigate(`/${lang}`);
             }}
           >
-            <Icon name="logout" size={18} />
+            <Icon name="logout" />
             {t('header.logout')}
           </button>
         </div>

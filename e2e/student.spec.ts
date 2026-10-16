@@ -24,7 +24,7 @@ test('student scenario', async ({ page }) => {
   // 3. Topic: rotate the model, select structures, read the card.
   await expect(page).toHaveURL(/assignment=/);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  const canvas = page.locator('.viewer canvas');
+  const canvas = page.locator('.stage canvas');
   await expect(canvas).toBeVisible({ timeout: 20_000 });
   const box = (await canvas.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -42,8 +42,7 @@ test('student scenario', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expectNoA11yViolations(page);
 
-  // 4. Process, assistant, quiz.
-  await page.getByRole('tab', { name: 'Processes' }).click();
+  // 4. Process, assistant, quiz (sections of the page, as in the Workbench).
   await page.getByRole('button', { name: 'Play' }).click();
   await expect(page).toHaveURL(/process=/);
   await page.getByRole('button', { name: 'Pause' }).click();
@@ -51,7 +50,6 @@ test('student scenario', async ({ page }) => {
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByRole('button', { name: /Show on the model/ }).first()).toBeVisible();
 
-  await page.getByRole('tab', { name: 'Check yourself' }).click();
   await page.getByRole('button', { name: 'Start the quiz' }).click();
   await answerQuiz(page);
   await page.getByRole('button', { name: 'See results' }).click();

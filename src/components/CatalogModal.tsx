@@ -17,7 +17,7 @@ import {
   type Subject,
   type TopicSummary,
 } from '@bilig/content-model';
-import { groupedSubjects, subjectTree } from '@bilig/scene-core';
+import { groupedSubjects, subjectSwatch, subjectTree } from '@bilig/scene-core';
 import { useCatalog, useServerSearch } from '../api/content';
 import { Formula } from '../lib/formula';
 import { useDebounced, useFocusTrap, useKeydown, useLang } from '../lib/hooks';
@@ -50,7 +50,7 @@ function CatalogDialog(): JSX.Element {
   const close = useUi((s) => s.closeCatalog);
   const { data: catalog, isLoading, isError, refetch } = useCatalog();
   const [query, setQuery] = useState('');
-  const [subjectKey, setSubjectKey] = useState<string | null>(null);
+  const [subjectKey, setSubjectKey] = useState<string | null>(() => useUi.getState().catalogSubject);
   const dialogRef = useRef<HTMLDivElement>(null);
   useFocusTrap(dialogRef, true);
   useKeydown((e) => e.key === 'Escape' && close(), { allowInInputs: true });
@@ -80,27 +80,29 @@ function CatalogDialog(): JSX.Element {
 
   const tree = subjectKey && catalog ? subjectTree(catalog, subjectKey) : null;
   const conceptHits = (server.data?.items ?? []).filter((h) => h.kind === 'concept' && h.topicKey);
+  const currentSubject = useUi((s) => s.context?.subject.key);
 
   return (
-    <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="catalog-title" ref={dialogRef}>
-        <div className="modal__head">
-          {tree && (
-            <button type="button" className="icon-btn" onClick={() => setSubjectKey(null)} aria-label={t('common.back')}>
-              <Icon name="arrow-left" />
+    <div className="sheet" onMouseDown={(e) => e.target === e.currentTarget && close()}>
+      <div className="sheet__body cat" role="dialog" aria-modal="true" aria-labelledby="catalog-title" ref={dialogRef}>
+        <div className="sheet__head">
+          {tree ? (
+            <button type="button" className="ibtn glass" onClick={() => setSubjectKey(null)} aria-label={t('common.back')}>
+              <Icon name="prev" />
             </button>
+          ) : (
+            <Icon name="layers" />
           )}
           <h2 id="catalog-title">{tree ? tr(tree.subject.title, lang) : t('catalog.title')}</h2>
-          <button type="button" className="icon-btn" onClick={close} aria-label={t('common.close')}>
-            <Icon name="close" />
+          <button type="button" className="ibtn glass" onClick={close} aria-label={t('common.close')}>
+            <Icon name="x" />
           </button>
         </div>
 
         {!tree && (
-          <div className="search-box">
+          <label className="search">
             <Icon name="search" />
             <input
-              className="input"
               type="search"
               autoFocus
               aria-label={t('catalog.searchLabel')}
@@ -108,14 +110,22 @@ function CatalogDialog(): JSX.Element {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-          </div>
+          </label>
         )}
 
-        {isLoading && <p className="muted">{t('common.loading')}</p>}
+        {isLoading && (
+          <div className="sgrid" aria-busy="true" aria-label={t('common.loading')}>
+            {Array.from({ length: 6 }, (_, i) => (
+              <span key={i} className="skel" style={{ height: 70 }} />
+            ))}
+          </div>
+        )}
         {isError && (
-          <div className="row">
-            <p className="error-text">{t('catalog.loadError')}</p>
-            <button type="button" className="btn btn--sm" onClick={() => refetch()}>
+          <div className="state state--error" role="alert">
+            <Icon name="warn" />
+            <b>{t('catalog.loadError')}</b>
+            <button type="button" className="btn2" onClick={() => refetch()}>
+              <Icon name="reset" className="sm" />
               {t('common.retry')}
             </button>
           </div>
@@ -124,10 +134,10 @@ function CatalogDialog(): JSX.Element {
         {tree ? (
           <div className="stack">
             {tree.courses.map((c) => (
-              <section key={c.course.key} className="catalog-group">
-                <h3>{tr(c.course.title, lang)}</h3>
+              <section key={c.course.key} aria-label={tr(c.course.title, lang)}>
+                <h3 className="grp">{tr(c.course.title, lang)}</h3>
                 {c.units.map((u) => (
-                  <div key={u.unit.key} className="stack">
+                  <div key={u.unit.key} className="cat__unit">
                     <b>{tr(u.unit.title, lang)}</b>
                     <div className="hits">
                       {u.topics.map((tp) => (
@@ -142,8 +152,10 @@ function CatalogDialog(): JSX.Element {
         ) : (
           <>
             {result && result.topics.length > 0 && (
-              <section className="catalog-group" aria-labelledby="cat-topics">
-                <h3 id="cat-topics">{t('catalog.topics')}</h3>
+              <section aria-labelledby="cat-topics">
+                <h3 id="cat-topics" className="grp">
+                  {t('catalog.topics')}
+                </h3>
                 <div className="hits">
                   {result.topics.map((tp) => (
                     <TopicHit key={tp.key} topic={tp} onOpen={() => go(tp.key)} />
@@ -152,15 +164,17 @@ function CatalogDialog(): JSX.Element {
               </section>
             )}
             {conceptHits.length > 0 && (
-              <section className="catalog-group" aria-labelledby="cat-structures">
-                <h3 id="cat-structures">{t('catalog.structures')}</h3>
+              <section aria-labelledby="cat-structures">
+                <h3 id="cat-structures" className="grp">
+                  {t('catalog.structures')}
+                </h3>
                 <div className="hits">
                   {conceptHits.map((h) => (
-                    <button key={`${h.topicKey}:${h.key}`} type="button" className="topic-hit" onClick={() => go(h.topicKey!, h.key)}>
-                      <Icon name="dot" />
+                    <button key={`${h.topicKey}:${h.key}`} type="button" className="hit" onClick={() => go(h.topicKey!, h.key)}>
+                      <Icon name="focus" />
                       <span>
                         <b>{h.title}</b>
-                        {h.snippet && <span className="muted small"> — {h.snippet}</span>}
+                        {h.snippet && <small>{h.snippet}</small>}
                       </span>
                     </button>
                   ))}
@@ -168,16 +182,24 @@ function CatalogDialog(): JSX.Element {
               </section>
             )}
             {groups.map((g) => (
-              <section key={g.groupKey} className="catalog-group" aria-labelledby={`grp-${g.groupKey}`}>
-                <h3 id={`grp-${g.groupKey}`}>{tr(g.title, lang)}</h3>
-                <div className="catalog-grid">
+              <section key={g.groupKey} aria-labelledby={`grp-${g.groupKey}`}>
+                <h3 id={`grp-${g.groupKey}`} className="grp">
+                  {tr(g.title, lang)}
+                </h3>
+                <div className="sgrid">
                   {g.subjects.map((s) => (
-                    <SubjectCard key={s.key} subject={s} count={catalog ? subjectModelCount(catalog, s.key) : 0} onOpen={() => openSubject(s)} />
+                    <SubjectCard key={s.key} subject={s} count={catalog ? subjectModelCount(catalog, s.key) : 0} current={s.key === currentSubject} onOpen={() => openSubject(s)} />
                   ))}
                 </div>
               </section>
             ))}
-            {catalog && groups.length === 0 && !result?.topics.length && !conceptHits.length && <p className="muted">{t('catalog.empty')}</p>}
+            {catalog && groups.length === 0 && !result?.topics.length && !conceptHits.length && (
+              <div className="state">
+                <Icon name="search" />
+                <b>{t('catalog.empty')}</b>
+                <span>{t('catalog.emptyHint')}</span>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -185,32 +207,37 @@ function CatalogDialog(): JSX.Element {
   );
 }
 
-function SubjectCard({ subject, count, onOpen }: { subject: Subject; count: number; onOpen: () => void }): JSX.Element {
+function SubjectCard({ subject, count, current, onOpen }: { subject: Subject; count: number; current: boolean; onOpen: () => void }): JSX.Element {
   const { t } = useTranslation();
   const lang = useLang();
+  const theme = useUi((s) => s.theme);
   const locked = subject.status === 'soon';
   const title = tr(subject.title, lang);
+  const sw = subjectSwatch(subject.hue, theme);
   return (
     <button
       type="button"
-      className="subject-card"
-      style={{ ['--h' as string]: String(subject.hue) }}
+      className="sc"
       aria-disabled={locked || undefined}
+      aria-current={current ? 'true' : undefined}
       aria-label={locked ? t('catalog.locked', { name: title }) : `${title}, ${t('catalog.models', { count })}`}
       onClick={onOpen}
     >
-      <span className="subject-card__icon">
-        <Icon name={subject.icon} size={24} />
+      <span className="si" style={{ background: sw.bg, color: sw.fg }}>
+        <Icon name={subject.icon} className="lg" />
       </span>
-      <span className="subject-card__title">{title}</span>
-      {locked ? (
-        <span className="badge">
-          <Icon name="lock" size={14} />
-          {t('catalog.coming')}
-        </span>
-      ) : (
-        <span className="muted small">{t('catalog.models', { count })}</span>
-      )}
+      <span>
+        <b>{title}</b>
+        <small>
+          {locked ? (
+            <>
+              <Icon name="lock" className="sm" /> {t('catalog.coming')}
+            </>
+          ) : (
+            t('catalog.models', { count })
+          )}
+        </small>
+      </span>
     </button>
   );
 }
@@ -218,13 +245,16 @@ function SubjectCard({ subject, count, onOpen }: { subject: Subject; count: numb
 function TopicHit({ topic, onOpen }: { topic: TopicSummary; onOpen: () => void }): JSX.Element {
   const lang = useLang();
   return (
-    <button type="button" className="topic-hit" onClick={onOpen}>
-      <Icon name="chevron-right" />
+    <button type="button" className="hit" onClick={onOpen}>
+      <Icon name="cube" />
       <span>
-        <b>{tr(topic.title, lang)}</b>
-        {topic.formula && <>{', '}<Formula tex={topic.formula} /></>}
-        {topic.classification && <span className="muted small"> — <i>{tr(topic.classification, lang)}</i></span>}
+        <b>
+          {tr(topic.title, lang)}
+          {topic.formula && <>{', '}<Formula tex={topic.formula} /></>}
+        </b>
+        {topic.classification && <small>{tr(topic.classification, lang)}</small>}
       </span>
+      <Icon name="chev" className="sm" />
     </button>
   );
 }

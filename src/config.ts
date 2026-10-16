@@ -14,6 +14,13 @@ export const UI_LANGS: readonly Lang[] = [
   ...localeFolders.filter((l) => l !== DEFAULT_LANG).sort(),
 ];
 
+/** Header language switch order (Workbench: RU · KY · EN), then any other locale folder. */
+const HEADER_ORDER: readonly string[] = ['ru', 'ky', 'en'];
+export const HEADER_LANGS: readonly Lang[] = [
+  ...HEADER_ORDER.filter((l): l is Lang => (UI_LANGS as readonly string[]).includes(l)),
+  ...UI_LANGS.filter((l) => !HEADER_ORDER.includes(l)),
+];
+
 export const isUiLang = (v: unknown): v is Lang => typeof v === 'string' && (UI_LANGS as readonly string[]).includes(v);
 
 /** API origin + prefix; empty origin = same origin (dev proxy /api → :3000). */

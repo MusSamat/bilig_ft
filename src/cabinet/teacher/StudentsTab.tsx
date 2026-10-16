@@ -95,7 +95,7 @@ export function StudentsTab({ cls }: { cls: SchoolClass }): JSX.Element {
                   <td>{s.hasConsent ? t('teacher.consentYes') : t('teacher.consentNo')}</td>
                   <td>
                     <button type="button" className="btn btn--sm" onClick={() => void resetPin(s.id, s.displayName)} aria-label={t('teacher.resetPinFor', { name: s.displayName })}>
-                      <Icon name="reset" size={16} />
+                      <Icon name="reset" className="sm" />
                       {t('teacher.resetPin')}
                     </button>
                   </td>
@@ -121,11 +121,11 @@ export function StudentsTab({ cls }: { cls: SchoolClass }): JSX.Element {
         </label>
         <div className="row">
           <button type="submit" className="btn btn--primary btn--sm" disabled={busy || !names.trim()}>
-            <Icon name="plus" size={16} />
+            <Icon name="plus" className="sm" />
             {t('teacher.add')}
           </button>
           <label className="btn btn--sm">
-            <Icon name="upload" size={16} />
+            <Icon name="upload" className="sm" />
             {t('teacher.importCsv')}
             <input ref={fileRef} type="file" accept=".csv,text/csv,text/plain" className="visually-hidden" onChange={(e) => void onFile(e.target.files?.[0])} />
           </label>
@@ -141,7 +141,7 @@ export function StudentsTab({ cls }: { cls: SchoolClass }): JSX.Element {
           <div className="row">
             <h3 id="cards-title">{t('teacher.cardsTitle')}</h3>
             <button type="button" className="btn btn--sm" onClick={() => window.print()}>
-              <Icon name="print" size={16} />
+              <Icon name="print" className="sm" />
               {t('teacher.printCards')}
             </button>
           </div>

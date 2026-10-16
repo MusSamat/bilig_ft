@@ -10,10 +10,10 @@ import type { ClassCodeResponse } from '@bilig/content-model/api';
 import { isApiError } from '../api/client';
 import { loginAdult, loginStudent, lookupClassCode, useSession } from '../api/session';
 import { Icon } from '../components/Icon';
+import { LogoMark } from '../components/Logo';
 import { errorKey } from '../cabinet/format';
 import { useLang } from '../lib/hooks';
 import { useUi } from '../state/ui';
-import '../cabinet/cabinet.css';
 
 type Tab = 'student' | 'adult';
 
@@ -44,35 +44,72 @@ export default function LoginPage(): JSX.Element {
   useEffect(() => setContext(null), [setContext]);
 
   return (
-    <div className="page narrow">
-      <h1>{t('auth.title')}</h1>
-      {me && (
-        <div className="card row">
-          <span>{t('auth.already', { name: me.displayName })}</span>
-          <Link className="btn btn--sm" to={`/${lang}`}>
-            {t('auth.continue')}
-          </Link>
-        </div>
-      )}
-      <div className="segmented login-tabs" role="tablist" aria-label={t('auth.tabs')}>
-        {(['student', 'adult'] as const).map((k) => (
-          <button
-            key={k}
-            type="button"
-            role="tab"
-            id={`login-tab-${k}`}
-            aria-selected={tab === k}
-            aria-controls={`login-panel-${k}`}
-            onClick={() => setTab(k)}
-          >
-            <Icon name={k === 'student' ? 'graduation' : 'user'} size={18} />
-            {t(`auth.tab.${k}`)}
-          </button>
-        ))}
+    <div className="page">
+      <div className="auth">
+        <section className="auth__brand panel glass" aria-labelledby="auth-title">
+          <div className="home-hero__brand">
+            <LogoMark size={48} />
+            <b aria-hidden="true">{t('app.title')}</b>
+          </div>
+          <h1 id="auth-title">{t('auth.title')}</h1>
+          <p className="lead-text">{t('auth.lead')}</p>
+          <ul className="auth__points">
+            <li>
+              <Icon name="cube" />
+              {t('auth.point.model')}
+            </li>
+            <li>
+              <Icon name="chat" />
+              {t('auth.point.tutor')}
+            </li>
+            <li>
+              <Icon name="target" />
+              {t('auth.point.progress')}
+            </li>
+          </ul>
+        </section>
+        <section className="auth__card panel glass" aria-label={t('auth.tabs')}>
+          {me && (
+            <div className="soft-box">
+              <Icon name="check" />
+              <span>
+                {t('auth.already', { name: me.displayName })}{' '}
+                <Link to={`/${lang}`}>{t('auth.continue')}</Link>
+              </span>
+            </div>
+          )}
+          <div className="seg flat login-tabs" role="tablist" aria-label={t('auth.tabs')}>
+            {(['student', 'adult'] as const).map((k) => (
+              <button
+                key={k}
+                type="button"
+                role="tab"
+                id={`login-tab-${k}`}
+                aria-selected={tab === k}
+                aria-controls={`login-panel-${k}`}
+                onClick={() => setTab(k)}
+              >
+                <Icon name={k === 'student' ? 'grad' : 'user'} className="sm" />
+                {t(`auth.tab.${k}`)}
+              </button>
+            ))}
+          </div>
+          <div role="tabpanel" id={`login-panel-${tab}`} aria-labelledby={`login-tab-${tab}`}>
+            {tab === 'student' ? <StudentLogin /> : <AdultLogin />}
+          </div>
+        </section>
       </div>
-      <div className="card" role="tabpanel" id={`login-panel-${tab}`} aria-labelledby={`login-tab-${tab}`}>
-        {tab === 'student' ? <StudentLogin /> : <AdultLogin />}
-      </div>
+    </div>
+  );
+}
+
+/** Progress through the three student steps (code → name → PIN). */
+function StepDots({ n }: { n: number }): JSX.Element {
+  return (
+    <div className="auth__steps" aria-hidden="true">
+      {[0, 1, 2].map((i) => (
+        <span key={i} className={i <= n ? 'on' : undefined} />
+      ))}
     </div>
   );
 }
@@ -131,6 +168,7 @@ function StudentLogin(): JSX.Element {
   if (!cls) {
     return (
       <form className="stack" onSubmit={submitCode} noValidate>
+        <StepDots n={0} />
         <div className="field">
           <label htmlFor="class-code">{t('auth.student.codeLabel')}</label>
           <input
@@ -154,7 +192,10 @@ function StudentLogin(): JSX.Element {
         <button type="submit" className="btn btn--primary" disabled={busy}>
           {busy ? t('auth.busy') : t('auth.student.continue')}
         </button>
-        <p className="muted small">{t('auth.student.privacy')}</p>
+        <p className="auth__note">
+          <Icon name="shield" className="sm" />
+          {t('auth.student.privacy')}
+        </p>
       </form>
     );
   }
@@ -162,6 +203,7 @@ function StudentLogin(): JSX.Element {
   if (!student) {
     return (
       <div className="stack">
+        <StepDots n={1} />
         <h2 ref={headRef} tabIndex={-1}>
           {t('auth.student.pickName')}
         </h2>
@@ -171,7 +213,7 @@ function StudentLogin(): JSX.Element {
             <button
               key={s.id}
               type="button"
-              className="btn"
+              className="btn2"
               onClick={() => {
                 setError(null);
                 setStudent(s);
@@ -189,7 +231,7 @@ function StudentLogin(): JSX.Element {
             setError(null);
           }}
         >
-          <Icon name="arrow-left" size={16} />
+          <Icon name="prev" className="sm" />
           {t('auth.student.changeCode')}
         </button>
       </div>
@@ -198,6 +240,7 @@ function StudentLogin(): JSX.Element {
 
   return (
     <form className="stack" onSubmit={submitPin} noValidate>
+      <StepDots n={2} />
       <h2>{t('auth.student.hello', { name: student.displayName })}</h2>
       <div className="field">
         <label htmlFor="student-pin">{t('auth.student.pinLabel')}</label>
@@ -232,7 +275,7 @@ function StudentLogin(): JSX.Element {
           setError(null);
         }}
       >
-        <Icon name="arrow-left" size={16} />
+        <Icon name="prev" className="sm" />
         {t('auth.student.changeName')}
       </button>
     </form>

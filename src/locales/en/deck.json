@@ -35,5 +35,9 @@
   "nextSlide": "Next slide",
   "stepsTitle": "Steps",
   "clear": "Clear all",
-  "snapshotAlt": "3D snapshot of the topic"
+  "snapshotAlt": "3D snapshot of the topic",
+  "emptyTitle": "No slides yet",
+  "draftNote": "A draft built from the topic and your snapshots.",
+  "openEditor": "Open the editor",
+  "fromTopicNeedsTopic": "Open a topic or add a slide from it first"
 }

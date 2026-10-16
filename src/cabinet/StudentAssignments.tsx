@@ -15,7 +15,6 @@ import { Icon } from '../components/Icon';
 import { useLang } from '../lib/hooks';
 import { topicPath } from '../lib/urls';
 import { formatDate, formatPercent } from './format';
-import './cabinet.css';
 
 const DAY = 86_400_000;
 
@@ -35,22 +34,41 @@ export function StudentAssignments(): JSX.Element | null {
   const { t } = useTranslation();
   const lang = useLang();
   const { data: catalog } = useCatalog();
-  const { data, isLoading, isError } = useMyAssignments();
+  const { data, isLoading, isError, refetch } = useMyAssignments();
 
   return (
     <section className="card stack" aria-labelledby="my-assignments-title">
-      <h2 id="my-assignments-title" className="panel-title">
-        <Icon name="calendar" />
-        {t('cabinet.assignments')}
-      </h2>
-      {isLoading && <p className="muted">{t('common.loading')}</p>}
-      {isError && <p className="error-text">{t('cabinet.assignmentsError')}</p>}
-      {data && data.items.length === 0 && <p className="muted">{t('cabinet.assignmentsEmpty')}</p>}
+      <div className="home-section-h">
+        <Icon name="cal" className="lg" />
+        <h2 id="my-assignments-title">{t('cabinet.assignments')}</h2>
+      </div>
+      {isLoading && (
+        <div className="stack" aria-busy="true" aria-label={t('common.loading')}>
+          <span className="skel" style={{ height: 88, borderRadius: 'var(--r-lg)' }} />
+          <span className="skel" style={{ height: 88, borderRadius: 'var(--r-lg)' }} />
+        </div>
+      )}
+      {isError && (
+        <div className="state state--error" role="alert">
+          <Icon name="warn" />
+          <b>{t('cabinet.assignmentsError')}</b>
+          <button type="button" className="btn2" onClick={() => refetch()}>
+            <Icon name="reset" className="sm" />
+            {t('common.retry')}
+          </button>
+        </div>
+      )}
+      {data && data.items.length === 0 && (
+        <div className="state">
+          <Icon name="check" />
+          <span>{t('cabinet.assignmentsEmpty')}</span>
+        </div>
+      )}
       {data && data.items.length > 0 && (
         <ul className="assignment-list">
           {data.items.map((a) => {
             const topic = catalog?.topics.find((x) => x.key === a.topicKey);
-            const title = topic ? tr(topic.title, lang) : a.topicKey;
+            const title = topic ? tr(topic.title, lang) : a.topicTitle ?? a.topicKey;
             const due = dueState(a);
             const href = `${topicPath(catalog, lang, a.topicKey)}?assignment=${encodeURIComponent(a.id)}`;
             return (
@@ -62,7 +80,7 @@ export function StudentAssignments(): JSX.Element | null {
                     {due === 'soon' && <span className="badge badge--accent">{t('cabinet.dueSoon')}</span>}
                     {a.status === 'done' ? (
                       <span className="badge badge--ok">
-                        <Icon name="check" size={14} />
+                        <Icon name="check" className="sm" />
                         {t('cabinet.done')}
                       </span>
                     ) : (
@@ -82,9 +100,9 @@ export function StudentAssignments(): JSX.Element | null {
                   )}
                 </span>
                 <div>
-                  <Link className="btn btn--sm btn--primary" to={href} aria-label={t('cabinet.openTopic', { name: title })}>
+                  <Link className="cta btn--sm" to={href} aria-label={t('cabinet.openTopic', { name: title })}>
                     {t('cabinet.open')}
-                    <Icon name="arrow-right" size={16} />
+                    <Icon name="arrow" className="sm" />
                   </Link>
                 </div>
               </li>

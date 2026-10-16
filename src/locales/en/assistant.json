@@ -16,5 +16,7 @@
   "limit": "You reached the guest question limit. Sign in to continue.",
   "you": "You",
   "bot": "Assistant",
-  "history": "Conversation"
+  "history": "Conversation",
+  "unavailable": "Assistant unavailable",
+  "typeFirst": "Type a question first"
 }

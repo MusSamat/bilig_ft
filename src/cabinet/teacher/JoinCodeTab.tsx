@@ -46,7 +46,7 @@ export function JoinCodeTab({ cls, onChange }: { cls: SchoolClass; onChange: (c:
             })
           }
         >
-          <Icon name="reset" size={16} />
+          <Icon name="reset" className="sm" />
           {t('teacher.reissue')}
         </button>
         <button
@@ -55,7 +55,7 @@ export function JoinCodeTab({ cls, onChange }: { cls: SchoolClass; onChange: (c:
           disabled={busy}
           onClick={() => void run(() => api('classPatch', { params: { id: cls.id }, body: { joinCodeEnabled: !cls.joinCodeEnabled } }))}
         >
-          <Icon name={cls.joinCodeEnabled ? 'lock' : 'check'} size={16} />
+          <Icon name={cls.joinCodeEnabled ? 'lock' : 'check'} className="sm" />
           {cls.joinCodeEnabled ? t('teacher.disable') : t('teacher.enable')}
         </button>
       </div>
