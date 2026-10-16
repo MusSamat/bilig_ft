@@ -35,7 +35,7 @@ function keysOf(lang: string): string[] {
 const files = (dir: string): string[] =>
   readdirSync(dir).flatMap((f) => {
     const p = join(dir, f);
-    if (statSync(p).isDirectory()) return f === 'locales' || f === 'mocks' || f === 'test' || f === 'admin' ? [] : files(p); // admin has its own i18n test
+    if (statSync(p).isDirectory()) return f === 'locales' || f === 'mocks' || f === 'test' || f === 'admin' || f === 'thumbs' ? [] : files(p); // admin has its own i18n test; thumbs is a dev tool
     return /\.(ts|tsx)$/.test(f) && !/\.test\.tsx?$/.test(f) && !/testUtils/.test(f) ? [p] : [];
   });
 

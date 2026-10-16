@@ -78,6 +78,24 @@ describe('circuit, orbit, moon, seasons', () => {
     expect(seasonState(42.9, 23.44, 0.0167, 0.75).noonAltitude).toBeCloseTo(23.66, 2);
     expect(seasonState(42.9, 23.44, 0.0167, 0.25).dayLength).toBeGreaterThan(15);
   });
+  it('dc-circuit: lamp2… are lamps, placed by `slots`, dimmed by `lampBrightness`', () => {
+    const parts = MODELS['dc-circuit'].build(
+      {
+        model: 'dc-circuit', switchClosed: true, lampBrightness: 0.25,
+        wires: ['battery-switch', 'switch-lamp', 'lamp-lamp2', 'lamp2-battery'],
+        slots: { lamp: [1.2, 0, -0.5], lamp2: [1.2, 0, 0.5] },
+      },
+      { modes: {} },
+    );
+    const lamp2 = parts.find((p) => p.name === 'Lamp2');
+    expect(lamp2?.position).toEqual([1.2, 0, 0.5]);
+    expect(parts.find((p) => p.name === 'Lamp2_Bulb')?.glow).toBeCloseTo(0.3);
+    expect(parts.find((p) => p.name === 'Lamp_Bulb')?.glow).toBeCloseTo(0.3);
+    // The default one-lamp board is unchanged.
+    const one = MODELS['dc-circuit'].build({ model: 'dc-circuit', switchClosed: true }, { modes: {} });
+    expect(one.find((p) => p.name === 'Lamp_Bulb')?.glow).toBe(1.2);
+    expect(one.some((p) => p.name === 'Lamp2')).toBe(false);
+  });
   it('circuit loop from wire names', () => {
     expect(circuitLoop(['battery-switch', 'bad', 'lamp-battery'])).toEqual([
       { name: 'battery-switch', from: 'battery', to: 'switch' },

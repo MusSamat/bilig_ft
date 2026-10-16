@@ -248,7 +248,12 @@ const circuit: SimModel = {
     const wires = circuitLoop(Array.isArray(raw.wires) ? (raw.wires as unknown[]).filter((w): w is string => typeof w === 'string') : ['battery-switch', 'switch-lamp', 'lamp-battery']);
     const comps = [...new Set(wires.flatMap((w) => [w.from, w.to]))];
     let extra = 0;
-    const slot = (c: string): Vec3 => SLOTS[c] ?? [-0.6 + 0.6 * extra++, 0, 1];
+    // `slots` places components the default board layout doesn't know (a second lamp …).
+    const custom = raw.slots && typeof raw.slots === 'object' ? (raw.slots as Record<string, unknown>) : {};
+    const slot = (c: string): Vec3 => vec3(custom[c], SLOTS[c] ?? [-0.6 + 0.6 * extra++, 0, 1]);
+    // `lamp`, `lamp2`, `lamp3` … are all lamps; `lampBrightness` (0–1) dims them (lamps in series).
+    const isLamp = (c: string) => /^lamp\d*$/.test(c);
+    const brightness = Math.min(1, Math.max(0, numParam(raw, 'lampBrightness', 1)));
     const pos = new Map(comps.map((c) => [c, slot(c)]));
     const parts: Part[] = [
       { name: 'Board', shape: { kind: 'box', size: [3.2, 0.04, 2.6] }, position: [0, -0.04, 0], color: '#2b3440', noPick: true },
@@ -256,7 +261,7 @@ const circuit: SimModel = {
     const Name = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
     for (const c of comps) {
       const at = pos.get(c)!;
-      switch (c) {
+      switch (isLamp(c) ? 'lamp' : c) {
         case 'battery':
           parts.push({ name: 'Battery', shape: { kind: 'cylinder', radiusTop: 0.12, radiusBottom: 0.12, height: 0.6, segments: 24 }, position: [at[0], 0.12 * h, at[2]], rotation: [Math.PI / 2, 0, 0], scale: [1, 1, flat ? 0.3 : 1], color: '#e9c46a', metalness: 0.4 });
           parts.push({ name: 'Battery_Plus', parent: 'Battery', shape: { kind: 'cylinder', radiusTop: 0.04, radiusBottom: 0.04, height: 0.06 }, position: [0, 0.33, 0], color: '#ef476f' });
@@ -265,11 +270,14 @@ const circuit: SimModel = {
           parts.push({ name: 'Switch', shape: { kind: 'box', size: [0.4, 0.05, 0.16] }, position: [at[0], 0.03, at[2]], color: '#6c757d' });
           parts.push({ name: 'Switch_Lever', parent: 'Switch', shape: { kind: 'box', size: [0.38, 0.03, 0.05] }, position: [0, 0.05, 0], rotation: [0, 0, closed ? 0 : 0.5], color: '#adb5bd', metalness: 0.7 });
           break;
-        case 'lamp':
-          parts.push({ name: 'Lamp', shape: { kind: 'group' }, position: [at[0], 0, at[2]] });
-          parts.push({ name: 'Lamp_Base', parent: 'Lamp', shape: { kind: 'cylinder', radiusTop: 0.09, radiusBottom: 0.1, height: 0.18 }, position: [0, 0.09, 0], color: '#adb5bd', metalness: 0.6 });
-          parts.push({ name: 'Lamp_Bulb', parent: 'Lamp', shape: { kind: 'sphere', radius: 0.2 * (flat ? 0.6 : 1) }, position: [0, 0.38 * h + 0.02, 0], color: closed ? '#ffe66d' : '#e9ecef', glow: closed ? 1.2 : 0, opacity: 0.7, container: false });
+        case 'lamp': {
+          const L = Name(c);
+          const lit = closed && brightness > 0;
+          parts.push({ name: L, shape: { kind: 'group' }, position: [at[0], 0, at[2]] });
+          parts.push({ name: `${L}_Base`, parent: L, shape: { kind: 'cylinder', radiusTop: 0.09, radiusBottom: 0.1, height: 0.18 }, position: [0, 0.09, 0], color: '#adb5bd', metalness: 0.6 });
+          parts.push({ name: `${L}_Bulb`, parent: L, shape: { kind: 'sphere', radius: 0.2 * (flat ? 0.6 : 1) }, position: [0, 0.38 * h + 0.02, 0], color: lit ? '#ffe66d' : '#e9ecef', glow: lit ? 1.2 * brightness : 0, opacity: 0.7, container: false });
           break;
+        }
         default:
           parts.push({ name: Name(c), shape: { kind: 'cylinder', radiusTop: 0.16, radiusBottom: 0.16, height: 0.1 * h + 0.02, segments: 32 }, position: [at[0], 0.06 * h, at[2]], color: c === 'ammeter' ? '#90be6d' : '#577590' });
           parts.push({ name: `${Name(c)}_Dial`, parent: Name(c), shape: { kind: 'box', size: [0.02, 0.02, 0.12] }, position: [0, 0.07 * h, 0], rotation: [0, closed ? -0.6 : 0.6, 0], color: '#f8f9fa' });
