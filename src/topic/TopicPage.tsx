@@ -8,27 +8,30 @@
  * names in code.
  */
 import { useEffect, useMemo } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { topicConcepts } from '@bilig/content-model';
+import { t as tr, topicConcepts } from '@bilig/content-model';
 import { registry } from '@bilig/scene-core';
 import { useCatalog, useTopicPackage } from '../api/content';
-import { isApiError } from '../api/client';
+import { isApiError, type ApiError } from '../api/client';
+import { useSession } from '../api/session';
 import { Icon } from '../components/Icon';
 import { db, nowIso } from '../lib/db';
 import { useLang } from '../lib/hooks';
 import { useTopicProgress } from '../lib/progress';
-import { stripLang } from '../lib/urls';
+import { stripLang, topicPath } from '../lib/urls';
 import { ensurePlugins, usePluginsReady } from '../scene/registry';
+import { probeWebGL } from '../scene/webgl';
 import { useUi } from '../state/ui';
 import { useViewer } from '../state/viewer';
-import { AssistantPanel } from './AssistantPanel';
+import { ChatDock } from './ChatDock';
 import { ComparisonTable } from './ComparisonTable';
 import { ConceptCard } from './ConceptCard';
 import { TopicContext, type TopicCtx } from './context';
 import { ProcessPanel } from './ProcessPanel';
 import { Quiz } from './Quiz';
 import { Stage } from './Stage';
+import { useStageView } from './stageView';
 import { TopicHero } from './TopicHeader';
 import { useTopicUrlSync } from './useTopicUrlSync';
 
@@ -46,13 +49,20 @@ export default function TopicPage(): JSX.Element {
   const setLessonStep = useViewer((s) => s.setLessonStep);
   const viewerTopic = useViewer((s) => s.topicKey);
   const selected = useViewer((s) => s.selected);
+  const expanded = useStageView((s) => s.expanded);
 
   const pkg = data?.pkg;
   const concepts = useMemo(() => (pkg ? topicConcepts(pkg) : []), [pkg]);
   const progress = useTopicProgress(pkg?.topic);
   const lesson = params.get('view') === 'lesson';
 
-  useEffect(() => void ensurePlugins(), []);
+  // Start everything the 3D stage needs in parallel with the package request:
+  // plugins, the viewer chunk (three.js) and the WebGL probe (off the main thread).
+  useEffect(() => {
+    void ensurePlugins();
+    void probeWebGL();
+    void import('../scene/SceneViewer');
+  }, []);
 
   // Header context + subject hue (W-01, W-03): the hue always comes from the API.
   useEffect(() => {
@@ -103,6 +113,7 @@ export default function TopicPage(): JSX.Element {
   }, [pkg]);
 
   if (isLoading || (!data && !error)) return <TopicSkeleton />;
+  if (isApiError(error) && isLicenceError(error)) return <TopicLocked topicKey={topicKey ?? ''} catalog={catalog} />;
   if (error || !data || !pkg) {
     const notFound = isApiError(error) && error.status === 404;
     return (
@@ -150,10 +161,7 @@ export default function TopicPage(): JSX.Element {
         <TopicHero catalog={catalog} />
         <div className="work">
           <Stage ready={ready} />
-          <div className="side">
-            <ConceptCard ready={ready} />
-            {!lesson && <AssistantPanel />}
-          </div>
+          <div className="side">{!expanded && <ConceptCard ready={ready} />}</div>
         </div>
         {a.processKeys.length > 0 && <ProcessPanel ready={ready} />}
         {(showCompare || showQuiz) && (
@@ -163,7 +171,53 @@ export default function TopicPage(): JSX.Element {
           </div>
         )}
       </div>
+      {!lesson && <ChatDock />}
     </TopicContext.Provider>
+  );
+}
+
+/** The package is behind a licence: 401 for guests, 403 for a school without this subject. */
+const isLicenceError = (e: ApiError): boolean =>
+  e.i18nKey === 'errors.license_required' || e.problem?.detail === 'license_required' || e.status === 401 || e.status === 403;
+
+function TopicLocked({ topicKey, catalog }: { topicKey: string; catalog: ReturnType<typeof useCatalog>['data'] }): JSX.Element {
+  const { t } = useTranslation();
+  const lang = useLang();
+  const location = useLocation();
+  const guest = useSession((s) => s.status !== 'authed');
+  const entry = catalog?.topics.find((x) => x.key === topicKey);
+  const demo = catalog?.topics.find((x) => x.demo && x.subjectKey === entry?.subjectKey && x.key !== topicKey);
+  const next = encodeURIComponent(location.pathname + location.search);
+  return (
+    <div className="wrap page--narrow">
+      <section className="card stack locked" aria-labelledby="topic-locked">
+        <span className="locked__ic" aria-hidden="true">
+          <Icon name="lock" />
+        </span>
+        <h1 id="topic-locked" className="page-title">
+          {entry ? tr(entry.title, lang) : t(guest ? 'topic.locked.guestTitle' : 'topic.locked.noLicenceTitle')}
+        </h1>
+        <p className="lead">{t(guest ? 'topic.locked.guest' : 'topic.locked.noLicence')}</p>
+        <div className="row">
+          {guest && (
+            <Link className="cta" to={`/${lang}/login?next=${next}`}>
+              <Icon name="user" className="sm" />
+              {t('topic.locked.signIn')}
+            </Link>
+          )}
+          {demo && (
+            <Link className="btn2" to={topicPath(catalog, lang, demo.key)}>
+              <Icon name="cube" className="sm" />
+              {t('topic.locked.demo', { title: tr(demo.title, lang) })}
+            </Link>
+          )}
+          <Link className="btn2" to={`/${lang}`}>
+            <Icon name="home" className="sm" />
+            {t('notFound.home')}
+          </Link>
+        </div>
+      </section>
+    </div>
   );
 }
 

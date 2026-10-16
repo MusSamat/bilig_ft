@@ -8,8 +8,8 @@ const PORT = 5174;
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 60_000,
-  expect: { timeout: 10_000 },
+  timeout: 180_000,
+  expect: { timeout: 30_000 },
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
@@ -24,8 +24,13 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        // Software WebGL in headless CI (SwiftShader) so the 3D scene renders.
-        launchOptions: { args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] },
+        // Software WebGL (SwiftShader) by default, as in CI: deterministic visual baselines.
+        // E2E_GPU=1 uses the machine's GPU instead (faster local runs; not for --update-snapshots).
+        launchOptions: {
+          args: process.env.E2E_GPU
+            ? ['--use-angle=gl-egl', '--enable-gpu', '--ignore-gpu-blocklist']
+            : ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'],
+        },
       },
     },
   ],

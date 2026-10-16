@@ -1,6 +1,6 @@
 /** TZ §3 «Ученик»: class code → name → PIN; home with assignments & recent topics; topic, process, assistant, quiz saved. */
 import { expect, test } from '@playwright/test';
-import { answerQuiz, expectNoA11yViolations, freshMocks } from './helpers';
+import { answerQuiz, expectNoA11yViolations, freshMocks, SCENE_TIMEOUT } from './helpers';
 
 test('student scenario', async ({ page }) => {
   await freshMocks(page);
@@ -25,7 +25,7 @@ test('student scenario', async ({ page }) => {
   await expect(page).toHaveURL(/assignment=/);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   const canvas = page.locator('.stage canvas');
-  await expect(canvas).toBeVisible({ timeout: 20_000 });
+  await expect(canvas).toBeVisible({ timeout: SCENE_TIMEOUT });
   const box = (await canvas.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
@@ -46,9 +46,11 @@ test('student scenario', async ({ page }) => {
   await page.getByRole('button', { name: 'Play' }).click();
   await expect(page).toHaveURL(/process=/);
   await page.getByRole('button', { name: 'Pause' }).click();
+  await page.getByRole('button', { name: 'Open the assistant' }).click();
   await page.getByRole('textbox', { name: 'Question for the assistant' }).fill('What does the nucleus do?');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByRole('button', { name: /Show on the model/ }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Minimise the assistant' }).click();
 
   await page.getByRole('button', { name: 'Start the quiz' }).click();
   await answerQuiz(page);

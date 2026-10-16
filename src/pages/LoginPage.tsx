@@ -4,7 +4,7 @@
  * access token stays in memory (session.ts); the refresh token is an HttpOnly cookie.
  */
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { ClassCodeResponse } from '@bilig/content-model/api';
 import { isApiError } from '../api/client';
@@ -16,6 +16,13 @@ import { useLang } from '../lib/hooks';
 import { useUi } from '../state/ui';
 
 type Tab = 'student' | 'adult';
+
+/** Where to go after signing in (`?next=/ky/bio/g8/human-heart`); same-site paths only. */
+function useNextPath(): string | null {
+  const [params] = useSearchParams();
+  const next = params.get('next');
+  return next && next.startsWith('/') && !next.startsWith('//') && !next.includes('\\') ? next : null;
+}
 
 function useErrorText(): (e: unknown) => string {
   const { t } = useTranslation();
@@ -115,6 +122,7 @@ function StepDots({ n }: { n: number }): JSX.Element {
 }
 
 function StudentLogin(): JSX.Element {
+  const next = useNextPath();
   const { t } = useTranslation();
   const lang = useLang();
   const navigate = useNavigate();
@@ -156,7 +164,7 @@ function StudentLogin(): JSX.Element {
     setError(null);
     try {
       await loginStudent(cls.classId, student.id, pin);
-      navigate(`/${lang}`);
+      navigate(next ?? `/${lang}`);
     } catch (err) {
       setError(errorText(err));
       setPin('');
@@ -283,6 +291,7 @@ function StudentLogin(): JSX.Element {
 }
 
 function AdultLogin(): JSX.Element {
+  const next = useNextPath();
   const { t } = useTranslation();
   const lang = useLang();
   const navigate = useNavigate();
@@ -305,7 +314,7 @@ function AdultLogin(): JSX.Element {
         setNeedTotp(true);
         return;
       }
-      navigate(res.permissions.includes('class.manage') ? `/${lang}/teacher` : `/${lang}/cabinet`);
+      navigate(next ?? (res.permissions.includes('class.manage') ? `/${lang}/teacher` : `/${lang}/cabinet`));
     } catch (err) {
       setError(errorText(err));
     } finally {

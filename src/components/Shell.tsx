@@ -49,6 +49,15 @@ export function Shell(): JSX.Element {
   }, [valid, t, i18n.language]);
 
   useEffect(() => applyTheme(hue, theme), [hue, theme]);
+
+  // `--hdr-h`: the sticky header's height, so sticky columns and the 3D view sit right below it.
+  useEffect(() => {
+    const top = document.querySelector<HTMLElement>('.top');
+    if (!top || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => document.documentElement.style.setProperty('--hdr-h', `${top.offsetHeight}px`));
+    ro.observe(top);
+    return () => ro.disconnect();
+  }, [valid]);
   useEffect(() => void loadDeck(), [loadDeck]);
 
   // W-02 hotkeys: `/` and Ctrl/⌘+K open the catalog.

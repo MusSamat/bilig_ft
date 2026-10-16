@@ -18,5 +18,9 @@
   "bot": "Assistant",
   "history": "Conversation",
   "unavailable": "Assistant unavailable",
-  "typeFirst": "Type a question first"
+  "typeFirst": "Type a question first",
+  "open": "Open the assistant",
+  "expand": "Enlarge the chat",
+  "shrink": "Make the chat smaller",
+  "minimize": "Minimise the assistant"
 }

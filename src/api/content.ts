@@ -51,7 +51,7 @@ export const useTopicPackage = (key: string | undefined) =>
     queryFn: ({ signal }) => loadTopicPackage(key!, signal),
     enabled: !!key,
     staleTime: 10 * 60_000,
-    retry: (n, e) => n < 1 && !(isApiError(e) && (e.status === 404 || e.status === 403)),
+    retry: (n, e) => n < 1 && !(isApiError(e) && [401, 403, 404].includes(e.status)),
   });
 
 export async function searchServer(q: string, lang: string): Promise<SearchResponse> {

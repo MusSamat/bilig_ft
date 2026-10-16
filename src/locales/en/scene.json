@@ -30,5 +30,14 @@
   "credits": "Sources and licences",
   "license": "Licence",
   "author": "Author",
-  "source": "Source"
+  "source": "Source",
+  "expand": "Expand",
+  "collapse": "Collapse",
+  "fullscreen": "Full screen",
+  "fullscreenExit": "Exit full screen",
+  "cardPanel": "Card",
+  "hideCard": "Hide the card",
+  "showCard": "Show the card",
+  "loadingProgress": "Loading model… {{percent}}%",
+  "preparing": "Preparing the 3D model…"
 }

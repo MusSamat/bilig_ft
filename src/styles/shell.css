@@ -218,6 +218,14 @@
     margin-inline-start: auto;
     color: var(--muted);
   }
+  .hit__lock {
+    margin-inline-start: auto;
+    display: inline-flex;
+    color: var(--muted);
+  }
+  .hit--locked > .ic:last-child {
+    margin-inline-start: 0;
+  }
   .hit b {
     display: block;
     font-weight: 600;

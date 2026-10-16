@@ -127,6 +127,12 @@ export const ICONS: Record<string, string> = {
   coach: "<path d='M8.5 13V6.5a1.5 1.5 0 0 1 3 0V12M11.5 11V5a1.5 1.5 0 0 1 3 0v6M14.5 11.5V7a1.5 1.5 0 0 1 3 0v7a6 6 0 0 1-6 6h-1a6 6 0 0 1-4.7-2.3L3.6 14.6a1.5 1.5 0 0 1 2.3-1.9L8.5 15'/>",
   wheel: "<rect x='7' y='3' width='10' height='18' rx='5'/><path d='M12 7v3'/>",
   pointer: "<path d='M5 3l14 7-6 2-2 6z'/>",
+  /* ---- focus view (drawn on the same grid) ---- */
+  expand: "<path d='M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5'/>",
+  shrink: "<path d='M20 10h-6V4M4 14h6v6M14 10l6.5-6.5M10 14l-6.5 6.5'/>",
+  fullscreen: "<path d='M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4'/><rect x='8' y='8' width='8' height='8' rx='1.5'/>",
+  fullscreenExit: "<path d='M9 4v4a1 1 0 0 1-1 1H4M20 9h-4a1 1 0 0 1-1-1V4M15 20v-4a1 1 0 0 1 1-1h4M4 15h4a1 1 0 0 1 1 1v4'/>",
+  sidebar: "<rect x='3' y='4' width='18' height='16' rx='2'/><path d='M15 4v16'/>",
 };
 
 /** Content / legacy ids → icon ids (same meaning = same glyph as the prototype). */

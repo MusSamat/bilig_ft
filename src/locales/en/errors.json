@@ -15,5 +15,6 @@
   "conflict": "The data has changed",
   "version_mismatch": "Changed elsewhere. Reload the page",
   "idempotency_conflict": "Duplicate request",
-  "payload_too_large": "The file is too large"
+  "payload_too_large": "The file is too large",
+  "license_required": "This topic needs a sign-in or a school licence"
 }

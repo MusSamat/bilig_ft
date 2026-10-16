@@ -19,7 +19,7 @@ import { Box3, Color, DoubleSide, Material, Mesh, MeshStandardMaterial, Plane, S
 import { KTX2Loader, type GLTFLoader } from 'three-stdlib';
 import { conceptForNode, type ResolvedConcept } from '@bilig/content-model';
 import { CONCEPT_KEY_USERDATA, type SceneProps, type ViewerState } from '@bilig/scene-core';
-import { DIM_OPACITY, GHOST_OPACITY, GLOW_COLOR, PartsView, hoverHandlers, lookFor, usePick } from '@bilig/scene-kit';
+import { CompileGate, DIM_OPACITY, GHOST_OPACITY, GLOW_COLOR, PartsView, hoverHandlers, lookFor, usePick } from '@bilig/scene-kit';
 import { buildCell, cellKind } from './cells.js';
 import { proceduralParts } from './layout.js';
 
@@ -182,7 +182,12 @@ function LoadedModel(props: SceneProps & { url: string; opts: GltfPluginOptions;
     });
     return scene;
   }, [gltf.scene]);
-  return <BoundModel {...props} root={root} procedural={false} />;
+  // The GLB arrives after the first frame: compile its materials before it shows.
+  return (
+    <CompileGate>
+      <BoundModel {...props} root={root} procedural={false} />
+    </CompileGate>
+  );
 }
 
 function ProceduralCell(props: SceneProps & { clip?: Plane[]; kind: 'animal' | 'plant' }): JSX.Element {

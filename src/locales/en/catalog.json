@@ -11,5 +11,6 @@
   "empty": "Nothing found",
   "loadError": "Could not load the catalog",
   "hotkey": "Shortcuts: / or Ctrl+K",
-  "emptyHint": "Try another word: search works in Kyrgyz, Russian and English."
+  "emptyHint": "Try another word: search works in Kyrgyz, Russian and English.",
+  "signInToOpen": "Opens after signing in"
 }

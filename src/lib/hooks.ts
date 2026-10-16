@@ -64,14 +64,18 @@ export function useKeydown(handler: (e: KeyboardEvent) => void, opts: { enabled?
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-/** Keep Tab focus inside a dialog; restore focus to the opener on close (W-02). */
-export function useFocusTrap(ref: RefObject<HTMLElement>, active: boolean): void {
+/**
+ * Keep Tab focus inside a dialog; restore focus to the opener on close (W-02).
+ * `also`: selector of floating controls that stay reachable above the dialog (the assistant).
+ */
+export function useFocusTrap(ref: RefObject<HTMLElement>, active: boolean, also?: string): void {
   useEffect(() => {
     if (!active) return;
     const opener = document.activeElement as HTMLElement | null;
     const on = (e: KeyboardEvent) => {
       if (e.key !== 'Tab' || !ref.current) return;
-      const items = [...ref.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => el.offsetParent !== null || el === document.activeElement);
+      const extra = also ? [...document.querySelectorAll<HTMLElement>(also)].flatMap((el) => (el.matches(FOCUSABLE) ? [el] : [...el.querySelectorAll<HTMLElement>(FOCUSABLE)])) : [];
+      const items = [...ref.current.querySelectorAll<HTMLElement>(FOCUSABLE), ...extra].filter((el) => el.offsetParent !== null || el === document.activeElement);
       if (!items.length) return;
       const first = items[0];
       const last = items[items.length - 1];
@@ -88,7 +92,7 @@ export function useFocusTrap(ref: RefObject<HTMLElement>, active: boolean): void
       document.removeEventListener('keydown', on);
       opener?.focus?.();
     };
-  }, [ref, active]);
+  }, [ref, active, also]);
 }
 
 /** Debounced value. */

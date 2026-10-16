@@ -19,6 +19,7 @@ import {
 } from '@bilig/content-model';
 import { groupedSubjects, subjectSwatch, subjectTree } from '@bilig/scene-core';
 import { useCatalog, useServerSearch } from '../api/content';
+import { useSession } from '../api/session';
 import { Formula } from '../lib/formula';
 import { useDebounced, useFocusTrap, useKeydown, useLang } from '../lib/hooks';
 import { topicPath } from '../lib/urls';
@@ -243,9 +244,12 @@ function SubjectCard({ subject, count, current, onOpen }: { subject: Subject; co
 }
 
 function TopicHit({ topic, onOpen }: { topic: TopicSummary; onOpen: () => void }): JSX.Element {
+  const { t } = useTranslation();
   const lang = useLang();
+  // Guests may open only the demo topics; the rest still open (with a sign-in prompt).
+  const locked = useSession((s) => s.status === 'guest') && topic.demo === false;
   return (
-    <button type="button" className="hit" onClick={onOpen}>
+    <button type="button" className={`hit${locked ? ' hit--locked' : ''}`} onClick={onOpen}>
       <Icon name="cube" />
       <span>
         <b>
@@ -254,6 +258,12 @@ function TopicHit({ topic, onOpen }: { topic: TopicSummary; onOpen: () => void }
         </b>
         {topic.classification && <small>{tr(topic.classification, lang)}</small>}
       </span>
+      {locked && (
+        <span className="hit__lock" title={t('catalog.signInToOpen')}>
+          <Icon name="lock" className="sm" />
+          <span className="visually-hidden">{t('catalog.signInToOpen')}</span>
+        </span>
+      )}
       <Icon name="chev" className="sm" />
     </button>
   );

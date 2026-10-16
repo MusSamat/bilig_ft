@@ -15,6 +15,7 @@ import { useKeydown, useLang } from '../lib/hooks';
 import { useViewer } from '../state/viewer';
 import { takeSnapshot } from './actions';
 import { useTopic } from './context';
+import { toggleStage, useStageView } from './stageView';
 
 export function LessonPanel({ ready }: { ready: boolean }): JSX.Element | null {
   const { t } = useTranslation();
@@ -24,6 +25,7 @@ export function LessonPanel({ ready }: { ready: boolean }): JSX.Element | null {
   const { pkg, concepts } = useTopic();
   const index = useViewer((s) => s.lessonStep);
   const setLessonStep = useViewer((s) => s.setLessonStep);
+  const expanded = useStageView((s) => s.expanded);
 
   const tour: Tour = useMemo(
     () =>
@@ -99,6 +101,10 @@ export function LessonPanel({ ready }: { ready: boolean }): JSX.Element | null {
         </button>
       </div>
       <div className="lesson__tools">
+        <button type="button" className="btn2 btn--sm" onClick={toggleStage} aria-pressed={expanded}>
+          <Icon name={expanded ? 'shrink' : 'expand'} className="sm" />
+          {expanded ? t('scene.collapse') : t('lesson.present')}
+        </button>
         <button type="button" className="btn2 btn--sm" onClick={() => void takeSnapshot(pkg, lang, true, navigate)}>
           <Icon name="camera" className="sm" />
           {t('scene.snapshot')}

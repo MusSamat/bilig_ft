@@ -7,21 +7,23 @@
  * commands explain why they are disabled). A first-visit coach explains the
  * controls. WebGL-unavailable fallback shows the specimen picture.
  */
-import { Component, Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Component, Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { t as tr } from '@bilig/content-model';
 import { conceptColor, player, registry, type ViewerState } from '@bilig/scene-core';
 import { Icon } from '../components/Icon';
 import { Thumb } from '../components/Thumb';
-import { useCoarsePointer, useLang, useReducedMotion } from '../lib/hooks';
+import { useCoarsePointer, useFocusTrap, useKeydown, useLang, useReducedMotion } from '../lib/hooks';
 import { hasLiveThumb, storeLiveThumb } from '../lib/thumbs';
-import { hasWebGL } from '../scene/webgl';
+import { useWebGLSupport } from '../scene/webgl';
 import { effectiveVisibility, sceneHandle, useViewer } from '../state/viewer';
 import { takeSnapshot } from './actions';
+import { ConceptCard } from './ConceptCard';
 import { fileUrl, useTopic } from './context';
 import { ModePanel } from './ModePanel';
 import { StructureTree } from './StructureTree';
+import { collapseStage, fullscreenSupported, onFullscreenChange, resetStageView, toggleFullscreen, toggleStage, useStageView } from './stageView';
 
 const SceneViewer = lazy(() => import('../scene/SceneViewer'));
 
@@ -194,6 +196,7 @@ function Tool(p: ToolProps): JSX.Element {
       <button
         type="button"
         className="tb"
+        data-tool={p.id}
         aria-pressed={p.pressed}
         disabled={p.disabled}
         onClick={p.onClick}
@@ -216,8 +219,54 @@ export function Stage({ ready }: { ready: boolean }): JSX.Element {
   const touch = useCoarsePointer();
   const v = useViewer();
   const plugin = ready ? registry.get(pkg.topic.scene.plugin) : undefined;
-  const webgl = useMemo(hasWebGL, []);
+  // null while the (off-main-thread) probe runs: the stage shows its loader meanwhile.
+  const webgl = useWebGLSupport();
   const [coach, setCoach] = useState(() => !coachSeen());
+  const sectionRef = useRef<HTMLElement>(null);
+  const expanded = useStageView((s) => s.expanded);
+  const fullscreen = useStageView((s) => s.fullscreen);
+  const drawer = useStageView((s) => s.drawer);
+  const canFullscreen = useMemo(fullscreenSupported, []);
+
+  // Focus view (~94% modal, optionally browser fullscreen): the same element, so the
+  // canvas, camera, focus and process step are untouched.
+  useFocusTrap(sectionRef, expanded, '.chat-fab, .chat-dock:not([hidden])');
+  useEffect(() => {
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+      resetStageView();
+    };
+  }, []);
+  useEffect(() => {
+    if (!expanded) return;
+    useStageView.setState({ drawer: !!useViewer.getState().selected || lesson });
+    const root = document.documentElement;
+    const overflow = root.style.overflow;
+    root.style.overflow = 'hidden';
+    sectionRef.current?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      // Popovers inside the view and the assistant close first.
+      if (document.getElementById('credits-pop') || (e.target as Element | null)?.closest?.('.chat-dock')) return;
+      collapseStage();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      root.style.overflow = overflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [expanded, lesson]);
+  // A picked part opens the concept drawer.
+  useEffect(() => {
+    if (expanded && v.selected) useStageView.setState({ drawer: true });
+  }, [expanded, v.selected]);
+  // `F` toggles the focus view (physical key, so it works on the Cyrillic layout too).
+  useKeydown((e) => {
+    if (e.code !== 'KeyF' || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+    e.preventDefault();
+    toggleStage();
+  });
 
   // Drive the process player from requestAnimationFrame (W-41).
   const playing = !!v.process?.state.playing;
@@ -287,14 +336,25 @@ export function Stage({ ready }: { ready: boolean }): JSX.Element {
     </section>
   );
 
-  if (!webgl) return fallback(t('scene.webglUnavailable'));
+  if (webgl && !webgl.available) return fallback(t('scene.webglUnavailable'));
   if (ready && !plugin) return fallback(t('scene.pluginMissing'));
 
   const needsFocus = !v.selected;
   const focusReason = { reasonId: 'tb-needs-focus', reason: t('scene.needsFocus') };
 
+  const cls = ['stage', v.findItemKey && 'is-finding', expanded && 'is-expanded', fullscreen && 'is-fs', expanded && drawer && 'has-drawer'].filter(Boolean).join(' ');
   return (
-    <section className={`stage${v.findItemKey ? ' is-finding' : ''}`} aria-labelledby="stage-title" aria-describedby="scene-alt">
+    <>
+    {expanded && <div className="stage-backdrop" aria-hidden="true" onClick={collapseStage} />}
+    <section
+      ref={sectionRef}
+      className={cls}
+      aria-labelledby="stage-title"
+      aria-describedby="scene-alt"
+      role={expanded ? 'dialog' : undefined}
+      aria-modal={expanded || undefined}
+      tabIndex={expanded ? -1 : undefined}
+    >
       <h2 id="stage-title" className="visually-hidden">
         {t('scene.region')}
       </h2>
@@ -302,8 +362,15 @@ export function Stage({ ready }: { ready: boolean }): JSX.Element {
         {alt}
       </p>
       <div className="stage__gl">
-        {plugin ? (
-          <SceneBoundary fallback={<StageLoading />}>
+        {plugin && webgl ? (
+          <SceneBoundary
+            fallback={
+              <div className="stage__loading" role="alert">
+                <Icon name="info" />
+                <span>{t('scene.webglUnavailable')}</span>
+              </div>
+            }
+          >
             <Suspense fallback={<StageLoading />}>
               <SceneViewer
                 topic={pkg.topic}
@@ -342,6 +409,9 @@ export function Stage({ ready }: { ready: boolean }): JSX.Element {
         <Tool id="hide" icon="eyeoff" label={t('scene.hideOthers')} pressed={v.toolbar === 'hide'} disabled={needsFocus} {...focusReason} onClick={v.hideOthers} />
         <Tool id="reset" icon="reset" label={t('scene.reset')} onClick={v.resetView} />
         <Tool id="shot" icon="camera" label={t('scene.snapshot')} disabled={!plugin} reasonId="tb-loading" reason={t('scene.loading')} onClick={() => void takeSnapshot(pkg, lang, lesson, navigate)} />
+        <span className="toolbar__sep" aria-hidden="true" />
+        <Tool id="expand" icon={expanded ? 'shrink' : 'expand'} label={expanded ? t('scene.collapse') : t('scene.expand')} pressed={expanded} onClick={toggleStage} />
+        {canFullscreen && <Tool id="fullscreen" icon={fullscreen ? 'fullscreenExit' : 'fullscreen'} label={fullscreen ? t('scene.fullscreenExit') : t('scene.fullscreen')} pressed={fullscreen} onClick={() => void toggleFullscreen()} />}
         <span id="tb-needs-focus" className="visually-hidden">
           {t('scene.needsFocus')}
         </span>
@@ -350,7 +420,30 @@ export function Stage({ ready }: { ready: boolean }): JSX.Element {
         </span>
       </div>
       <Credits />
+      {expanded &&
+        (drawer ? (
+          <aside className="stage__drawer" aria-label={t('scene.cardPanel')}>
+            <div className="stage__drawer-bar">
+              <span>{t('scene.cardPanel')}</span>
+              <button type="button" className="ibtn" onClick={() => useStageView.setState({ drawer: false })} aria-label={t('scene.hideCard')} title={t('scene.hideCard')}>
+                <Icon name="sidebar" />
+              </button>
+            </div>
+            <ConceptCard ready={ready} />
+          </aside>
+        ) : (
+          <button type="button" className="stage__drawer-tab glass" onClick={() => useStageView.setState({ drawer: true })}>
+            <Icon name="sidebar" className="sm" />
+            {t('scene.showCard')}
+          </button>
+        ))}
+      {expanded && (
+        <button type="button" className="ibtn glass stage__close" onClick={collapseStage} aria-label={t('scene.collapse')} title={t('scene.collapse')}>
+          <Icon name="x" />
+        </button>
+      )}
       {coach && ready && <Coach touch={touch} onClose={closeCoach} />}
     </section>
+    </>
   );
 }

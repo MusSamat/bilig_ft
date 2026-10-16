@@ -271,6 +271,43 @@
     color: var(--muted);
     font-weight: 600;
   }
+  .stage__progress {
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    top: var(--sp-4);
+    transform: translateX(-50%);
+    display: grid;
+    gap: var(--sp-2);
+    min-width: 200px;
+    padding: var(--sp-2) var(--sp-4);
+    border-radius: var(--r-pill);
+    border: 1px solid var(--edge);
+    background: var(--panel);
+    box-shadow: var(--sh);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    text-align: center;
+    pointer-events: none;
+  }
+  .stage__progress-bar {
+    height: 4px;
+    border-radius: var(--r-pill);
+    background: var(--line);
+    overflow: hidden;
+  }
+  .stage__progress-bar > span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.2s ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .stage__progress-bar > span {
+      transition: none;
+    }
+  }
   .stage__pulse {
     width: 120px;
     height: 120px;
@@ -1609,5 +1646,336 @@
       align-self: flex-end;
       margin: 0 14px 14px;
     }
+  }
+}
+@layer pages {
+  /* ---------- Desktop: the model stays on screen while the card scrolls ---------- */
+  @media (min-width: 981px) {
+    .stage:not(.is-expanded) {
+      position: sticky;
+      top: calc(var(--hdr-h, 76px) + var(--sp-2));
+      height: clamp(480px, calc(100vh - var(--hdr-h, 76px) - var(--sp-2) * 3), 860px);
+    }
+    .side {
+      position: sticky;
+      top: calc(var(--hdr-h, 76px) + var(--sp-2));
+      max-height: calc(100vh - var(--hdr-h, 76px) - var(--sp-2) * 3);
+      overflow-y: auto;
+      border-radius: var(--r-xl);
+      scrollbar-width: thin;
+    }
+  }
+
+  /* ---------- 3D focus view (same element as the inline stage) ---------- */
+  .stage-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    background: rgb(6 14 20 / 0.55);
+    animation: fade var(--t-fast);
+  }
+  .stage.is-expanded {
+    --drawer-w: min(400px, 40%);
+    position: fixed;
+    top: max(2.5vh, env(safe-area-inset-top, 0px));
+    right: max(2.5vw, env(safe-area-inset-right, 0px));
+    bottom: max(2.5vh, env(safe-area-inset-bottom, 0px));
+    left: max(2.5vw, env(safe-area-inset-left, 0px));
+    height: auto;
+    z-index: 40;
+    background: radial-gradient(65% 60% at 50% 45%, rgb(255 255 255 / 0.5), transparent 75%), linear-gradient(160deg, var(--g3), var(--g4));
+    box-shadow: 0 40px 120px rgb(0 0 0 / 0.35);
+    animation: rise var(--t) var(--ease);
+  }
+  :root[data-theme='dark'] .stage.is-expanded {
+    background: radial-gradient(65% 60% at 50% 45%, rgb(255 255 255 / 0.06), transparent 75%), linear-gradient(160deg, var(--g3), var(--g4));
+  }
+  .stage.is-expanded:focus {
+    outline: none;
+  }
+  .stage.is-fs {
+    inset: 0;
+    border-radius: 0;
+    border: 0;
+  }
+  .stage__close {
+    position: absolute;
+    top: var(--sp-4);
+    right: var(--sp-4);
+    z-index: 6;
+    width: var(--tap);
+    height: var(--tap);
+  }
+  .stage.is-expanded .view {
+    top: calc(var(--sp-4) + var(--tap) + var(--sp-2));
+  }
+  .toolbar__sep {
+    width: 1px;
+    align-self: stretch;
+    margin: 6px 2px;
+    background: var(--line);
+  }
+  .stage__drawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--drawer-w);
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border-left: 1px solid var(--edge);
+    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: var(--blur);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: drawer-in var(--t) var(--ease);
+  }
+  .stage__drawer-bar {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-height: calc(var(--tap) + var(--sp-4) * 2);
+    padding: 0 calc(var(--tap) + var(--sp-4) * 2) 0 22px;
+    font-weight: 700;
+    color: var(--muted);
+    background: var(--panel);
+  }
+  .stage__drawer-bar span {
+    flex: 1;
+  }
+  .stage__drawer .insp {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    padding-top: 0;
+  }
+  .stage__drawer-tab {
+    position: absolute;
+    top: var(--sp-4);
+    right: calc(var(--sp-4) + var(--tap) + var(--sp-2));
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: var(--tap);
+    padding: 0 16px;
+    border-radius: var(--r-pill);
+    font-weight: 600;
+    color: var(--ink);
+  }
+  /* With the drawer open, the overlays centre on the remaining model area. */
+  .stage.has-drawer .view {
+    right: calc(var(--drawer-w) + var(--sp-4));
+    top: var(--sp-4);
+  }
+  .stage.has-drawer .toolbar,
+  .stage.has-drawer .hint {
+    right: var(--drawer-w);
+  }
+  .stage.has-drawer .toolbar {
+    max-width: calc(100% - var(--drawer-w) - 24px);
+  }
+  .stage.has-drawer .chips-wrap {
+    right: calc(var(--drawer-w) + 300px);
+  }
+  /* The view has its own close button; size toggles are icons there (named by aria-label). */
+  .stage.is-expanded .tb[data-tool='expand'] > span,
+  .stage.is-expanded .tb[data-tool='fullscreen'] > span {
+    display: none;
+  }
+  .stage__drawer .ih__close {
+    display: none;
+  }
+  .stage.has-drawer .stepcap {
+    left: calc((100% - var(--drawer-w)) / 2);
+  }
+  .stage.has-drawer .credits {
+    right: calc(var(--drawer-w) + var(--sp-4));
+  }
+  .stage.has-drawer .stage__close {
+    z-index: 6;
+  }
+  @keyframes drawer-in {
+    from {
+      transform: translateX(24px);
+      opacity: 0;
+    }
+  }
+
+  /* ---------- Floating assistant ---------- */
+  .chat-fab {
+    position: fixed;
+    z-index: 45;
+    right: calc(var(--sp-4) + env(safe-area-inset-right, 0px));
+    bottom: calc(var(--sp-4) + env(safe-area-inset-bottom, 0px));
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-height: 56px;
+    padding: 0 22px 0 18px;
+    border: 0;
+    border-radius: var(--r-pill);
+    background: var(--accent);
+    color: var(--on);
+    font-weight: 700;
+    box-shadow: 0 14px 40px color-mix(in srgb, var(--accent) 40%, transparent);
+    animation: rise var(--t) var(--ease);
+  }
+  .chat-fab:hover {
+    filter: brightness(1.06);
+  }
+  .chat-dock {
+    position: fixed;
+    z-index: 45;
+    right: calc(var(--sp-4) + env(safe-area-inset-right, 0px));
+    bottom: calc(var(--sp-4) + env(safe-area-inset-bottom, 0px));
+    width: min(400px, calc(100vw - var(--sp-4) * 2));
+    height: min(600px, calc(100vh - var(--hdr-h, 76px) - var(--sp-4) * 2));
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: 0 30px 90px rgb(0 0 0 / 0.28);
+    animation: rise var(--t) var(--ease);
+  }
+  .chat-dock[hidden] {
+    display: none;
+  }
+  .chat-dock--expanded {
+    z-index: 47;
+    top: max(5vh, env(safe-area-inset-top, 0px));
+    left: max(5vw, env(safe-area-inset-left, 0px));
+    right: max(5vw, env(safe-area-inset-right, 0px));
+    bottom: max(5vh, env(safe-area-inset-bottom, 0px));
+    width: auto;
+    height: auto;
+    background: linear-gradient(160deg, var(--g3), var(--g4));
+  }
+  .chat-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 46;
+    background: rgb(6 14 20 / 0.45);
+    animation: fade var(--t-fast);
+  }
+  .chat-dock .tutor {
+    flex: 1;
+    min-height: 0;
+    padding: 16px 18px 18px;
+  }
+  .chat-dock .msgs {
+    max-height: none;
+    min-height: 0;
+  }
+  .chat-dock--expanded .tutor {
+    width: min(920px, 100%);
+    margin: 0 auto;
+  }
+  .chat-dock--expanded .m {
+    font-size: var(--fs-md);
+  }
+  .tutor__head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-2);
+  }
+  .tutor__head .th2 {
+    flex: 1;
+    margin: 0;
+  }
+  .chat-dock__ctl {
+    display: flex;
+    gap: 2px;
+  }
+  @media (max-width: 720px) {
+    .chat-fab {
+      width: 56px;
+      padding: 0;
+      justify-content: center;
+    }
+    .chat-fab__label {
+      display: none;
+    }
+    .chat-dock--panel {
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: auto;
+      height: min(75vh, 640px);
+      border-radius: var(--r-xl) var(--r-xl) 0 0;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .chat-dock--expanded {
+      inset: 0;
+      border-radius: 0;
+    }
+    .stage.is-expanded {
+      inset: 0;
+      border-radius: 0;
+      overflow-y: auto;
+    }
+    .stage.is-expanded .stage__gl {
+      height: 62vh;
+    }
+    .stage__drawer {
+      position: relative;
+      width: auto;
+      order: 7;
+      border-left: 0;
+      border-top: 1px solid var(--edge);
+      overflow: visible;
+    }
+    .stage.has-drawer .view,
+    .stage.has-drawer .credits {
+      right: auto;
+    }
+    .stage__drawer-tab {
+      position: static;
+      order: 6;
+      align-self: flex-start;
+      margin: 0 14px 14px;
+    }
+    .stage__close {
+      top: var(--sp-2);
+      right: var(--sp-2);
+    }
+    .stage.is-expanded .chips-wrap {
+      padding-right: calc(var(--tap) + var(--sp-4));
+    }
+    /* Room below the toolbar for the floating assistant button. */
+    .stage.is-expanded {
+      padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    }
+  }
+
+  /* ---------- Locked topic (licence) ---------- */
+  .locked {
+    text-align: center;
+    justify-items: center;
+  }
+  .locked__ic {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--soft);
+    color: var(--accent);
+  }
+  .locked__ic .ic {
+    width: 30px;
+    height: 30px;
+  }
+  .locked .row {
+    justify-content: center;
+    flex-wrap: wrap;
   }
 }

@@ -131,6 +131,7 @@ export function Header(): JSX.Element {
 }
 
 function ProfileButton(): JSX.Element {
+  const location = useLocation();
   const { t } = useTranslation();
   const lang = useLang();
   const navigate = useNavigate();
@@ -153,8 +154,11 @@ function ProfileButton(): JSX.Element {
   }, [open]);
 
   if (!me) {
+    // Come back here after signing in (but not to the login page itself).
+    const here = location.pathname + location.search;
+    const next = /\/login$/.test(location.pathname) || here === `/${lang}` ? '' : `?next=${encodeURIComponent(here)}`;
     return (
-      <Link className="btn2 top__login" to={`/${lang}/login`} aria-label={t('header.login')}>
+      <Link className="btn2 top__login" to={`/${lang}/login${next}`} aria-label={t('header.login')}>
         <Icon name="user" />
         <span className="top__label">{t('header.login')}</span>
       </Link>

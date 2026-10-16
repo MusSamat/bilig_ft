@@ -30,5 +30,14 @@
   "credits": "Булактар жана лицензиялар",
   "license": "Лицензия",
   "author": "Автор",
-  "source": "Булак"
+  "source": "Булак",
+  "expand": "Чоңойтуу",
+  "collapse": "Кичирейтүү",
+  "fullscreen": "Толук экран",
+  "fullscreenExit": "Толук экрандан чыгуу",
+  "cardPanel": "Карточка",
+  "hideCard": "Карточканы жашыруу",
+  "showCard": "Карточканы көрсөтүү",
+  "loadingProgress": "Модель жүктөлүүдө… {{percent}}%",
+  "preparing": "3D-модель даярдалууда…"
 }

@@ -3,7 +3,9 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import i18n from '../i18n';
 import { useSession } from '../api/session';
+import { Route } from 'react-router-dom';
 import { renderPage, resetSession } from '../cabinet/testUtils';
+import { renderRoutes } from '../test/utils';
 import { CLASS_CODE, STUDENT_PIN, TEACHER_EMAIL, TEACHER_PASSWORD } from '../mocks/db';
 import LoginPage from './LoginPage';
 
@@ -62,5 +64,27 @@ describe('LoginPage — adult', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
     await waitFor(() => expect(useSession.getState().permissions).toContain('class.manage'));
     expect(await screen.findByTestId('elsewhere')).toBeInTheDocument();
+  });
+});
+
+describe('LoginPage — return to where the user came from', () => {
+  it('signs in and goes to `?next=` (same-site paths only)', async () => {
+    const user = userEvent.setup();
+    renderRoutes(`/en/login?next=${encodeURIComponent('/en/bio/g8/human-heart?focus=bio.aorta')}`, <Route path="/:lang/login" element={<LoginPage />} />);
+    await user.click(screen.getByRole('tab', { name: /Teacher or staff/ }));
+    await user.type(screen.getByLabelText('E-mail'), TEACHER_EMAIL);
+    await user.type(screen.getByLabelText('Password'), TEACHER_PASSWORD);
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/en/bio/g8/human-heart?focus=bio.aorta'));
+  });
+
+  it('ignores an off-site `next`', async () => {
+    const user = userEvent.setup();
+    renderRoutes(`/en/login?next=${encodeURIComponent('//evil.example/x')}`, <Route path="/:lang/login" element={<LoginPage />} />);
+    await user.click(screen.getByRole('tab', { name: /Teacher or staff/ }));
+    await user.type(screen.getByLabelText('E-mail'), TEACHER_EMAIL);
+    await user.type(screen.getByLabelText('Password'), TEACHER_PASSWORD);
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/en/teacher'));
   });
 });

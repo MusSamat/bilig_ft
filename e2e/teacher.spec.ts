@@ -1,6 +1,6 @@
 /** TZ §3 «Учитель»: sign in, class + CSV import + cards, assignment, lesson mode, presentation PPTX, results. */
 import { expect, test } from '@playwright/test';
-import { expectNoA11yViolations, freshMocks } from './helpers';
+import { expectNoA11yViolations, freshMocks, SCENE_TIMEOUT } from './helpers';
 
 test('teacher scenario', async ({ page }) => {
   await freshMocks(page);
@@ -35,7 +35,7 @@ test('teacher scenario', async ({ page }) => {
   // 4. Lesson mode on the projector, stepping with arrows / remote.
   await page.goto('/en/bio/g7/animal-cell?view=lesson');
   await expect(page.getByText(/Step 1 of \d+/)).toBeVisible();
-  await expect(page.locator('.stage canvas')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('.stage canvas')).toBeVisible({ timeout: SCENE_TIMEOUT });
   await expect(page).toHaveURL(/lesson=0/);
   await page.keyboard.press('ArrowRight');
   await expect(page.getByText(/Step 2 of \d+/)).toBeVisible();
@@ -46,7 +46,7 @@ test('teacher scenario', async ({ page }) => {
   await expect(page.getByText(/Step 2 of \d+/)).toBeVisible();
 
   // 5. Presentation with own 3D snapshot → PPTX.
-  await expect(page.locator('.stage canvas')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('.stage canvas')).toBeVisible({ timeout: SCENE_TIMEOUT });
   await page.waitForTimeout(800);
   await page.getByRole('button', { name: 'Snapshot' }).first().click();
   await expect(page.getByText('Snapshot added to the presentation')).toBeVisible();

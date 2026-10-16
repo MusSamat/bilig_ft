@@ -30,5 +30,14 @@
   "credits": "Источники и лицензии",
   "license": "Лицензия",
   "author": "Автор",
-  "source": "Источник"
+  "source": "Источник",
+  "expand": "Развернуть",
+  "collapse": "Свернуть",
+  "fullscreen": "Во весь экран",
+  "fullscreenExit": "Выйти из полноэкранного режима",
+  "cardPanel": "Карточка",
+  "hideCard": "Скрыть карточку",
+  "showCard": "Показать карточку",
+  "loadingProgress": "Загрузка модели… {{percent}}%",
+  "preparing": "Подготовка 3D-модели…"
 }

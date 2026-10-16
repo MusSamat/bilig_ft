@@ -1,6 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page } from '@playwright/test';
 
+/**
+ * The 3D stage needs the GPU process; with software WebGL (SwiftShader, CI and
+ * old PCs) starting it can take tens of seconds on a busy machine.
+ */
+export const SCENE_TIMEOUT = 90_000;
+
 /** Fresh mock state per test (MSW state lives in sessionStorage). */
 export async function freshMocks(page: Page): Promise<void> {
   await page.goto('/en');

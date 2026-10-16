@@ -10,14 +10,16 @@
  */
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ContactShadows, OrbitControls, PerformanceMonitor } from '@react-three/drei';
+import { ContactShadows, OrbitControls, PerformanceMonitor, useProgress } from '@react-three/drei';
+import { useTranslation } from 'react-i18next';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { t as tr, type Camera, type ResolvedConcept, type Topic, type Vec3 } from '@bilig/content-model';
 import { CONCEPT_KEY_USERDATA, conceptColor, pickConcept, placeLabels, type Hit, type ScenePlugin, type ViewerState } from '@bilig/scene-core';
+import { CompileGate, useShadersCompiling } from '@bilig/scene-kit';
 import { sceneHandle } from '../state/viewer';
-import { isSoftwareGL } from './webgl';
+import { isSoftwareGL, isSoftwareRenderer, reportRenderer } from './webgl';
 
 export interface SceneViewerProps {
   topic: Topic;
@@ -48,6 +50,32 @@ interface Bounds {
   radius: number;
 }
 
+/**
+ * Download progress of the model's files (GLB, textures) over the stage. The
+ * plugin shows its procedural stand-in meanwhile, so the scene is never empty.
+ */
+function ModelProgress(): JSX.Element | null {
+  const { t } = useTranslation();
+  const { active, progress } = useProgress();
+  const compiling = useShadersCompiling();
+  if (!active && !compiling) return null;
+  if (!active)
+    return (
+      <div className="stage__progress" role="status">
+        <span>{t('scene.preparing')}</span>
+      </div>
+    );
+  const pct = Math.round(progress);
+  return (
+    <div className="stage__progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={t('scene.loading')}>
+      <span>{t('scene.loadingProgress', { percent: pct })}</span>
+      <span className="stage__progress-bar" aria-hidden="true">
+        <span style={{ width: `${pct}%` }} />
+      </span>
+    </div>
+  );
+}
+
 const DEFAULT_CAMERA: Camera = { position: [0, 1.5, 6], target: [0, 0, 0], fov: 45 };
 /** A click or hover this close (px) to a structure's anchor counts as that structure. */
 const NEAR_PX = 26;
@@ -55,7 +83,8 @@ const NEAR_PX = 26;
 export default function SceneViewer(props: SceneViewerProps): JSX.Element {
   const { topic, concepts, plugin, state, onPick, onHover, onMiss, assetBaseUrl, labelsAll, autoRotate, reducedMotion, resetNonce, stepCamera, hue = 200 } = props;
   const cam = topic.scene.camera ?? DEFAULT_CAMERA;
-  const lowPower = useMemo(isSoftwareGL, []);
+  // From the worker probe; the real renderer corrects it in onCreated when the worker could not tell.
+  const [lowPower, setLowPower] = useState(isSoftwareGL);
   const maxDpr = typeof window === 'undefined' ? 1 : lowPower ? 0.7 : Math.min(2, window.devicePixelRatio || 1);
   const [dpr, setDpr] = useState(Math.min(1.5, maxDpr));
   const anchors = useRef<Anchors>(new Map());
@@ -93,11 +122,20 @@ export default function SceneViewer(props: SceneViewerProps): JSX.Element {
 
   return (
     <>
+      <ModelProgress />
       <Canvas
         dpr={dpr}
         camera={{ position: cam.position, fov: cam.fov ?? 45, near: 0.05, far: 200 }}
         gl={{ antialias: !lowPower, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
         onCreated={({ gl }) => {
+          const ctx = gl.getContext();
+          const info = ctx.getExtension('WEBGL_debug_renderer_info');
+          const name = String(info ? ctx.getParameter(info.UNMASKED_RENDERER_WEBGL) : ctx.getParameter(ctx.RENDERER));
+          reportRenderer(name);
+          if (isSoftwareRenderer(name)) {
+            setLowPower(true);
+            setDpr((d) => Math.min(d, 0.7));
+          }
           gl.localClippingEnabled = true;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.05;
@@ -119,7 +157,9 @@ export default function SceneViewer(props: SceneViewerProps): JSX.Element {
         />
         <RoomLighting hue={hue} />
         <Suspense fallback={null}>
-          <Plugin topic={topic} concepts={concepts} state={state} onSelectConcept={onPick} assetBaseUrl={assetBaseUrl} />
+          <CompileGate>
+            <Plugin topic={topic} concepts={concepts} state={state} onSelectConcept={onPick} assetBaseUrl={assetBaseUrl} />
+          </CompileGate>
           <Grounding />
         </Suspense>
         <AnchorIndex anchors={anchors} bounds={bounds} concepts={concepts} />

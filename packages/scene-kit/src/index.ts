@@ -8,3 +8,4 @@ export * from './pick.js';
 export * from './hooks.js';
 export * from './parts.js';
 export { PartsView, type PartsViewProps } from './PartsView.js';
+export { CompileGate, useShadersCompiling } from './CompileGate.js';

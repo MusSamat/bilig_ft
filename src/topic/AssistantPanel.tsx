@@ -4,7 +4,7 @@
  * with concept citations that highlight the structure in 3D. When the service
  * is unavailable (503 / no network) a localized message is shown.
  */
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { t as tr } from '@bilig/content-model';
 import { isApiError } from '../api/client';
@@ -34,7 +34,8 @@ const guestCount = (): number => {
   }
 };
 
-export function AssistantPanel(): JSX.Element | null {
+/** `controls`: the floating dock's buttons (size / minimise), shown in the header. */
+export function AssistantPanel({ controls }: { controls?: ReactNode } = {}): JSX.Element | null {
   const { t } = useTranslation();
   const lang = useLang();
   const { pkg, concepts } = useTopic();
@@ -118,17 +119,20 @@ export function AssistantPanel(): JSX.Element | null {
   const unavailable = msgs.some((m, i) => i === msgs.length - 1 && m.errorKey === 'errors.tutor_unavailable') || !online;
 
   return (
-    <section id="tutor" className="tutor panel glass" aria-labelledby="assistant-title">
-      <h2 id="assistant-title" className="th2">
-        <Icon name="chat" />
-        {t('assistant.title')}
-        {unavailable && (
-          <span className="pill pill--bad">
-            <Icon name="wifioff" />
-            {t('assistant.unavailable')}
-          </span>
-        )}
-      </h2>
+    <section id="tutor" className="tutor" aria-labelledby="assistant-title">
+      <div className="tutor__head">
+        <h2 id="assistant-title" className="th2">
+          <Icon name="chat" />
+          {t('assistant.title')}
+          {unavailable && (
+            <span className="pill pill--bad">
+              <Icon name="wifioff" />
+              {t('assistant.unavailable')}
+            </span>
+          )}
+        </h2>
+        {controls}
+      </div>
       <div className="msgs" ref={logRef} role="log" aria-live="polite" aria-label={t('assistant.history')}>
         <p className="m b">{t('assistant.greeting', { topic: tr(pkg.topic.title, lang) })}</p>
         {msgs.map((m, i) => (
@@ -170,6 +174,7 @@ export function AssistantPanel(): JSX.Element | null {
       )}
       <form className="ask" onSubmit={onSubmit}>
         <input
+          id="assistant-input"
           ref={inputRef}
           value={input}
           maxLength={2000}

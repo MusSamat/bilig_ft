@@ -40,6 +40,6 @@ describe('ConceptCard (W-30/W-31)', () => {
     await user.click(screen.getByRole('button', { name: 'В презентацию' }));
     expect(useDeck.getState().slides).toMatchObject([{ kind: 'concept', conceptKey: 'chem.oxygen' }]);
     expect(useDeck.getState().topicKey).toBe(pkg.topic.key);
-    expect(screen.getByRole('button', { name: 'Спросить помощника' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Спросить про это' })).toBeInTheDocument();
   });
 });

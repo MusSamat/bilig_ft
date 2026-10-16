@@ -21,5 +21,13 @@
   "current": "Current",
   "duration": "Duration",
   "notFoundHint": "Check the address or pick a topic in the catalog.",
-  "nOfM": "{{n}} of {{m}}"
+  "nOfM": "{{n}} of {{m}}",
+  "locked": {
+    "guestTitle": "Sign in to open this topic",
+    "guest": "This topic is for pupils and teachers of licensed schools. Sign in to open it, or try the open demo topic.",
+    "noLicenceTitle": "No licence for this topic",
+    "noLicence": "Your school has no licence for this subject. Please contact your school administrator.",
+    "signIn": "Sign in",
+    "demo": "Open the demo: {{title}}"
+  }
 }
