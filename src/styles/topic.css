@@ -271,13 +271,30 @@
     color: var(--muted);
     font-weight: 600;
   }
-  .stage__progress {
+  /*
+   * Loading / failed state: a veil over the 3D area and its labels (above the
+   * step caption and coach marks, below the drawer and the stage close button)
+   * with the message card centred on it, like a modal scoped to the stage.
+   */
+  .stage__veil {
     position: absolute;
-    z-index: 2;
-    left: 50%;
-    top: var(--sp-4);
-    transform: translateX(-50%);
+    inset: 0;
+    z-index: 4;
     display: grid;
+    place-items: center;
+    padding: var(--sp-4);
+    background: color-mix(in srgb, var(--panel) 62%, transparent);
+    backdrop-filter: blur(10px) saturate(0.8);
+    -webkit-backdrop-filter: blur(10px) saturate(0.8);
+  }
+  /* The model's coach marks wait until there is a model to point at. */
+  .stage:has(.stage__veil) .coach {
+    display: none;
+  }
+  .stage__progress {
+    display: grid;
+    justify-items: center;
+    text-align: center;
     gap: var(--sp-2);
     min-width: 200px;
     padding: var(--sp-2) var(--sp-4);
@@ -291,7 +308,33 @@
     text-align: center;
     pointer-events: none;
   }
+  .stage__progress--failed {
+    border-radius: var(--r-lg, 16px);
+    padding: var(--sp-4) var(--sp-5, 24px);
+    gap: var(--sp-3);
+    color: var(--ink, inherit);
+    font-weight: 600;
+  }
+  .stage__spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 3px solid var(--line);
+    border-top-color: var(--accent);
+    animation: stage-spin 0.9s linear infinite;
+  }
+  @keyframes stage-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .stage__spinner {
+      animation: none;
+    }
+  }
   .stage__progress-bar {
+    justify-self: stretch;
     height: 4px;
     border-radius: var(--r-pill);
     background: var(--line);

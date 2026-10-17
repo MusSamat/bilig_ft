@@ -60,7 +60,18 @@ export interface SceneProps {
   onSelectConcept: (key: string | null) => void;
   /** Base URL for package-relative asset paths (`SceneSpec.asset`), from the manifest. */
   assetBaseUrl?: string;
+  /**
+   * Plugins that download a model report its state, so the viewer can show a
+   * centred loader and, on failure, a message with «Retry» instead of a
+   * stand-in that looks like the real model.
+   */
+  onAssetStatus?: (status: AssetStatus) => void;
+  /** Bumped by «Retry»: forget a failed download and fetch it again. */
+  retryNonce?: number;
 }
+
+/** Download state of a plugin's model file. */
+export type AssetStatus = 'loading' | 'ready' | 'failed';
 
 /**
  * Engine conventions every plugin follows so the shared viewer core can fly

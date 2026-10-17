@@ -16,8 +16,8 @@ import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { t as tr, type Camera, type ResolvedConcept, type Topic, type Vec3 } from '@bilig/content-model';
-import { CONCEPT_KEY_USERDATA, conceptColor, pickConcept, placeLabels, type Hit, type ScenePlugin, type ViewerState } from '@bilig/scene-core';
-import { CompileGate, useShadersCompiling } from '@bilig/scene-kit';
+import { CONCEPT_KEY_USERDATA, conceptColor, pickConcept, placeLabels, type AssetStatus, type Hit, type ScenePlugin, type ViewerState } from '@bilig/scene-core';
+import { CompileGate, SceneFx, useShadersCompiling } from '@bilig/scene-kit';
 import { sceneHandle } from '../state/viewer';
 import { isSoftwareGL, isSoftwareRenderer, reportRenderer } from './webgl';
 
@@ -51,29 +51,46 @@ interface Bounds {
 }
 
 /**
- * Download progress of the model's files (GLB, textures) over the stage. The
- * plugin shows its procedural stand-in meanwhile, so the scene is never empty.
+ * Centred over the stage: download progress of the model's files (GLB,
+ * textures), then shader preparation; when the file cannot be loaded, a
+ * message with «Retry».
  */
-function ModelProgress(): JSX.Element | null {
+function ModelProgress({ status, onRetry }: { status: AssetStatus | null; onRetry(): void }): JSX.Element | null {
   const { t } = useTranslation();
   const { active, progress } = useProgress();
   const compiling = useShadersCompiling();
-  if (!active && !compiling) return null;
-  if (!active)
-    return (
+  const loading = active || status === 'loading';
+  let card: JSX.Element;
+  if (status === 'failed')
+    card = (
+      <div className="stage__progress stage__progress--failed" role="alertdialog" aria-labelledby="stage-load-failed">
+        <span id="stage-load-failed">{t('scene.loadFailed')}</span>
+        <button type="button" className="btn2" onClick={onRetry} autoFocus>
+          {t('scene.retry')}
+        </button>
+      </div>
+    );
+  else if (loading) {
+    const pct = Math.round(active ? progress : 0);
+    card = (
+      <div className="stage__progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={t('scene.loading')}>
+        <span className="stage__spinner" aria-hidden="true" />
+        <span>{t('scene.loadingProgress', { percent: pct })}</span>
+        <span className="stage__progress-bar" aria-hidden="true">
+          <span style={{ width: `${pct}%` }} />
+        </span>
+      </div>
+    );
+  } else if (compiling)
+    card = (
       <div className="stage__progress" role="status">
+        <span className="stage__spinner" aria-hidden="true" />
         <span>{t('scene.preparing')}</span>
       </div>
     );
-  const pct = Math.round(progress);
-  return (
-    <div className="stage__progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={t('scene.loading')}>
-      <span>{t('scene.loadingProgress', { percent: pct })}</span>
-      <span className="stage__progress-bar" aria-hidden="true">
-        <span style={{ width: `${pct}%` }} />
-      </span>
-    </div>
-  );
+  else return null;
+  // A veil over the 3D area and its labels: nothing behind competes with the message.
+  return <div className="stage__veil">{card}</div>;
 }
 
 const DEFAULT_CAMERA: Camera = { position: [0, 1.5, 6], target: [0, 0, 0], fov: 45 };
@@ -93,6 +110,14 @@ export default function SceneViewer(props: SceneViewerProps): JSX.Element {
   const labelEls = useRef(new Map<string, HTMLSpanElement>());
   const leaderEls = useRef(new Map<string, SVGLineElement>());
   const Plugin = plugin.Component;
+  const [assetStatus, setAssetStatus] = useState<AssetStatus | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
+  useEffect(() => setAssetStatus(null), [topic.key]);
+
+  const focusKeys = useMemo(
+    () => [...new Set([state.selectedConceptKey, state.highlightConceptKey, ...(state.citedConceptKeys ?? [])].filter((k): k is string => !!k))],
+    [state.selectedConceptKey, state.highlightConceptKey, state.citedConceptKeys],
+  );
 
   const labelKeys = useMemo(() => {
     const vis = state.visibility ?? {};
@@ -122,11 +147,12 @@ export default function SceneViewer(props: SceneViewerProps): JSX.Element {
 
   return (
     <>
-      <ModelProgress />
+      <ModelProgress status={assetStatus} onRetry={() => setRetryNonce((n) => n + 1)} />
       <Canvas
         dpr={dpr}
         camera={{ position: cam.position, fov: cam.fov ?? 45, near: 0.05, far: 200 }}
-        gl={{ antialias: !lowPower, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
+        gl={{ antialias: !lowPower, alpha: true, stencil: true, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
+        shadows={lowPower ? false : 'soft'}
         onCreated={({ gl }) => {
           const ctx = gl.getContext();
           const info = ctx.getExtension('WEBGL_debug_renderer_info');
@@ -137,8 +163,10 @@ export default function SceneViewer(props: SceneViewerProps): JSX.Element {
             setDpr((d) => Math.min(d, 0.7));
           }
           gl.localClippingEnabled = true;
-          gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.05;
+          // Khronos PBR Neutral: true-to-authored colours (the concept hues match the UI chips),
+          // where ACES shifts saturated hues and greys out highlights.
+          gl.toneMapping = THREE.NeutralToneMapping;
+          gl.toneMappingExposure = 1;
           gl.setClearColor(0x000000, 0);
         }}
         onPointerMissed={(e) => {
@@ -155,10 +183,11 @@ export default function SceneViewer(props: SceneViewerProps): JSX.Element {
           onIncline={() => setDpr((d) => Math.min(maxDpr, +(d * 1.2).toFixed(2)))}
           onFallback={() => setDpr(0.75)}
         />
-        <RoomLighting hue={hue} />
+        <RoomLighting hue={hue} bounds={bounds} shadows={!lowPower} />
+        <SceneFx focus={focusKeys} hover={state.hoveredConceptKey ?? null} shadows={!lowPower} />
         <Suspense fallback={null}>
           <CompileGate>
-            <Plugin topic={topic} concepts={concepts} state={state} onSelectConcept={onPick} assetBaseUrl={assetBaseUrl} />
+            <Plugin topic={topic} concepts={concepts} state={state} onSelectConcept={onPick} assetBaseUrl={assetBaseUrl} onAssetStatus={setAssetStatus} retryNonce={retryNonce} />
           </CompileGate>
           <Grounding />
         </Suspense>
@@ -223,10 +252,17 @@ export default function SceneViewer(props: SceneViewerProps): JSX.Element {
   );
 }
 
-/** Prototype lighting: a PMREM room environment, hemisphere + key light, and a rim light in the subject hue. */
-function RoomLighting({ hue }: { hue: number }): JSX.Element {
+/**
+ * Studio lighting: a PMREM room environment for reflections, a soft
+ * hemisphere fill, a key light that casts soft shadows (its shadow camera is
+ * fitted to the model, so molecules and landscapes get equally crisp shadows)
+ * and a rim light in the subject hue that separates the model from the stage.
+ */
+function RoomLighting({ hue, bounds, shadows }: { hue: number; bounds: MutableRefObject<Bounds | null>; shadows: boolean }): JSX.Element {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
+  const key = useRef<THREE.DirectionalLight>(null);
+  const fitted = useRef('');
   useEffect(() => {
     let tex: THREE.Texture | null = null;
     try {
@@ -242,11 +278,43 @@ function RoomLighting({ hue }: { hue: number }): JSX.Element {
       tex?.dispose();
     };
   }, [gl, scene]);
+  // Key light and its shadow camera follow the model bounds (assets load late).
+  useFrame(() => {
+    const l = key.current;
+    const b = bounds.current;
+    if (!l || !b) return;
+    const sig = `${b.center.x.toFixed(2)},${b.center.y.toFixed(2)},${b.center.z.toFixed(2)},${b.radius.toFixed(2)}`;
+    if (sig === fitted.current) return;
+    fitted.current = sig;
+    const r = b.radius * 1.25;
+    l.position.copy(b.center).add(new THREE.Vector3(0.45, 0.78, 0.55).normalize().multiplyScalar(r * 3));
+    l.target.position.copy(b.center);
+    l.target.updateMatrixWorld();
+    const cam = l.shadow.camera;
+    cam.left = cam.bottom = -r;
+    cam.right = cam.top = r;
+    cam.near = r * 0.5;
+    cam.far = r * 6;
+    cam.updateProjectionMatrix();
+    l.shadow.normalBias = b.radius * 0.012;
+    l.shadow.needsUpdate = true;
+  });
   const rim = useMemo(() => new THREE.Color().setHSL(hue / 360, 0.7, 0.6), [hue]);
   return (
     <>
-      <hemisphereLight args={[0xffffff, 0x8fa0b8, 0.45]} />
-      <directionalLight position={[4, 7, 6]} intensity={1.1} />
+      <hemisphereLight args={[0xffffff, 0x8fa0b8, 0.5]} />
+      <directionalLight
+        ref={key}
+        position={[4, 7, 6]}
+        intensity={1.35}
+        castShadow={shadows}
+        shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.0004}
+        shadow-radius={4}
+      >
+        <object3D attach="target" />
+      </directionalLight>
+      <directionalLight position={[-5, 2, 4]} intensity={0.35} />
       <pointLight position={[-6, 3, -5]} color={rim} intensity={0.9} decay={0} />
     </>
   );

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ViewerState } from '@bilig/scene-core';
-import { conceptColor, lookFor, GHOST_OPACITY } from './look.js';
+import { conceptColor, desaturate, lookFor, GHOST_OPACITY } from './look.js';
 import { conceptKeyOf, hitsFrom, resolvePick, conceptUserData } from './pick.js';
 
 const st = (over: Partial<ViewerState> = {}): ViewerState => ({ lang: 'ky', selectedConceptKey: null, modes: {}, ...over });
@@ -32,6 +32,31 @@ describe('lookFor', () => {
     expect(lookFor('a', sel).emissiveIntensity).toBeGreaterThan(lookFor('c', sel).emissiveIntensity);
     expect(lookFor('c', sel).hovered).toBe(true);
     expect(lookFor('b', st()).dimmed).toBe(false);
+  });
+  it('the structure in focus keeps its own colours; the rest fades towards grey', () => {
+    const sel = st({ selectedConceptKey: 'a' });
+    const a = lookFor('a', sel, { baseColor: '#ff0000' });
+    expect(a.color).toBe('#ff0000');
+    expect(a.emissive).toBe('#ff0000');
+    // A fixed-colour part (CPK atom) takes its concept colour in focus.
+    expect(lookFor('a', sel, { baseColor: '#ffffff', hue: 210 }).color).toBe(conceptColor(210));
+    expect(lookFor('a', st(), { baseColor: '#ffffff', hue: 210 }).color).toBe('#ffffff');
+    // Drawn after the see-through rest, at full opacity.
+    expect(a.onTop).toBe(true);
+    expect(a.opacity).toBe(1);
+    expect(lookFor('b', sel).onTop).toBe(false);
+    // A highlighted shell gets more visible, never less.
+    expect(lookFor('a', sel, { container: true, containerOpacity: 0.62 }).opacity).toBeGreaterThanOrEqual(0.62);
+    expect(a.saturation).toBe(1);
+    const b = lookFor('b', sel, { baseColor: '#ff0000' });
+    expect(b.saturation).toBeLessThan(0.5);
+    expect(b.color).not.toBe('#ff0000');
+  });
+  it('desaturate keeps the colour at 1 and gives grey at 0', () => {
+    expect(desaturate('#3366cc', 1)).toBe('#3366cc');
+    const g = desaturate('#3366cc', 0);
+    expect(g.slice(1, 3)).toBe(g.slice(3, 5));
+    expect(g.slice(3, 5)).toBe(g.slice(5, 7));
   });
   it('conceptColor wraps hue', () => {
     expect(conceptColor(370)).toBe(conceptColor(10));

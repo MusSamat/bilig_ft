@@ -4,7 +4,7 @@ import { bindParts, unboundConcepts } from '@bilig/scene-kit';
 import { realTopics } from '../../scene-kit/src/real-packages.test-util.js';
 import { element, shellConfig, ELEMENTS } from './elements.js';
 import { atomRadius, inferBonds, parseMoleculeParams } from './params.js';
-import { buildMoleculeParts, repFrom } from './build.js';
+import { buildMoleculeParts, NUCLEON_R, packNucleons, repFrom } from './build.js';
 import { moleculePlugin } from './index.js';
 
 const water = {
@@ -71,7 +71,17 @@ describe('node names', () => {
   it('bonds bind through the parent group for multi-bonds', () => {
     const parts = buildMoleculeParts(parseMoleculeParams({ formula: 'O2', atoms: [{ id: 'O1', element: 'O', position: [0, 0, 0] }, { id: 'O2', element: 'O', position: [1.21, 0, 0] }], bonds: [{ a: 'O1', b: 'O2', order: 2 }] }), { modes: {} });
     const b = bindParts(parts, [{ key: 'k.bond', kind: 'bond', hue: 1, isContainer: false, title: { ky: 'b', ru: 'b', en: 'b' }, description: { ky: 'b', ru: 'b', en: 'b' }, props: [], related: [], misconceptions: [], examples: { stem: [], simple: [] }, nodes: ['Bond_*'] }]);
-    expect(b.get('Bond_O1_O2_2')).toBe('k.bond');
+    expect(b.get('Bond_O1_O2_2a')).toBe('k.bond');
+    // Double bond = two parallel sticks, each split half per atom.
+    expect(parts.filter((x) => x.name.startsWith('Bond_O1_O2_') && x.shape.kind === 'cylinder')).toHaveLength(4);
+  });
+  it('single bonds split in CPK halves; nucleus is close-packed', () => {
+    const parts = buildMoleculeParts(parseMoleculeParams(water), { modes: {} });
+    expect(parts.find((x) => x.name === 'Bond_O1_H1_a')?.color).toBe(element('O').color);
+    expect(parts.find((x) => x.name === 'Bond_O1_H1_b')?.color).toBe(element('H').color);
+    const pts = packNucleons(23, NUCLEON_R);
+    for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) expect(Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1], pts[i][2] - pts[j][2])).toBeGreaterThan(2 * NUCLEON_R * 0.9);
+    expect(Math.max(...pts.map((q) => Math.hypot(...q)))).toBeLessThan(NUCLEON_R * 3.4);
   });
 });
 

@@ -20,7 +20,8 @@ function ionRadius(ion: Ion, p: CrystalParams, rep: Rep): number {
   const nn = nearestNeighbour(p.lattice, p.a);
   const vdwMax = Math.max(...p.ions.map((i) => element(i.el).vdw));
   const full = ion.radius ?? (nn / 2) * (0.75 + 0.25 * (element(ion.el).vdw / vdwMax));
-  return rep === 'spacefill' ? full : Math.max(nn * 0.08, full * 0.4);
+  // Ball-and-stick keeps the true Na⁺ : Cl⁻ size ratio (0.102 : 0.181 nm) at half size.
+  return rep === 'spacefill' ? full : Math.max(nn * 0.1, full * 0.55);
 }
 
 const MAX_BONDS = 900;
@@ -40,18 +41,22 @@ export function buildCrystalParts(p: CrystalParams, modes: ModeState): Part[] {
     if (!positions.length) return;
     const n = (counts.get(ion.el) ?? 0) + 1;
     counts.set(ion.el, n);
-    parts.push({ name: `Ion_${ion.el}_${n === 1 ? 'all' : `all${n}`}`, shape: { kind: 'instances', positions, radius: ionRadius(ion, p, rep) }, color: element(ion.el).color, concept: ion.concept, roughness: 0.3 });
+    parts.push({ name: `Ion_${ion.el}_${n === 1 ? 'all' : `all${n}`}`, shape: { kind: 'instances', positions, radius: ionRadius(ion, p, rep) }, color: element(ion.el).color, concept: ion.concept, roughness: 0.24 });
   });
   if (rep === 'ball-stick') {
     const bonds = latticeBonds(points, nearestNeighbour(p.lattice, p.a)).slice(0, MAX_BONDS);
     parts.push({ name: 'Bonds', shape: { kind: 'group' }, noPick: true });
     bonds.forEach(([i, j], k) =>
-      parts.push({ name: `Bond_${k + 1}`, parent: 'Bonds', shape: { kind: 'tube', from: points[i].pos, to: points[j].pos, radius: p.a * 0.025 }, color: '#c9ced6', concept: p.bondConcept }),
+      parts.push({ name: `Bond_${k + 1}`, parent: 'Bonds', shape: { kind: 'tube', from: points[i].pos, to: points[j].pos, radius: p.a * 0.02 }, color: '#d3d9e2', concept: p.bondConcept }),
     );
   }
-  parts.push({ name: 'UnitCell', shape: { kind: 'box', size: [p.a, p.a, p.a] }, position: [p.a / 2, p.a / 2, p.a / 2], color: '#ffd166', opacity: 0.12, container: true });
+  parts.push({ name: 'UnitCell', shape: { kind: 'box', size: [p.a, p.a, p.a] }, position: [p.a / 2, p.a / 2, p.a / 2], color: '#f0a830', opacity: 0.08, container: true });
   unitCellEdges(p).forEach(([a, b], k) =>
-    parts.push({ name: `UnitCell_Edge_${k + 1}`, parent: 'UnitCell', shape: { kind: 'tube', from: a, to: b, radius: p.a * 0.012 }, color: '#ffd166' }),
+    parts.push({ name: `UnitCell_Edge_${k + 1}`, parent: 'UnitCell', shape: { kind: 'tube', from: a, to: b, radius: p.a * 0.03 }, color: '#f5a524', glow: 0.25, roughness: 0.3 }),
   );
+  // Corner joints so the edge frame reads as one clean cage.
+  [0, 1].forEach((x) => [0, 1].forEach((y) => [0, 1].forEach((z) =>
+    parts.push({ name: `UnitCell_Corner_${x}${y}${z}`, parent: 'UnitCell', shape: { kind: 'sphere', radius: p.a * 0.03, widthSegments: 16 }, position: [x * p.a, y * p.a, z * p.a], color: '#f5a524', glow: 0.25, roughness: 0.3 }),
+  )));
   return parts;
 }

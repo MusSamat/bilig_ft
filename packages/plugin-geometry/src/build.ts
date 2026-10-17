@@ -6,7 +6,10 @@
  */
 import type { Vec3 } from '@bilig/content-model';
 import type { ModeState } from '@bilig/scene-core';
-import { add, type Part } from '@bilig/scene-kit';
+import { add, len3, sub, type Part } from '@bilig/scene-kit';
+
+/** Edge colour: near-black slate, crisp on light faces and on a projector. */
+const EDGE = '#1d2733';
 import type { Solid } from './solids.js';
 
 export type Render = 'solid' | 'wireframe';
@@ -72,9 +75,15 @@ function solidParts(s: Solid): Part[] {
   const vr = er * 2.6;
   const parts: Part[] = [{ name: id, shape: { kind: 'group' }, position: s.position, rotation: s.rotation, concept: s.concept, container: true }];
   const face = (name: string, points: Vec3[]): Part => ({ name: `${id}_Face_${name}`, parent: id, shape: { kind: 'polygon', points }, container: true, concept: s.concept });
-  const edgeP = (name: string, a: Vec3, b: Vec3): Part => ({ name: `${id}_Edge_${name}`, parent: id, shape: { kind: 'tube', from: a, to: b, radius: er }, color: '#1d2733', concept: s.edgesConcept });
-  const vertexP = (name: string, p: Vec3): Part => ({ name: `${id}_Vertex_${name}`, parent: id, shape: { kind: 'sphere', radius: vr, widthSegments: 16 }, position: p, color: '#ef476f', concept: s.verticesConcept });
-  const guide = (name: string, a: Vec3, b: Vec3, color: string): Part => ({ name: `${id}_${name}`, parent: id, shape: { kind: 'tube', from: a, to: b, radius: er * 0.8 }, color });
+  const edgeP = (name: string, a: Vec3, b: Vec3): Part => ({ name: `${id}_Edge_${name}`, parent: id, shape: { kind: 'tube', from: a, to: b, radius: er }, color: EDGE, material: 'plastic', concept: s.edgesConcept });
+  const vertexP = (name: string, p: Vec3): Part => ({ name: `${id}_Vertex_${name}`, parent: id, shape: { kind: 'sphere', radius: vr, widthSegments: 24 }, position: p, color: '#ef476f', material: 'plastic', concept: s.verticesConcept });
+  // Measurement guides: slightly self-lit so they read through the glass faces, with end dots.
+  const guide = (name: string, a: Vec3, b: Vec3, color: string): Part[] => [
+    { name: `${id}_${name}`, parent: id, shape: { kind: 'tube', from: a, to: b, radius: er * 0.9 }, color, material: 'plastic', glow: 0.35 },
+    { name: `${id}_${name}_End`, parent: `${id}_${name}`, shape: { kind: 'sphere', radius: er * 1.9, widthSegments: 16 }, position: [0, len3(sub(b, a)) / 2, 0], color, material: 'plastic', glow: 0.35 },
+  ];
+  // Thin surface lines (meridians, generators) that show the form of curved solids; they carry no concept of their own.
+  const line = (name: string, shape: Part['shape'], extra: Partial<Part> = {}): Part => ({ name: `${id}_Grid_${name}`, parent: id, shape, color: EDGE, opacity: 0.5, container: true, noPick: true, ...extra });
 
   const poly = polyFor(s);
   if (poly) {
@@ -92,41 +101,65 @@ function solidParts(s: Solid): Part[] {
       });
     }
     poly.verts.forEach((v, i) => parts.push(vertexP(poly.vertexNames?.[i] ?? String(i + 1), v)));
-    if (s.type === 'pyramid') parts.push(guide('Height', [0, s.height, 0], [0, 0, 0], '#ffd166'));
+    if (s.type === 'pyramid') parts.push(...guide('Height', [0, s.height, 0], [0, 0, 0], '#ffd166'));
+    if (s.type === 'right-triangle') {
+      // Right-angle mark at C (part of the right-angle concept through its parent vertex).
+      const m = Math.min(...s.legs) * 0.14;
+      parts.push({ name: `${id}_Vertex_C_Mark_1`, parent: `${id}_Vertex_C`, shape: { kind: 'tube', from: [m, 0, 0.002], to: [m, m, 0.002], radius: er * 0.7 }, color: EDGE, material: 'plastic' });
+      parts.push({ name: `${id}_Vertex_C_Mark_2`, parent: `${id}_Vertex_C`, shape: { kind: 'tube', from: [0, m, 0.002], to: [m, m, 0.002], radius: er * 0.7 }, color: EDGE, material: 'plastic' });
+    }
     if (s.type === 'right-triangle' && s.squaresOnSides) {
       const [a, b] = s.legs;
       const A: Vec3 = [a, 0, 0];
       const B: Vec3 = [0, b, 0];
       const n: Vec3 = [b, a, 0]; // outward normal of AB scaled to |AB|
-      parts.push(face('Square_a', [[0, 0, 0], A, [a, -a, 0], [0, -a, 0]]));
-      parts.push(face('Square_b', [[0, 0, 0], [-b, 0, 0], [-b, b, 0], B]));
-      parts.push(face('Square_c', [A, add(A, n), add(B, n), B]));
+      // Squares carry a unit grid (one cell per unit²: 9 + 16 = 25) and their own outlines.
+      const square = (name: string, pts: Vec3[]) => {
+        parts.push({ ...face(name, pts), texture: 'grid', textureScale: 1 });
+        pts.forEach((p, i) => parts.push({ name: `${id}_Face_${name}_Edge_${i + 1}`, parent: id, shape: { kind: 'tube', from: p, to: pts[(i + 1) % pts.length], radius: er * 0.8 }, color: EDGE, material: 'plastic', concept: s.concept }));
+      };
+      square('Square_a', [[0, 0, 0], A, [a, -a, 0], [0, -a, 0]]);
+      square('Square_b', [[0, 0, 0], B, [-b, b, 0], [-b, 0, 0]]);
+      square('Square_c', [A, add(A, n), add(B, n), B]);
     }
     return parts;
   }
   switch (s.type) {
     case 'sphere':
       parts.push({ name: `${id}_Face_Surface`, parent: id, shape: { kind: 'sphere', radius: s.radius, widthSegments: 48 }, container: true, concept: s.concept });
-      parts.push({ name: `${id}_Edge_Equator`, parent: id, shape: { kind: 'torus', radius: s.radius, tube: er }, rotation: [Math.PI / 2, 0, 0], color: '#1d2733', concept: s.edgesConcept });
+      parts.push({ name: `${id}_Edge_Equator`, parent: id, shape: { kind: 'torus', radius: s.radius, tube: er, segments: 128 }, rotation: [Math.PI / 2, 0, 0], color: EDGE, material: 'plastic', concept: s.edgesConcept });
+      for (let k = 0; k < 6; k++) parts.push(line(`M${k + 1}`, { kind: 'torus', radius: s.radius * 1.001, tube: er * 0.4, segments: 96 }, { rotation: [0, (k * Math.PI) / 6, 0] }));
+      for (const [k, lat] of [[1, Math.PI / 4], [2, -Math.PI / 4]] as const) {
+        parts.push(line(`P${k}`, { kind: 'torus', radius: s.radius * Math.cos(lat) * 1.001, tube: er * 0.4, segments: 96 }, { position: [0, s.radius * Math.sin(lat), 0], rotation: [Math.PI / 2, 0, 0] }));
+      }
       parts.push(vertexP('Center', [0, 0, 0]));
-      parts.push(guide('Radius', [0, 0, 0], [s.radius, 0, 0], '#06d6a0'));
+      parts.push(...guide('Radius', [0, 0, 0], [s.radius, 0, 0], '#06d6a0'));
       break;
     case 'cylinder': {
       const y = s.height / 2;
       parts.push({ name: `${id}_Face_Side`, parent: id, shape: { kind: 'cylinder', radiusTop: s.radius, radiusBottom: s.radius, height: s.height, segments: 48, openEnded: true }, container: true, concept: s.concept });
       parts.push(face('BaseTop', circle(s.radius, y)), face('BaseBottom', circle(s.radius, -y)));
-      parts.push({ name: `${id}_Edge_Top`, parent: id, shape: { kind: 'torus', radius: s.radius, tube: er }, position: [0, y, 0], rotation: [Math.PI / 2, 0, 0], color: '#1d2733', concept: s.edgesConcept });
-      parts.push({ name: `${id}_Edge_Bottom`, parent: id, shape: { kind: 'torus', radius: s.radius, tube: er }, position: [0, -y, 0], rotation: [Math.PI / 2, 0, 0], color: '#1d2733', concept: s.edgesConcept });
-      parts.push(guide('Height', [0, -y, 0], [0, y, 0], '#ffd166'), guide('Radius', [0, -y, 0], [s.radius, -y, 0], '#06d6a0'));
+      parts.push({ name: `${id}_Edge_Top`, parent: id, shape: { kind: 'torus', radius: s.radius, tube: er, segments: 128 }, position: [0, y, 0], rotation: [Math.PI / 2, 0, 0], color: EDGE, material: 'plastic', concept: s.edgesConcept });
+      parts.push({ name: `${id}_Edge_Bottom`, parent: id, shape: { kind: 'torus', radius: s.radius, tube: er, segments: 128 }, position: [0, -y, 0], rotation: [Math.PI / 2, 0, 0], color: EDGE, material: 'plastic', concept: s.edgesConcept });
+      for (let k = 0; k < 12; k++) {
+        const a = (k * Math.PI) / 6;
+        const p: Vec3 = [Math.cos(a) * s.radius * 1.002, 0, Math.sin(a) * s.radius * 1.002];
+        parts.push(line(`G${k + 1}`, { kind: 'tube', from: [p[0], -y, p[2]], to: [p[0], y, p[2]], radius: er * 0.4 }));
+      }
+      parts.push(...guide('Height', [0, -y, 0], [0, y, 0], '#ffd166'), ...guide('Radius', [0, -y, 0], [s.radius, -y, 0], '#06d6a0'));
       break;
     }
     case 'cone': {
       const y = s.height / 2;
       parts.push({ name: `${id}_Face_Side`, parent: id, shape: { kind: 'cylinder', radiusTop: 0, radiusBottom: s.radius, height: s.height, segments: 48, openEnded: true }, container: true, concept: s.concept });
       parts.push(face('Base', circle(s.radius, -y)));
-      parts.push({ name: `${id}_Edge_Base`, parent: id, shape: { kind: 'torus', radius: s.radius, tube: er }, position: [0, -y, 0], rotation: [Math.PI / 2, 0, 0], color: '#1d2733', concept: s.edgesConcept });
+      parts.push({ name: `${id}_Edge_Base`, parent: id, shape: { kind: 'torus', radius: s.radius, tube: er, segments: 128 }, position: [0, -y, 0], rotation: [Math.PI / 2, 0, 0], color: EDGE, material: 'plastic', concept: s.edgesConcept });
+      for (let k = 0; k < 12; k++) {
+        const a = (k * Math.PI) / 6;
+        parts.push(line(`G${k + 1}`, { kind: 'tube', from: [Math.cos(a) * s.radius * 1.002, -y, Math.sin(a) * s.radius * 1.002], to: [0, y, 0], radius: er * 0.4 }));
+      }
       parts.push(vertexP('Apex', [0, y, 0]));
-      parts.push(guide('Height', [0, -y, 0], [0, y, 0], '#ffd166'), guide('Radius', [0, -y, 0], [s.radius, -y, 0], '#06d6a0'));
+      parts.push(...guide('Height', [0, -y, 0], [0, y, 0], '#ffd166'), ...guide('Radius', [0, -y, 0], [s.radius, -y, 0], '#06d6a0'));
       break;
     }
     case 'torus':
@@ -145,5 +178,5 @@ export function buildGeometryParts(solids: readonly Solid[]): Part[] {
 }
 
 /** Opacity of faces for a render mode. */
-export const faceOpacity = (r: Render) => (r === 'wireframe' ? 0.06 : 0.82);
+export const faceOpacity = (r: Render) => (r === 'wireframe' ? 0.06 : 0.62);
 

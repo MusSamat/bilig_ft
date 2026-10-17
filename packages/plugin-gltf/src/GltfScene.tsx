@@ -2,10 +2,11 @@
  * GLB scene (TZ W-20/W-21/W-25): loads the topic asset with meshopt + KTX2
  * support, binds nodes to concepts by name masks (`Mito_*`) from the topic
  * overrides, and applies the shared concept look (selection glow, hover,
- * dimming of the rest, ghost/hide). Falls back to a procedural scene — named
- * with the same node masks — when there is no asset or it fails to load (404,
- * parse error): a ported Workbench cell for cell topics, generic blobs
- * otherwise. Failures are remembered per URL so a missing file is not
+ * dimming of the rest, ghost/hide). Without an asset it draws a procedural scene
+ * named with the same node masks; while the asset downloads it draws nothing
+ * and reports `loading` (the viewer shows a centred loader); when it fails
+ * (404, parse error) cell topics get the ported Workbench cell and the rest
+ * report `failed` (the viewer offers «Retry»). Failures are remembered per URL so a missing file is not
  * refetched on every mount.
  *
  * Nested containers: textured shells (a planet's crust) stay opaque with their
@@ -18,8 +19,8 @@ import { useGLTF } from '@react-three/drei';
 import { Box3, Color, DoubleSide, Material, Mesh, MeshStandardMaterial, Plane, Sphere, Vector3, type Object3D } from 'three';
 import { KTX2Loader, type GLTFLoader } from 'three-stdlib';
 import { conceptForNode, type ResolvedConcept } from '@bilig/content-model';
-import { CONCEPT_KEY_USERDATA, type SceneProps, type ViewerState } from '@bilig/scene-core';
-import { CompileGate, DIM_OPACITY, GHOST_OPACITY, GLOW_COLOR, PartsView, hoverHandlers, lookFor, usePick } from '@bilig/scene-kit';
+import { CONCEPT_KEY_USERDATA, type AssetStatus, type SceneProps, type ViewerState } from '@bilig/scene-core';
+import { CompileGate, DIM_OPACITY, FOCUS_RENDER_ORDER, FOCUS_TINT, GHOST_OPACITY, GLOW_INTENSITY, HOVER_INTENSITY, HOVER_TINT, PartsView, conceptColor, hoverHandlers, lookFor, setSaturation, setTint, usePick } from '@bilig/scene-kit';
 import { buildCell, cellKind } from './cells.js';
 import { proceduralParts } from './layout.js';
 
@@ -66,6 +67,8 @@ interface MatBase {
   depthWrite: boolean;
   emissive: Color;
   emissiveIntensity: number;
+  /** Own colour: the selection lifts the structure in it (white for textured / vertex-coloured). */
+  color: Color;
   textured: boolean;
 }
 const baseOf = (m: Material): MatBase => {
@@ -78,6 +81,7 @@ const baseOf = (m: Material): MatBase => {
       depthWrite: m.depthWrite,
       emissive: std.emissive ? std.emissive.clone() : new Color(0),
       emissiveIntensity: std.emissiveIntensity ?? 0,
+      color: std.color ? std.color.clone() : new Color(1, 1, 1),
       textured: !!std.map,
     };
   }
@@ -130,17 +134,35 @@ function applyLooks(root: Object3D, concepts: readonly ResolvedConcept[], state:
         const focus = !!(state.selectedConceptKey || state.highlightConceptKey);
         opacity = focus ? b.opacity * 0.35 : b.opacity;
       } else if (look.opacity === GHOST_OPACITY) opacity = Math.min(b.opacity, GHOST_OPACITY);
-      else if (container) opacity = procedural ? (look.dimmed ? b.opacity * 0.5 : look.highlighted ? Math.min(0.45, b.opacity * 1.8) : b.opacity) : look.opacity;
+      else if (container) {
+        // Shells keep the see-through level their author gave them (a cytoplasm
+        // is fainter than a membrane); stacked shells at one forced level would
+        // wash the organelles out. Untuned (opaque) shells get the shared level.
+        const own = procedural || b.transparent ? b.opacity : look.opacity;
+        opacity = look.dimmed ? own * 0.5 : look.highlighted ? Math.max(own, Math.min(0.6, own * 1.8)) : own;
+      }
       else if (look.dimmed) opacity = Math.min(b.opacity, DIM_OPACITY);
+      // The structure in focus is drawn after the see-through rest (transparent
+      // queue, later renderOrder), so the shells and dimmed parts in front of it
+      // never veil it: it reads in full colour from any angle.
+      const onTop = look.highlighted && !container && look.opacity !== GHOST_OPACITY;
+      o.renderOrder = onTop ? FOCUS_RENDER_ORDER : container ? 2 : 0;
       m.opacity = opacity;
-      m.transparent = opacity < 1 || b.transparent;
-      m.depthWrite = opacity >= 0.6 ? true : false;
+      m.transparent = onTop || opacity < 1 || b.transparent;
+      m.depthWrite = onTop || opacity >= 0.6;
       if (c?.isContainer && !textured) m.side = DoubleSide;
       m.clippingPlanes = clip ?? null;
+      // The structure in focus takes its concept colour — the colour of its chip,
+      // label dot and card — over the model's own shading (the contour marks it,
+      // SceneFx); whatever steps back fades towards grey.
+      const focus = !!(state.selectedConceptKey || state.highlightConceptKey);
+      const own = c ? conceptColor(c.hue) : null;
+      setSaturation(m, look.highlighted || look.hovered ? 1 : key ? look.saturation : focus ? 0.25 : 1);
+      setTint(m, own, look.highlighted ? FOCUS_TINT : look.hovered ? HOVER_TINT : 0);
       if (m instanceof MeshStandardMaterial) {
-        if (look.highlighted || look.hovered) {
-          m.emissive.set(GLOW_COLOR);
-          m.emissiveIntensity = look.emissiveIntensity * (procedural ? 0.75 : 1);
+        if ((look.highlighted || look.hovered) && own) {
+          m.emissive.set(own);
+          m.emissiveIntensity = Math.max(b.emissiveIntensity, look.highlighted ? GLOW_INTENSITY : HOVER_INTENSITY);
         } else {
           m.emissive.copy(b.emissive);
           m.emissiveIntensity = b.emissiveIntensity;
@@ -177,7 +199,7 @@ function LoadedModel(props: SceneProps & { url: string; opts: GltfPluginOptions;
     scene.traverse((o) => {
       if (o instanceof Mesh) {
         o.material = Array.isArray(o.material) ? o.material.map((m: Material) => m.clone()) : (o.material as Material).clone();
-        o.castShadow = true;
+        (Array.isArray(o.material) ? o.material : [o.material]).forEach((m: Material) => setSaturation(m, 1));
       }
     });
     return scene;
@@ -190,9 +212,21 @@ function LoadedModel(props: SceneProps & { url: string; opts: GltfPluginOptions;
   );
 }
 
+/** Reports a download state to the viewer while mounted (Suspense / error fallbacks). */
+function Status({ status, onStatus }: { status: AssetStatus; onStatus?: (s: AssetStatus) => void }): null {
+  useEffect(() => onStatus?.(status), [status, onStatus]);
+  return null;
+}
+
 function ProceduralCell(props: SceneProps & { clip?: Plane[]; kind: 'animal' | 'plant' }): JSX.Element {
   const { kind, concepts } = props;
-  const root = useMemo(() => buildCell(kind, concepts), [kind, concepts]);
+  const root = useMemo(() => {
+    const r = buildCell(kind, concepts);
+    r.traverse((o) => {
+      if (o instanceof Mesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m: Material) => setSaturation(m, 1));
+    });
+    return r;
+  }, [kind, concepts]);
   useEffect(
     () => () =>
       root.traverse((o) => {
@@ -219,16 +253,36 @@ export function makeGltfScene(opts: GltfPluginOptions) {
     const kind = useMemo(() => cellKind(props.concepts), [props.concepts]);
     const asset = props.topic.scene.asset;
     const url = asset && props.assetBaseUrl ? props.assetBaseUrl.replace(/\/?$/, '/') + asset : null;
-    const fallback = kind ? (
+    // A topic without a file draws its authored stand-in. A file that is still
+    // downloading draws nothing (the viewer shows a centred loader); a file that
+    // failed shows the procedural cell where there is one, else the viewer's
+    // «could not load» message — never generic blobs posing as the model.
+    const standIn = kind ? (
       <ProceduralCell {...props} clip={clip} kind={kind} />
     ) : (
       <PartsView parts={parts} concepts={props.concepts} state={props.state} onSelectConcept={props.onSelectConcept} clippingPlanes={clip} containerOpacity={0.2} />
     );
-    if (!url || failed.has(url)) return fallback;
+    const onStatus = props.onAssetStatus;
+    useEffect(() => {
+      if (!url || !props.retryNonce) return;
+      failed.delete(url);
+      useGLTF.clear(url);
+    }, [url, props.retryNonce]);
+    if (!url) return standIn;
+    const onFail = kind ? (
+      <>
+        {standIn}
+        <Status status="ready" onStatus={onStatus} />
+      </>
+    ) : (
+      <Status status="failed" onStatus={onStatus} />
+    );
+    if (failed.has(url)) return onFail;
     return (
-      <LoadBoundary fallback={fallback} url={url}>
-        <Suspense fallback={fallback}>
+      <LoadBoundary key={`${url}#${props.retryNonce ?? 0}`} fallback={onFail} url={url}>
+        <Suspense fallback={<Status status="loading" onStatus={onStatus} />}>
           <LoadedModel {...props} url={url} opts={opts} clip={clip} />
+          <Status status="ready" onStatus={onStatus} />
         </Suspense>
       </LoadBoundary>
     );

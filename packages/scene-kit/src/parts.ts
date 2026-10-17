@@ -6,14 +6,24 @@
  * like GLB nodes. This module is pure so naming and binding are unit-tested.
  */
 import { conceptForNode, type ResolvedConcept, type Vec3 } from '@bilig/content-model';
+import type { PartTexture } from './textures.js';
+
+export type { PartTexture } from './textures.js';
 
 export type PartShape =
   | { kind: 'group' }
-  | { kind: 'sphere'; radius: number; widthSegments?: number }
-  | { kind: 'box'; size: Vec3 }
+  /** `hemisphere`: only the half towards local +Y (day/night caps). */
+  | { kind: 'sphere'; radius: number; widthSegments?: number; hemisphere?: boolean }
+  /** `bevel`: rounded edges of this radius (blocks, cases, boards). */
+  | { kind: 'box'; size: Vec3; bevel?: number }
   | { kind: 'cylinder'; radiusTop: number; radiusBottom: number; height: number; segments?: number; openEnded?: boolean }
   | { kind: 'capsule'; radius: number; length: number }
-  | { kind: 'torus'; radius: number; tube: number; arc?: number }
+  /** `segments`: around the ring (long orbits need more than the default 96). */
+  | { kind: 'torus'; radius: number; tube: number; arc?: number; segments?: number }
+  /** Flat annulus in the local XZ plane, UV u running inner → outer edge (planetary rings, dial faces). */
+  | { kind: 'ring'; inner: number; outer: number; segments?: number }
+  /** Surface of revolution about local Y from a profile of [radius, y] points (bulbs, sockets, terminals). */
+  | { kind: 'lathe'; profile: [number, number][]; segments?: number }
   | { kind: 'torusKnot'; radius: number; tube: number }
   | { kind: 'icosahedron'; radius: number; detail?: number }
   /** Cylinder spanning two points (bonds, edges, wires, rods). */
@@ -23,7 +33,33 @@ export type PartShape =
   /** Flat convex polygon (faces), fan-triangulated, double sided. */
   | { kind: 'polygon'; points: Vec3[] }
   /** Instanced spheres (crystal ions). */
-  | { kind: 'instances'; positions: Vec3[]; radius: number };
+  | { kind: 'instances'; positions: Vec3[]; radius: number }
+  /** Thin tube along a polyline through the points (filaments, coils, curved guides). */
+  | { kind: 'polyline'; points: Vec3[]; radius: number; closed?: boolean };
+
+/**
+ * Surface presets (optional; without one a part keeps the default satin
+ * plastic). `metalness` / `roughness` on the part still override the preset.
+ */
+export type PartMaterial =
+  /** Glossy painted / plastic with a clear coat. */
+  | 'plastic'
+  /** Soft matte (paper, chalk, rock, planets). */
+  | 'matte'
+  /** Polished steel / chrome. */
+  | 'metal'
+  /** Brushed metal (stands, rods). */
+  | 'brushed'
+  /** Warm polished metals in the part's own colour (copper wire, brass bob). */
+  | 'copper'
+  /** Varnished wood (the `wood` texture is applied unless another is given). */
+  | 'wood'
+  /** Clear glass: translucent, glossy, doesn't hide what's inside. */
+  | 'glass'
+  /** Rubber / insulation. */
+  | 'rubber'
+  /** Self-lit (the Sun, a glowing filament): ignores scene lights. */
+  | 'emissive';
 
 export interface Part {
   /** Node name (`Atom_O1`, `cube_Edge_3`, `Bob`). Unique within a scene. */
@@ -53,6 +89,23 @@ export interface Part {
   motion?: (t: number) => { position?: Vec3; rotation?: Vec3; scale?: Vec3; visible?: boolean };
   metalness?: number;
   roughness?: number;
+  /** Surface preset (see PartMaterial). */
+  material?: PartMaterial;
+  /** Procedural texture (planets, the Sun, rings, wood, grids); colour multiplies it (use white for true colours). */
+  texture?: PartTexture;
+  /** Texture repeats per scene unit along the surface (`grid`, `wood` on flat polygons). Default 1. */
+  textureScale?: number;
+  /**
+   * World position of the Sun for this body: a day/night terminator from that
+   * direction, whatever the studio lights do (planets, moons).
+   */
+  sunlit?: Vec3;
+  /** Atmosphere colour: a soft rim glow around a sphere (Earth, Venus …). */
+  atmosphere?: string;
+  /** Glow sprite around the part (the Sun, a lit bulb): colour, diameter in scene units, strength 0–1. */
+  halo?: { color: string; size: number; strength?: number };
+  /** Crisp outline of the part's hard edges in this colour (boxes, polyhedra). */
+  edges?: string;
 }
 
 /**

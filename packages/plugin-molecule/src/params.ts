@@ -134,9 +134,13 @@ export function parseMoleculeParams(input: unknown): MoleculeParams {
 /** Node-name-safe formula (`CH4 + 2O2 -> …` → `CH4_2O2_…`). */
 export const nameSafe = (s: string) => s.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
 
-/** Atom display radius (Å) for a representation. */
+/** Ball-and-stick ball = this fraction of the van der Waals radius (Jmol-like, keeps true size ratios). */
+export const BALL_FRACTION = 0.23;
+/** Space-filling scale of the van der Waals radius (true proportions, slightly shrunk so neighbours stay legible). */
+export const SPACEFILL_FRACTION = 0.8;
+
+/** Atom display radius (Å) for a representation: both proportional to the element's van der Waals radius. */
 export function atomRadius(el: string, rep: 'ball-stick' | 'spacefill'): number {
   const e = element(el);
-  // Ball-and-stick proportions of the Workbench prototype (atoms read as balls, bonds as sticks).
-  return rep === 'spacefill' ? e.vdw * 0.8 : Math.max(0.22, e.covalent * 0.62);
+  return e.vdw * (rep === 'spacefill' ? SPACEFILL_FRACTION : BALL_FRACTION);
 }

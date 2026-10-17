@@ -39,5 +39,7 @@
   "hideCard": "Hide the card",
   "showCard": "Show the card",
   "loadingProgress": "Loading model… {{percent}}%",
-  "preparing": "Preparing the 3D model…"
+  "preparing": "Preparing the 3D model…",
+  "loadFailed": "Could not load the 3D model",
+  "retry": "Retry"
 }
