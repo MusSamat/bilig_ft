@@ -10,7 +10,7 @@
  */
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { topicConcepts, type Camera, type ContentPackage, type Topic } from '@bilig/content-model';
+import { sceneForSample, topicConcepts, type Camera, type ContentPackage, type Topic } from '@bilig/content-model';
 import { applyModes, defaultModeState, registry, type ConceptVisibility, type ModeState, type ViewerState } from '@bilig/scene-core';
 import { ensurePlugins, usePluginsReady } from '../scene/registry';
 import { sceneHandle } from '../state/viewer';
@@ -19,7 +19,9 @@ const SceneViewer = lazy(() => import('../scene/SceneViewer'));
 
 export interface ThumbSpec {
   pkg: ContentPackage;
-  /** Replaces parts of `pkg.topic.scene` (another plugin, params, camera, asset). */
+  /** v0.5.0: start from this sample's scene (`sceneForSample`, plus its modes), as the live stage shows it. */
+  sample?: string;
+  /** Replaces parts of `pkg.topic.scene` (another plugin, params, camera, asset); applied over the sample's scene. */
   scene?: Partial<Topic['scene']>;
   modes?: ModeState;
   focus?: string | null;
@@ -58,12 +60,16 @@ function processView(spec: ThumbSpec): ViewerState['process'] {
 
 function ThumbScene({ spec }: { spec: ThumbSpec }) {
   const ready = usePluginsReady((s) => s.ready);
-  const topic = useMemo<Topic>(() => ({ ...spec.pkg.topic, scene: { ...spec.pkg.topic.scene, ...spec.scene } as Topic['scene'] }), [spec]);
+  const sample = spec.sample ? spec.pkg.topic.samples.find((s) => s.key === spec.sample) : undefined;
+  const topic = useMemo<Topic>(
+    () => ({ ...spec.pkg.topic, scene: { ...sceneForSample(spec.pkg.topic.scene, sample), ...spec.scene } as Topic['scene'] }),
+    [spec, sample],
+  );
   const concepts = useMemo(() => topicConcepts(spec.pkg), [spec]);
   const plugin = ready ? registry.get(topic.scene.plugin) : undefined;
   if (!plugin) return null;
   const defs = registry.modesFor(topic.scene);
-  const modes = applyModes(defaultModeState(defs), defs, { ...spec.modes, rotate: false });
+  const modes = applyModes(defaultModeState(defs), defs, { ...sample?.scene?.modes, ...spec.modes, rotate: false });
   const state: ViewerState = {
     lang: spec.lang ?? 'en',
     selectedConceptKey: spec.focus ?? null,
@@ -86,7 +92,7 @@ function ThumbScene({ spec }: { spec: ThumbSpec }) {
         autoRotate={false}
         reducedMotion
         resetNonce={0}
-        stepCamera={(spec.scene?.camera as Camera | undefined) ?? null}
+        stepCamera={(spec.scene?.camera as Camera | undefined) ?? sample?.scene?.camera ?? null}
         hue={spec.pkg.subject.hue}
       />
     </Suspense>

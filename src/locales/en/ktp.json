@@ -1,0 +1,166 @@
+{
+  "tab": "Lesson plans",
+  "promise": "A lesson plan in 1 minute from your KTP",
+  "intro": "Upload your calendar and thematic plan (KTP) as a .docx. Bilig checks the dates and hours, links each lesson to a Bilig topic and builds the official lesson plan in one click.",
+  "upload": {
+    "button": "Choose a .docx file",
+    "inputLabel": "KTP file (.docx)",
+    "drop": "or drag it here",
+    "hint": "Word document (.docx), up to {{mb}} MB",
+    "sending": "Uploading and checking your KTP…",
+    "notDocx": "This is not a .docx file. Save the KTP in Word as “Word Document (.docx)” and try again.",
+    "empty": "The file is empty.",
+    "tooLarge": "The file is larger than {{mb}} MB.",
+    "done": "KTP “{{title}}” uploaded"
+  },
+  "list": {
+    "title": "My KTPs",
+    "empty": "No KTPs yet. Upload your first one: its lessons and dates will appear here.",
+    "loadError": "Could not load your KTPs",
+    "open": "Open “{{title}}”",
+    "classes": "classes {{list}}",
+    "lessons_one": "{{count}} lesson",
+    "lessons_other": "{{count}} lessons",
+    "updated": "updated {{date}}",
+    "delete": "Delete “{{title}}”",
+    "confirmDelete": "Delete the KTP “{{title}}”? Plans you have already downloaded stay on your computer.",
+    "deleted": "KTP deleted"
+  },
+  "issues": {
+    "errors_one": "{{count}} error",
+    "errors_other": "{{count}} errors",
+    "warnings_one": "{{count}} warning",
+    "warnings_other": "{{count}} warnings",
+    "infos_one": "{{count}} note",
+    "infos_other": "{{count}} notes",
+    "none": "No problems found",
+    "onlyProblems": "Only problems",
+    "showAll_one": "Show the problem",
+    "showAll_other": "Show all {{count}} problems",
+    "at": "Lesson {{row}} · {{class}}:"
+  },
+  "issue": {
+    "no_lessons": "No lesson table was found in the file",
+    "title_missing": "The lesson has no title",
+    "date_missing": "No date for {{class}}",
+    "date_invalid": "Non-existent date: {{date}}",
+    "date_order": "{{date}} is earlier than the previous lesson ({{prev}})",
+    "date_same_day": "A second lesson on the same day ({{date}})",
+    "date_sunday": "{{date}} is a Sunday",
+    "date_holiday": "{{date}} is a public holiday",
+    "date_out_of_year": "{{date}} is outside the school year",
+    "hours_mismatch": "The header says {{declared}} hours, but the lessons add up to {{actual}}",
+    "section_hours_mismatch": "The section is declared as {{declared}} h, but its lessons take {{actual}} h"
+  },
+  "plan": {
+    "back": "All KTPs",
+    "notFound": "This KTP was not found. It may have been deleted.",
+    "loadError": "Could not load the KTP",
+    "year": "{{from}}–{{to}} school year",
+    "hours": "{{actual}} of {{declared}} hours",
+    "hoursOnly_one": "{{count}} hour",
+    "hoursOnly_other": "{{count}} hours",
+    "teacher": "Teacher: {{name}}",
+    "class": "Class",
+    "lang": "Language of the plans",
+    "noRows": "No lessons were found in this file. Check that the KTP has a table with lesson titles and dates.",
+    "noProblems": "No problems in the lessons of {{class}}."
+  },
+  "langName": {
+    "ky": "Кыргызча",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "week": {
+    "title": "This week · {{class}}",
+    "today": "Today",
+    "noToday": "No lessons today.",
+    "empty": "No lessons for {{class}} this week.",
+    "next": "Next lesson: {{date}}, “{{title}}”.",
+    "download_one": "Download the week ({{count}} plan)",
+    "download_other": "Download the week ({{count}} plans)",
+    "tooMany": "The week has more than {{max}} lessons: download it in parts below"
+  },
+  "lessons": {
+    "title": "Lessons · {{class}}"
+  },
+  "table": {
+    "caption": "KTP lessons with dates for {{class}}"
+  },
+  "col": {
+    "index": "#",
+    "number": "No. in KTP",
+    "title": "Lesson",
+    "type": "Type",
+    "hours": "Hours",
+    "date": "Date ({{class}})",
+    "topic": "Bilig topic",
+    "homework": "Homework",
+    "issues": "Problems",
+    "actions": "Actions"
+  },
+  "section": {
+    "untitled": "Without a section",
+    "declared_one": "{{count}} h declared",
+    "declared_other": "{{count}} h declared",
+    "actual_one": "{{count}} h of lessons",
+    "actual_other": "{{count}} h of lessons"
+  },
+  "untitled": "Untitled lesson",
+  "type": {
+    "label": "Type of lesson {{n}}",
+    "new": "New material",
+    "practice": "Practice",
+    "test": "Test",
+    "analysis": "Test review"
+  },
+  "date": {
+    "label": "Date of lesson {{n}} for {{class}}"
+  },
+  "badge": {
+    "saturday": "Saturday",
+    "sunday": "Sunday",
+    "holiday": "Holiday"
+  },
+  "homework": {
+    "label": "Homework for lesson {{n}}",
+    "placeholder": "Not set"
+  },
+  "topic": {
+    "none": "Not linked",
+    "auto": "auto · {{score}}%",
+    "autoTitle": "Matched automatically, confidence {{score}}%",
+    "change": "Change the topic of lesson {{n}}",
+    "link": "Link a topic to lesson {{n}}",
+    "open": "Open the topic “{{title}}”",
+    "pickFor": "Bilig topic for “{{title}}”",
+    "search": "Search topics",
+    "searchPlaceholder": "Topic title",
+    "results": "Topics",
+    "suggested": "Topics of this subject:",
+    "noResults": "No topics found",
+    "clear": "Remove the link"
+  },
+  "action": {
+    "plan": "Plan",
+    "planFor": "Download the plan of lesson {{n}} for {{class}} (.docx)"
+  },
+  "range": {
+    "title": "Plans for several lessons in one file",
+    "selectCol": "Select",
+    "select": "Select lesson {{n}}",
+    "from": "From lesson",
+    "to": "To lesson",
+    "download_one": "Download {{count}} plan",
+    "download_other": "Download {{count}} plans",
+    "downloadNone": "Download the selected",
+    "clear": "Clear the selection",
+    "hint": "Tick lessons (Shift+click selects a range) or enter their numbers.",
+    "tooMany": "At most {{max}} lessons in one file"
+  },
+  "draftNote": "Every plan is a draft: check it and choose the competency codes before the lesson.",
+  "conflict": "The KTP was changed elsewhere. We loaded the latest version: check your edit and make it again.",
+  "saveError": "Could not save the change",
+  "downloaded": "The plan is downloaded",
+  "downloadError": "Could not build the plan. Try again."
+}

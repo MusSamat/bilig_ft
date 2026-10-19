@@ -171,8 +171,32 @@
     text-decoration: none;
     transition: border-color var(--t-fast), box-shadow var(--t-fast);
   }
-  a.spec:hover {
+  a.spec:hover,
+  button.spec:not(:disabled):hover {
     border-color: var(--accent);
+  }
+  button.spec {
+    font: inherit;
+    cursor: pointer;
+  }
+  button.spec:disabled {
+    cursor: progress;
+  }
+  .spec__open {
+    align-self: center;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    margin-inline-start: -10px;
+    border-radius: 50%;
+    border: 1.5px solid var(--line);
+    background: var(--chip);
+    color: var(--ink);
+  }
+  .spec__open:hover {
+    border-color: var(--accent);
+    color: var(--accent);
   }
   .spec[aria-current='true'] {
     border-color: var(--accent);

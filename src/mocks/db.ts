@@ -14,6 +14,7 @@ import type {
   SchoolClass,
   SnapshotResponse,
 } from '@bilig/content-model/api';
+import { buildKtpPlan, type MockKtpPlan } from './ktp';
 
 export interface MockUser {
   id: string;
@@ -59,11 +60,14 @@ export interface MockState {
   flags: { offline: boolean; tutorDown: boolean; latencyMs: number };
   /** v0.4.0: generated examples / questions (pool + review state). */
   generated: AdminGenerated[];
+  /** v0.5.0: teachers' КТП (owner-only). */
+  ktp: MockKtpPlan[];
 }
 
 export const SCHOOL_ID = '0192a000-0000-7000-8000-000000000001';
 export const CLASS_ID = '0192a000-0000-7000-8000-0000000000c1';
 export const TEACHER_ID = '0192a000-0000-7000-8000-0000000000a1';
+export const KTP_ID = '0192a000-0000-7000-8000-0000000000f1';
 export const CLASS_CODE = 'ABC123';
 export const STUDENT_PIN = '1234';
 export const TEACHER_EMAIL = 'teacher@bilig.kg';
@@ -117,6 +121,7 @@ function seed(): MockState {
     syncLog: [],
     flags: { offline: false, tutorDown: false, latencyMs: 0 },
     generated: [],
+    ktp: [buildKtpPlan(KTP_ID, TEACHER_ID, 'КТП 8-класс алгебра 2026-2027.docx', new Date(Date.now() - 2 * 86400_000).toISOString())],
   };
 }
 
@@ -130,6 +135,7 @@ function load(): MockState {
       if (raw) {
         const state = JSON.parse(raw) as MockState;
         state.generated ??= [];
+        state.ktp ??= [];
         return state;
       }
     } catch {

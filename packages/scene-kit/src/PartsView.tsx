@@ -25,6 +25,7 @@ import { FOCUS_RENDER_ORDER, lookFor, type ConceptLook } from './look.js';
 import { bindParts, type Part, type PartMaterial, type PartShape } from './parts.js';
 import { hoverHandlers, usePick } from './hooks.js';
 import { setSaturation } from './saturation.js';
+import { TextPart } from './TextPart.js';
 import { bumpTexture, partTexture, RIM_SPRITE_SCALE } from './textures.js';
 
 const UP = new Vector3(0, 1, 0);
@@ -369,8 +370,24 @@ function Decorations({ part, look, geometry }: { part: Part; look: ConceptLook; 
 // Parts
 // ---------------------------------------------------------------------------
 
-function Instances({ shape, name, userData, look, part, clip }: { shape: Extract<PartShape, { kind: 'instances' }>; name: string; userData: Record<string, unknown>; look: ConceptLook; part: Part; clip?: Plane[] }) {
+function Instances({ shape, name, userData, look, part, clip, time }: { shape: Extract<PartShape, { kind: 'instances' }>; name: string; userData: Record<string, unknown>; look: ConceptLook; part: Part; clip?: Plane[]; time?: { current: number } }) {
   const ref = useRef<InstancedMesh>(null);
+  const tmp = useMemo(() => new Object3D(), []);
+  const lastT = useRef(Number.NaN);
+  useFrame(() => {
+    const m = ref.current;
+    const f = part.instanceMotion;
+    if (!m || !f) return;
+    const t = time?.current ?? 0;
+    if (t === lastT.current) return;
+    lastT.current = t;
+    for (let i = 0; i < shape.positions.length; i++) {
+      tmp.position.set(...f(t, i));
+      tmp.updateMatrix();
+      m.setMatrixAt(i, tmp.matrix);
+    }
+    m.instanceMatrix.needsUpdate = true;
+  });
   useLayoutEffect(() => {
     const m = ref.current;
     if (!m) return;
@@ -399,6 +416,7 @@ interface NodeProps {
   userData: (p: Part) => Record<string, unknown>;
   clip?: Plane[];
   register: (name: string, obj: Object3D | null) => void;
+  time?: { current: number };
 }
 
 interface Common {
@@ -443,13 +461,13 @@ function TubePart({ part, lk, container, common, pointer, childNodes, clip, span
   );
 }
 
-function PartNode({ part, childrenOf, look, userData, clip, register }: NodeProps): JSX.Element | null {
+function PartNode({ part, childrenOf, look, userData, clip, register, time }: NodeProps): JSX.Element | null {
   const { look: lk, container } = look(part);
   const kids = childrenOf.get(part.name) ?? [];
   const ud = userData(part);
   const pointer = ud[CONCEPT_KEY_USERDATA] ? hoverHandlers : {};
   const childNodes = kids.map((k) => (
-    <PartNode key={k.name} part={k} childrenOf={childrenOf} look={look} userData={userData} clip={clip} register={register} />
+    <PartNode key={k.name} part={k} childrenOf={childrenOf} look={look} userData={userData} clip={clip} register={register} time={time} />
   ));
   const s = part.shape;
   const common: Common = {
@@ -465,10 +483,13 @@ function PartNode({ part, childrenOf, look, userData, clip, register }: NodeProp
   if (s.kind === 'instances') {
     return (
       <group {...common}>
-        <Instances shape={s} name={part.name} userData={ud} look={lk} part={part} clip={clip} />
+        <Instances shape={s} name={part.name} userData={ud} look={lk} part={part} clip={clip} time={time} />
         {childNodes}
       </group>
     );
+  }
+  if (s.kind === 'text') {
+    return <TextPart name={part.name} shape={s} color={part.color ?? '#ffffff'} look={lk} position={part.position} rotation={part.rotation} scale={part.scale} register={(o) => register(part.name, o)} />;
   }
   if (s.kind === 'polygon') {
     return (
@@ -571,7 +592,7 @@ export function PartsView({ parts, concepts, state, onSelectConcept, time, clipp
   return (
     <group onClick={(e: ThreeEvent<MouseEvent>) => onClick(e)}>
       {(childrenOf.get('') ?? []).map((p) => (
-        <PartNode key={p.name} part={p} childrenOf={childrenOf} look={look} userData={userData} clip={clippingPlanes} register={register} />
+        <PartNode key={p.name} part={p} childrenOf={childrenOf} look={look} userData={userData} clip={clippingPlanes} register={register} time={time} />
       ))}
     </group>
   );

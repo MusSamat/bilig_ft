@@ -11,7 +11,9 @@ const TopicPage = lazy(() => import('./topic/TopicPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const CabinetPage = lazy(() => import('./pages/CabinetPage'));
 const TeacherPage = lazy(() => import('./pages/TeacherPage'));
+const KtpPlanPage = lazy(() => import('./ktp/KtpPlanPage'));
 const PresentationPage = lazy(() => import('./presentation/PresentationPage'));
+const TextbookPage = lazy(() => import('./pages/TextbookPage'));
 const AdminApp = lazy(() => import('./admin'));
 
 function PageFallback(): JSX.Element {
@@ -49,7 +51,9 @@ export function App(): JSX.Element {
         <Route path="login" element={lazyPage(LoginPage)} />
         <Route path="cabinet" element={lazyPage(CabinetPage)} />
         <Route path="teacher" element={lazyPage(TeacherPage)} />
+        <Route path="teacher/ktp/:id" element={lazyPage(KtpPlanPage)} />
         <Route path="presentation" element={lazyPage(PresentationPage)} />
+        <Route path="textbooks/:key" element={lazyPage(TextbookPage)} />
         <Route path=":subject/:grade/:topic" element={lazyPage(TopicPage)} />
         <Route path=":subject/:topic" element={lazyPage(TopicPage)} />
         <Route path="*" element={<NotFoundPage />} />

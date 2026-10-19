@@ -1,0 +1,467 @@
+{
+  "manifest": {
+    "topicKey": "sim-lever",
+    "version": "0.0.1",
+    "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "files": [],
+    "builtAt": "2026-10-19T00:00:00Z"
+  },
+  "subject": {
+    "key": "phys",
+    "icon": "orbit",
+    "hue": 28,
+    "group": "natural",
+    "order": 2,
+    "status": "live",
+    "title": {
+      "ky": "Физика",
+      "ru": "Физика",
+      "en": "Physics"
+    }
+  },
+  "course": {
+    "key": "phys.g9",
+    "subjectKey": "phys",
+    "grade": 9,
+    "curriculum": "kg-2024",
+    "title": {
+      "ky": "Физика, 9-класс",
+      "ru": "Физика, 9 класс",
+      "en": "Physics, grade 9"
+    }
+  },
+  "unit": {
+    "key": "phys.g9.dynamics",
+    "courseKey": "phys.g9",
+    "order": 1,
+    "title": {
+      "ky": "Динамиканын негиздери",
+      "ru": "Основы динамики",
+      "en": "Basics of dynamics"
+    }
+  },
+  "objectives": [
+    {
+      "key": "phys.g9.dynamics.o1",
+      "code": "PHYS-9.2.1",
+      "unitKey": "phys.g9.dynamics",
+      "text": {
+        "ky": "Ньютондун үч мыйзамын түшүндүрүү жана мисал келтирүү.",
+        "ru": "Объяснять три закона Ньютона и приводить примеры.",
+        "en": "Explain Newton's three laws with examples."
+      }
+    },
+    {
+      "key": "phys.g9.dynamics.o2",
+      "code": "PHYS-9.2.2",
+      "unitKey": "phys.g9.dynamics",
+      "text": {
+        "ky": "Жантайма тегиздиктеги дененин ылдамдануусун эсептөө.",
+        "ru": "Рассчитывать ускорение тела на наклонной плоскости.",
+        "en": "Calculate the acceleration of a body on an inclined plane."
+      }
+    }
+  ],
+  "topic": {
+    "key": "sim-lever",
+    "unitKey": "phys.g9.dynamics",
+    "status": "published",
+    "title": {
+      "ky": "Күч моменти. Рычаг",
+      "ru": "Момент силы. Рычаг",
+      "en": "Moment of a force. The lever"
+    },
+    "classification": {
+      "ky": "Дев-макет",
+      "ru": "Дев-макет",
+      "en": "Dev mock"
+    },
+    "description": {
+      "ky": "Процедуралык sim-модель (контракт 0.5.0).",
+      "ru": "Процедурная sim-модель (контракт 0.5.0) для разработки.",
+      "en": "Procedural sim model (contract 0.5.0) for development."
+    },
+    "goal": {
+      "ky": "Моделди көрүү.",
+      "ru": "Посмотреть модель.",
+      "en": "View the model."
+    },
+    "objectiveKeys": [],
+    "durationMin": 45,
+    "scene": {
+      "plugin": "sim",
+      "params": {
+        "model": "lever",
+        "length": 2,
+        "pivot": 1,
+        "loads": [
+          {
+            "id": "A",
+            "position": 0.2,
+            "mass": 3
+          },
+          {
+            "id": "B",
+            "position": 1.8,
+            "mass": 2
+          }
+        ]
+      },
+      "camera": {
+        "position": [
+          0,
+          1.6,
+          5.5
+        ],
+        "target": [
+          0,
+          0.8,
+          0
+        ],
+        "fov": 45
+      },
+      "modes": [
+        "vectors",
+        "arms",
+        "balance",
+        "labels"
+      ]
+    },
+    "conceptKeys": [
+      "mock.lever.beam",
+      "mock.lever.pivot",
+      "mock.lever.arm",
+      "mock.lever.load"
+    ],
+    "overrides": {
+      "mock.lever.beam": {
+        "nodes": [
+          "Beam"
+        ]
+      },
+      "mock.lever.pivot": {
+        "nodes": [
+          "Pivot"
+        ]
+      },
+      "mock.lever.arm": {
+        "nodes": [
+          "Arm_*"
+        ]
+      },
+      "mock.lever.load": {
+        "nodes": [
+          "Load_*"
+        ]
+      }
+    },
+    "samples": [],
+    "activities": {
+      "processKeys": []
+    },
+    "examples": {
+      "stem": [
+        {
+          "field": "e",
+          "title": {
+            "ky": "Мисал",
+            "ru": "Пример",
+            "en": "Example"
+          },
+          "text": {
+            "ky": "Дев-макет үчүн мисал.",
+            "ru": "Пример для дев-макета.",
+            "en": "An example for the dev mock."
+          }
+        }
+      ],
+      "simple": [
+        {
+          "title": {
+            "ky": "Мисал",
+            "ru": "Пример",
+            "en": "Example"
+          },
+          "text": {
+            "ky": "Дев-макет үчүн мисал.",
+            "ru": "Пример для дев-макета.",
+            "en": "An example for the dev mock."
+          }
+        }
+      ]
+    },
+    "demo": true
+  },
+  "concepts": [
+    {
+      "key": "mock.lever.beam",
+      "kind": "part",
+      "hue": 46,
+      "isContainer": false,
+      "title": {
+        "ky": "Рычаг",
+        "ru": "Рычаг",
+        "en": "Beam"
+      },
+      "description": {
+        "ky": "Дев-макет",
+        "ru": "Дев-макет для просмотра модели.",
+        "en": "Dev mock for viewing the model."
+      },
+      "props": [],
+      "related": [],
+      "misconceptions": [],
+      "examples": {
+        "stem": [
+          {
+            "field": "e",
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ],
+        "simple": [
+          {
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "mock.lever.pivot",
+      "kind": "part",
+      "hue": 113,
+      "isContainer": false,
+      "title": {
+        "ky": "Таяныч чекити",
+        "ru": "Точка опоры",
+        "en": "Pivot"
+      },
+      "description": {
+        "ky": "Дев-макет",
+        "ru": "Дев-макет для просмотра модели.",
+        "en": "Dev mock for viewing the model."
+      },
+      "props": [],
+      "related": [],
+      "misconceptions": [],
+      "examples": {
+        "stem": [
+          {
+            "field": "e",
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ],
+        "simple": [
+          {
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "mock.lever.arm",
+      "kind": "part",
+      "hue": 180,
+      "isContainer": false,
+      "title": {
+        "ky": "Күч ийини",
+        "ru": "Плечо силы",
+        "en": "Lever arm"
+      },
+      "description": {
+        "ky": "Дев-макет",
+        "ru": "Дев-макет для просмотра модели.",
+        "en": "Dev mock for viewing the model."
+      },
+      "props": [],
+      "related": [],
+      "misconceptions": [],
+      "examples": {
+        "stem": [
+          {
+            "field": "e",
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ],
+        "simple": [
+          {
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "mock.lever.load",
+      "kind": "part",
+      "hue": 247,
+      "isContainer": false,
+      "title": {
+        "ky": "Жүк",
+        "ru": "Груз",
+        "en": "Load"
+      },
+      "description": {
+        "ky": "Дев-макет",
+        "ru": "Дев-макет для просмотра модели.",
+        "en": "Dev mock for viewing the model."
+      },
+      "props": [],
+      "related": [],
+      "misconceptions": [],
+      "examples": {
+        "stem": [
+          {
+            "field": "e",
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ],
+        "simple": [
+          {
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "processes": [],
+  "items": [],
+  "glossary": [],
+  "propertyTypes": [
+    {
+      "key": "acceleration",
+      "icon": "trending-up",
+      "valueKind": "quantity",
+      "unit": "m/s²",
+      "label": {
+        "ky": "Ылдамдануу",
+        "ru": "Ускорение",
+        "en": "Acceleration"
+      }
+    },
+    {
+      "key": "angle",
+      "icon": "triangle-right",
+      "valueKind": "quantity",
+      "unit": "°",
+      "label": {
+        "ky": "Бурчу",
+        "ru": "Угол",
+        "en": "Angle"
+      }
+    },
+    {
+      "key": "force",
+      "icon": "arrow-big-right",
+      "valueKind": "quantity",
+      "unit": "N",
+      "label": {
+        "ky": "Күч",
+        "ru": "Сила",
+        "en": "Force"
+      }
+    },
+    {
+      "key": "frictionCoefficient",
+      "icon": "grip",
+      "valueKind": "quantity",
+      "label": {
+        "ky": "Сүрүлүү коэффициенти",
+        "ru": "Коэффициент трения",
+        "en": "Coefficient of friction"
+      }
+    },
+    {
+      "key": "length",
+      "icon": "ruler",
+      "valueKind": "quantity",
+      "unit": "m",
+      "label": {
+        "ky": "Узундугу",
+        "ru": "Длина",
+        "en": "Length"
+      }
+    },
+    {
+      "key": "speed",
+      "icon": "gauge",
+      "valueKind": "quantity",
+      "unit": "m/s",
+      "label": {
+        "ky": "Ылдамдыгы",
+        "ru": "Скорость",
+        "en": "Speed"
+      }
+    }
+  ]
+}

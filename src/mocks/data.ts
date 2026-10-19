@@ -4,10 +4,20 @@
  * src/mocks/content. Imported only from src/mocks — never bundled in
  * production (see main.tsx and scripts/size-check.mjs).
  */
-import { CatalogSchema, summarizeTopic, validatePackage, type Catalog, type ContentPackage } from '@bilig/content-model';
+import {
+  CatalogSchema,
+  TextbookSchema,
+  filterTextbookTopics,
+  summarizeTopic,
+  validatePackage,
+  type Catalog,
+  type ContentPackage,
+  type Textbook,
+} from '@bilig/content-model';
 import catalogBase from './content/catalog.json';
 
 const raw = import.meta.glob<unknown>('./content/packages/*.json', { eager: true, import: 'default' });
+const rawTextbooks = import.meta.glob<{ textbook: unknown }>('./content/textbooks/*.json', { eager: true, import: 'default' });
 
 /**
  * The mock CDN (`/mock-files`) only draws placeholder images; it has no GLBs.
@@ -26,9 +36,19 @@ export const PACKAGES: ContentPackage[] = Object.values(raw)
   .map(withMockFiles)
   .sort((a, b) => a.topic.key.localeCompare(b.topic.key));
 
+/**
+ * Textbooks (`content/src/textbooks/*.json`, contract 0.5.0). Like the server, lessons list
+ * published topics only: keys without a mock package are dropped (the lesson shows «скоро»).
+ */
+export const TEXTBOOKS: Textbook[] = Object.values(rawTextbooks)
+  .map((f) => TextbookSchema.parse(f.textbook))
+  .map((t) => filterTextbookTopics(t, (key) => PACKAGES.some((p) => p.topic.key === key)))
+  .sort((a, b) => a.order - b.order || a.grade - b.grade);
+
 export function buildCatalog(): Catalog {
   return CatalogSchema.parse({
     ...catalogBase,
+    textbooks: TEXTBOOKS,
     // Thumbnails as absolute CDN-style URLs (requested in CONTRACT_REQUESTS.md).
     topics: PACKAGES.map((p) => {
       const t = summarizeTopic(p);

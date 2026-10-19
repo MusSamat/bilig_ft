@@ -5,7 +5,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 import { validatePackage, type Catalog, type ContentPackage } from '@bilig/content-model';
-import type { SearchResponse } from '@bilig/content-model/api';
+import type { SearchResponse, TextbookDetailResponse, TextbooksQuery, TextbooksResponse } from '@bilig/content-model/api';
 import { ApiError, api, apiUrl, fetchJson, isApiError } from './client';
 
 export const loadCatalog = (): Promise<Catalog> => api('catalog');
@@ -65,4 +65,28 @@ export const useServerSearch = (q: string, lang: string) =>
     enabled: q.trim().length >= 2,
     staleTime: 60_000,
     retry: false,
+  });
+
+/** v0.5.0 textbook menu (`GET /textbooks`): lessons list published topics only. */
+export const loadTextbooks = (query: TextbooksQuery = {}, signal?: AbortSignal): Promise<TextbooksResponse> =>
+  api('textbooks', { query: { grade: query.grade, subjectKey: query.subjectKey }, signal });
+
+export const useTextbooks = (query: TextbooksQuery = {}) =>
+  useQuery({
+    queryKey: ['textbooks', query.grade ?? null, query.subjectKey ?? null],
+    queryFn: ({ signal }) => loadTextbooks(query, signal),
+    staleTime: 5 * 60_000,
+  });
+
+/** One textbook with the cards of its topics (`GET /textbooks/:key`). */
+export const loadTextbook = (key: string, signal?: AbortSignal): Promise<TextbookDetailResponse> =>
+  api('textbook', { params: { key }, signal });
+
+export const useTextbook = (key: string | undefined) =>
+  useQuery({
+    queryKey: ['textbook', key],
+    queryFn: ({ signal }) => loadTextbook(key!, signal),
+    enabled: !!key,
+    staleTime: 5 * 60_000,
+    retry: (n, e) => n < 1 && !(isApiError(e) && [401, 403, 404].includes(e.status)),
   });

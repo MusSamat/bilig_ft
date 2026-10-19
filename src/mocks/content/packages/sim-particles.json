@@ -1,0 +1,475 @@
+{
+  "manifest": {
+    "topicKey": "sim-particles",
+    "version": "0.0.1",
+    "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "files": [],
+    "builtAt": "2026-10-19T00:00:00Z"
+  },
+  "subject": {
+    "key": "chem",
+    "icon": "flask",
+    "hue": 236,
+    "group": "natural",
+    "order": 1,
+    "status": "live",
+    "title": {
+      "ky": "Химия",
+      "ru": "Химия",
+      "en": "Chemistry"
+    }
+  },
+  "course": {
+    "key": "chem.g9",
+    "subjectKey": "chem",
+    "grade": 9,
+    "curriculum": "kg-2024",
+    "title": {
+      "ky": "Химия, 9-класс",
+      "ru": "Химия, 9 класс",
+      "en": "Chemistry, grade 9"
+    }
+  },
+  "unit": {
+    "key": "chem.g9.organic",
+    "courseKey": "chem.g9",
+    "order": 1,
+    "title": {
+      "ky": "Органикалык химиянын негиздери",
+      "ru": "Основы органической химии",
+      "en": "Basics of organic chemistry"
+    }
+  },
+  "objectives": [
+    {
+      "key": "chem.g9.organic.o1",
+      "code": "CHEM-9.6.1",
+      "unitKey": "chem.g9.organic",
+      "text": {
+        "ky": "Метандын түзүлүшүн жана касиеттерин сүрөттөө.",
+        "ru": "Описывать строение и свойства метана.",
+        "en": "Describe the structure and properties of methane."
+      }
+    },
+    {
+      "key": "chem.g9.organic.o2",
+      "code": "CHEM-9.6.2",
+      "unitKey": "chem.g9.organic",
+      "text": {
+        "ky": "Күйүү реакциясынын теңдемесин түзүү жана реакция боюнча эсептөө.",
+        "ru": "Составлять уравнение реакции горения и проводить расчёты по уравнению.",
+        "en": "Write the equation of a combustion reaction and calculate from it."
+      }
+    }
+  ],
+  "topic": {
+    "key": "sim-particles",
+    "unitKey": "chem.g9.organic",
+    "status": "published",
+    "title": {
+      "ky": "Таза заттар жана аралашмалар",
+      "ru": "Чистые вещества и смеси",
+      "en": "Pure substances and mixtures"
+    },
+    "classification": {
+      "ky": "Дев-макет",
+      "ru": "Дев-макет",
+      "en": "Dev mock"
+    },
+    "description": {
+      "ky": "Процедуралык sim-модель (контракт 0.5.0).",
+      "ru": "Процедурная sim-модель (контракт 0.5.0) для разработки.",
+      "en": "Procedural sim model (contract 0.5.0) for development."
+    },
+    "goal": {
+      "ky": "Моделди көрүү.",
+      "ru": "Посмотреть модель.",
+      "en": "View the model."
+    },
+    "objectiveKeys": [],
+    "durationMin": 45,
+    "scene": {
+      "plugin": "sim",
+      "params": {
+        "model": "particles",
+        "species": [
+          {
+            "id": "water",
+            "hue": 200,
+            "count": 120
+          },
+          {
+            "id": "oil",
+            "hue": 45,
+            "count": 40,
+            "place": "top",
+            "radius": 1.3
+          },
+          {
+            "id": "salt",
+            "element": "Cl",
+            "count": 30,
+            "place": "clump"
+          },
+          {
+            "id": "na",
+            "element": "Na",
+            "count": 30,
+            "place": "clump",
+            "radius": 0.8
+          }
+        ],
+        "bonded": [
+          {
+            "a": "salt",
+            "b": "na"
+          }
+        ],
+        "temperature": 40,
+        "dissolve": 0.4
+      },
+      "camera": {
+        "position": [
+          0,
+          1.6,
+          4.2
+        ],
+        "target": [
+          0,
+          0.9,
+          0
+        ],
+        "fov": 45
+      },
+      "modes": [
+        "motion",
+        "labels",
+        "zoom"
+      ]
+    },
+    "conceptKeys": [
+      "mock.particles.solvent",
+      "mock.particles.oil",
+      "mock.particles.salt",
+      "mock.particles.container"
+    ],
+    "overrides": {
+      "mock.particles.solvent": {
+        "nodes": [
+          "Solvent"
+        ]
+      },
+      "mock.particles.oil": {
+        "nodes": [
+          "Species_oil"
+        ]
+      },
+      "mock.particles.salt": {
+        "nodes": [
+          "Species_salt",
+          "Species_na"
+        ]
+      },
+      "mock.particles.container": {
+        "nodes": [
+          "Container"
+        ]
+      }
+    },
+    "samples": [],
+    "activities": {
+      "processKeys": []
+    },
+    "examples": {
+      "stem": [
+        {
+          "field": "e",
+          "title": {
+            "ky": "Мисал",
+            "ru": "Пример",
+            "en": "Example"
+          },
+          "text": {
+            "ky": "Дев-макет үчүн мисал.",
+            "ru": "Пример для дев-макета.",
+            "en": "An example for the dev mock."
+          }
+        }
+      ],
+      "simple": [
+        {
+          "title": {
+            "ky": "Мисал",
+            "ru": "Пример",
+            "en": "Example"
+          },
+          "text": {
+            "ky": "Дев-макет үчүн мисал.",
+            "ru": "Пример для дев-макета.",
+            "en": "An example for the dev mock."
+          }
+        }
+      ]
+    },
+    "demo": true
+  },
+  "concepts": [
+    {
+      "key": "mock.particles.solvent",
+      "kind": "part",
+      "hue": 69,
+      "isContainer": false,
+      "title": {
+        "ky": "Эриткич",
+        "ru": "Растворитель",
+        "en": "Solvent"
+      },
+      "description": {
+        "ky": "Дев-макет",
+        "ru": "Дев-макет для просмотра модели.",
+        "en": "Dev mock for viewing the model."
+      },
+      "props": [],
+      "related": [],
+      "misconceptions": [],
+      "examples": {
+        "stem": [
+          {
+            "field": "e",
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ],
+        "simple": [
+          {
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "mock.particles.oil",
+      "kind": "part",
+      "hue": 136,
+      "isContainer": false,
+      "title": {
+        "ky": "Май",
+        "ru": "Масло",
+        "en": "Oil"
+      },
+      "description": {
+        "ky": "Дев-макет",
+        "ru": "Дев-макет для просмотра модели.",
+        "en": "Dev mock for viewing the model."
+      },
+      "props": [],
+      "related": [],
+      "misconceptions": [],
+      "examples": {
+        "stem": [
+          {
+            "field": "e",
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ],
+        "simple": [
+          {
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "mock.particles.salt",
+      "kind": "part",
+      "hue": 203,
+      "isContainer": false,
+      "title": {
+        "ky": "Туз",
+        "ru": "Соль",
+        "en": "Salt"
+      },
+      "description": {
+        "ky": "Дев-макет",
+        "ru": "Дев-макет для просмотра модели.",
+        "en": "Dev mock for viewing the model."
+      },
+      "props": [],
+      "related": [],
+      "misconceptions": [],
+      "examples": {
+        "stem": [
+          {
+            "field": "e",
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ],
+        "simple": [
+          {
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "mock.particles.container",
+      "kind": "part",
+      "hue": 270,
+      "isContainer": false,
+      "title": {
+        "ky": "Идиш",
+        "ru": "Сосуд",
+        "en": "Container"
+      },
+      "description": {
+        "ky": "Дев-макет",
+        "ru": "Дев-макет для просмотра модели.",
+        "en": "Dev mock for viewing the model."
+      },
+      "props": [],
+      "related": [],
+      "misconceptions": [],
+      "examples": {
+        "stem": [
+          {
+            "field": "e",
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ],
+        "simple": [
+          {
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "processes": [],
+  "items": [],
+  "glossary": [],
+  "propertyTypes": [
+    {
+      "key": "bondType",
+      "icon": "link",
+      "valueKind": "text",
+      "label": {
+        "ky": "Байланыштын түрү",
+        "ru": "Тип связи",
+        "en": "Bond type"
+      }
+    },
+    {
+      "key": "energy",
+      "icon": "battery",
+      "valueKind": "quantity",
+      "unit": "J",
+      "label": {
+        "ky": "Энергия",
+        "ru": "Энергия",
+        "en": "Energy"
+      }
+    },
+    {
+      "key": "geometry",
+      "icon": "pyramid",
+      "valueKind": "text",
+      "label": {
+        "ky": "Молекуланын формасы",
+        "ru": "Геометрия молекулы",
+        "en": "Molecular geometry"
+      }
+    },
+    {
+      "key": "length",
+      "icon": "ruler",
+      "valueKind": "quantity",
+      "unit": "m",
+      "label": {
+        "ky": "Узундугу",
+        "ru": "Длина",
+        "en": "Length"
+      }
+    },
+    {
+      "key": "state",
+      "icon": "droplet",
+      "valueKind": "text",
+      "label": {
+        "ky": "Агрегаттык абалы",
+        "ru": "Агрегатное состояние",
+        "en": "State of matter"
+      }
+    }
+  ]
+}

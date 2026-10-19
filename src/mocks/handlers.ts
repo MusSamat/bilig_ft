@@ -14,6 +14,8 @@ import {
   sampleItems,
   suggestQuestions,
   t,
+  textbookSubjects,
+  textbookTopicKeys,
   type ContentPackage,
   type Lang,
   type Localized,
@@ -34,8 +36,9 @@ import {
   type SyncRequest,
 } from '@bilig/content-model/api';
 import type { Permission } from '@bilig/permissions';
-import { PACKAGES, buildCatalog, packageByKey } from './data';
+import { PACKAGES, TEXTBOOKS, buildCatalog, packageByKey } from './data';
 import { cabinetHandlers } from './handlers.cabinet';
+import { ktpHandlers } from './handlers.ktp';
 import {
   CLASS_ID,
   mockDb,
@@ -51,7 +54,7 @@ import {
 const now = () => new Date().toISOString();
 const FILES_BASE = '/mock-files';
 
-const fail = (code: ErrorCode, extra: Parameters<typeof problem>[1] = {}) => {
+export const fail = (code: ErrorCode, extra: Parameters<typeof problem>[1] = {}) => {
   const body = problem(code, extra);
   return HttpResponse.json(body, { status: body.status, headers: { 'Content-Type': 'application/problem+json' } });
 };
@@ -73,7 +76,7 @@ type Resolver<N extends EndpointName> = (ctx: Ctx) => Promise<EndpointResponse<N
 const toMswPath = (p: string) => API_PREFIX + p;
 
 /** Register a contract route: offline flag, auth/permission check, body validation. */
-function route<N extends EndpointName>(name: N, resolve: Resolver<N>): HttpHandler {
+export function route<N extends EndpointName>(name: N, resolve: Resolver<N>): HttpHandler {
   const def = ENDPOINTS[name] as { method: string; path: string; auth: Permission | 'session' | null; body?: z.ZodTypeAny };
   const method = def.method.toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
   return http[method](toMswPath(def.path), async ({ request, params }) => {
@@ -281,6 +284,20 @@ export const handlers: HttpHandler[] = [
     };
   }),
   route('topicPackage', ({ params }) => packageByKey(params.key) ?? fail('not_found')),
+  route('textbooks', ({ url }) => {
+    const grade = Number(url.searchParams.get('grade')) || undefined;
+    const subjectKey = url.searchParams.get('subjectKey');
+    return {
+      items: TEXTBOOKS.filter((tb) => (!grade || tb.grade === grade) && (!subjectKey || textbookSubjects(tb).includes(subjectKey))),
+    };
+  }),
+  route('textbook', ({ params }) => {
+    const textbook = TEXTBOOKS.find((tb) => tb.key === params.key);
+    if (!textbook) return fail('not_found');
+    const keys = textbookTopicKeys(textbook);
+    const topics = buildCatalog().topics.filter((tp) => keys.includes(tp.key));
+    return { textbook, topics: keys.map((k) => topics.find((tp) => tp.key === k)!).filter(Boolean) };
+  }),
   route('search', ({ url, req }) => {
     const q = url.searchParams.get('q') ?? '';
     const lang = (url.searchParams.get('lang') as Lang | null) ?? langOf(req);
@@ -636,6 +653,9 @@ export const handlers: HttpHandler[] = [
     ),
   ),
   route('meSessionRevoke', () => ({ ok: true as const })),
+
+  // v0.5.0 КТП → сабак планы
+  ...ktpHandlers({ route, fail }),
 
   // CDN stand-in for package files (thumbnails) ---------------------------------------
   http.get(`${FILES_BASE}/*`, ({ request }) => {

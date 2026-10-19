@@ -1,0 +1,29 @@
+{
+  "my": "My textbook",
+  "myHint": "A lesson in 5 minutes, from your own textbook",
+  "continue": "Continue: {{title}}",
+  "continueChapter": "Continue: {{title}} · chapter {{number}}",
+  "short": "{{title}} {{grade}}",
+  "grade": "Grade {{grade}}",
+  "part": "part {{part}}",
+  "chapters_one": "{{count}} chapter",
+  "chapters_other": "{{count}} chapters",
+  "chapter": "Chapter {{number}}",
+  "contents": "Contents",
+  "pages": "pp. {{from}}–{{to}}",
+  "page": "p. {{from}}",
+  "kind": {
+    "lesson": "Lesson",
+    "review": "Review",
+    "extra": "Extra"
+  },
+  "soon": "soon",
+  "soonHint": "The model for this lesson is being prepared",
+  "reviewHint": "The chapter's topics to review and self-check",
+  "lead": "Pick a lesson to open a ready 3D model with its materials.",
+  "placeLabel": "In the textbook: {{place}}",
+  "loadError": "Could not load the textbook",
+  "notFound": "Textbook not found",
+  "notFoundHint": "The link may be out of date. Pick your textbook on the home page.",
+  "loadListError": "Could not load the textbooks"
+}

@@ -1,0 +1,2564 @@
+{
+ "meta": {
+  "title": "№12 жалпы билим берүү мектебинин 8-класстарынын алгебра предмети боюнча 2026-2027-окуу жылы үчүн календардык-тематикалык планы",
+  "teacherName": "Асанов Бакыт Урматович",
+  "schoolName": "№12 жалпы билим берүү мектеби",
+  "subjectName": "алгебра",
+  "grade": 8,
+  "year": 2026,
+  "declaredHours": 136,
+  "classes": [
+   "8б",
+   "8в"
+  ]
+ },
+ "rows": [
+  {
+   "index": 1,
+   "number": 1,
+   "section": {
+    "title": "Сан",
+    "hours": 10
+   },
+   "title": "Сандар системасы",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-09-15",
+    "8в": "2026-09-15"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 2,
+   "number": 2,
+   "section": {
+    "title": "Сан",
+    "hours": 10
+   },
+   "title": "Сандар менен болгон амалдар",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-09-17",
+    "8в": "2026-09-16"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 3,
+   "number": 3,
+   "section": {
+    "title": "Сан",
+    "hours": 10
+   },
+   "title": "Көрсөткүчтүү даража жана даражанын касиеттери",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-09-18",
+    "8в": "2026-09-17"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 4,
+   "number": 4,
+   "section": {
+    "title": "Сан",
+    "hours": 10
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-09-21",
+    "8в": "2026-09-21"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 5,
+   "number": 5,
+   "section": {
+    "title": "Сан",
+    "hours": 10
+   },
+   "title": "Жөнөкөй сандар жана жөнөкөй көбөйтүүчүлөргө ажыратуу",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-09-22",
+    "8в": "2026-09-22"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 6,
+   "number": 6,
+   "section": {
+    "title": "Сан",
+    "hours": 10
+   },
+   "title": "Жалпы бөлүүчүлөр жана жалпы эселүү сандар",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-09-24",
+    "8в": "2026-09-23"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 7,
+   "number": 7,
+   "section": {
+    "title": "Сан",
+    "hours": 10
+   },
+   "title": "Сандын квадраты жана кубу, квадраттык жана кубдук тамырлар",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-09-25",
+    "8в": "2026-09-24"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 8,
+   "number": 8,
+   "section": {
+    "title": "Сан",
+    "hours": 10
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-09-28",
+    "8в": "2026-09-28"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 9,
+   "number": 9,
+   "section": {
+    "title": "Сан",
+    "hours": 10
+   },
+   "title": "Текшерүү иши №1",
+   "hours": 1,
+   "type": "test",
+   "dates": {
+    "8б": "2026-09-29",
+    "8в": "2026-09-29"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 10,
+   "number": 10,
+   "section": {
+    "title": "Сан",
+    "hours": 10
+   },
+   "title": "Текшерүү ишти анализдөө",
+   "hours": 1,
+   "type": "analysis",
+   "dates": {
+    "8б": "2026-10-01",
+    "8в": "2026-09-30"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 11,
+   "number": 11,
+   "section": {
+    "title": "Бөлчөктөр. Ондук бөлчөктөр жана проценттер",
+    "hours": 12
+   },
+   "title": "0,1 жана 0,01 ге көбөйтүү жана бөлүү",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-10-02",
+    "8в": "2026-10-01"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 12,
+   "number": 12,
+   "section": {
+    "title": "Бөлчөктөр. Ондук бөлчөктөр жана проценттер",
+    "hours": 12
+   },
+   "title": "Тегеректөө жана маанилүү цифралар",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-10-05",
+    "8в": "2026-10-05"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 13,
+   "number": 13,
+   "section": {
+    "title": "Бөлчөктөр. Ондук бөлчөктөр жана проценттер",
+    "hours": 12
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-10-06",
+    "8в": "2026-10-06"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 14,
+   "number": 14,
+   "section": {
+    "title": "Бөлчөктөр. Ондук бөлчөктөр жана проценттер",
+    "hours": 12
+   },
+   "title": "Бөлчөктөр жана ондук бөлчөктөр",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-10-08",
+    "8в": "2026-10-07"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 15,
+   "number": 15,
+   "section": {
+    "title": "Бөлчөктөр. Ондук бөлчөктөр жана проценттер",
+    "hours": 12
+   },
+   "title": "Бөлчөктөр менен болгон амалдар",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-10-09",
+    "8в": "2026-10-08"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 16,
+   "number": 16,
+   "section": {
+    "title": "Бөлчөктөр. Ондук бөлчөктөр жана проценттер",
+    "hours": 12
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-10-12",
+    "8в": "2026-10-12"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 17,
+   "number": 17,
+   "section": {
+    "title": "Бөлчөктөр. Ондук бөлчөктөр жана проценттер",
+    "hours": 12
+   },
+   "title": "Ондук бөлчөктөр менен болгон амалдар",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-10-13",
+    "8в": "2026-10-13"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 18,
+   "number": 18,
+   "section": {
+    "title": "Бөлчөктөр. Ондук бөлчөктөр жана проценттер",
+    "hours": 12
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-10-15",
+    "8в": "2026-10-14"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 19,
+   "number": 19,
+   "section": {
+    "title": "Бөлчөктөр. Ондук бөлчөктөр жана проценттер",
+    "hours": 12
+   },
+   "title": "Пайыздык өзгөрүү",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-10-16",
+    "8в": "2026-10-15"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 20,
+   "number": 20,
+   "section": {
+    "title": "Бөлчөктөр. Ондук бөлчөктөр жана проценттер",
+    "hours": 12
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-10-17",
+    "8в": "2026-10-17"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 21,
+   "number": 21,
+   "section": {
+    "title": "Бөлчөктөр. Ондук бөлчөктөр жана проценттер",
+    "hours": 12
+   },
+   "title": "Текшерүү иши №2",
+   "hours": 1,
+   "type": "test",
+   "dates": {
+    "8б": "2026-10-19",
+    "8в": "2026-10-19"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 22,
+   "number": 22,
+   "section": {
+    "title": "Бөлчөктөр. Ондук бөлчөктөр жана проценттер",
+    "hours": 12
+   },
+   "title": "Текшерүү ишти анализдөө",
+   "hours": 1,
+   "type": "analysis",
+   "dates": {
+    "8б": "2026-10-20",
+    "8в": "2026-10-20"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 23,
+   "number": 23,
+   "section": {
+    "title": "Катыштар жана пропорция",
+    "hours": 6
+   },
+   "title": "Катыштар",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-10-22",
+    "8в": "2026-10-21"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 24,
+   "number": 24,
+   "section": {
+    "title": "Катыштар жана пропорция",
+    "hours": 6
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-10-23",
+    "8в": "2026-10-22"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 25,
+   "number": 25,
+   "section": {
+    "title": "Катыштар жана пропорция",
+    "hours": 6
+   },
+   "title": "Пропорция жана катыштар",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-10-26",
+    "8в": "2026-10-26"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 26,
+   "number": 26,
+   "section": {
+    "title": "Катыштар жана пропорция",
+    "hours": 6
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-10-27",
+    "8в": "2026-10-27"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 27,
+   "number": 27,
+   "section": {
+    "title": "Катыштар жана пропорция",
+    "hours": 6
+   },
+   "title": "Текшерүү иши №3",
+   "hours": 1,
+   "type": "test",
+   "dates": {
+    "8б": "2026-10-29",
+    "8в": "2026-10-28"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 28,
+   "number": 28,
+   "section": {
+    "title": "Катыштар жана пропорция",
+    "hours": 6
+   },
+   "title": "Текшерүү ишти анализдөө",
+   "hours": 1,
+   "type": "analysis",
+   "dates": {
+    "8б": "2026-10-30",
+    "8в": "2026-10-29"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 29,
+   "number": 29,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Алгебралык формула жана субьектти өзгөртүү",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-11-02",
+    "8в": "2026-11-02"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 30,
+   "number": 30,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-11-03",
+    "8в": "2026-11-03"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 31,
+   "number": 31,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-11-05",
+    "8в": "2026-11-04"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 32,
+   "number": 32,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-11-06",
+    "8в": "2026-11-05"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 33,
+   "number": 33,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Текшерүү иши №4",
+   "hours": 1,
+   "type": "test",
+   "dates": {
+    "8б": "2026-11-09",
+    "8в": "2026-11-09"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 34,
+   "number": 34,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Текшерүү ишти анализдөө",
+   "hours": 1,
+   "type": "analysis",
+   "dates": {
+    "8б": "2026-11-10",
+    "8в": "2026-11-10"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 35,
+   "number": 1,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Кашааларды ачуу жана көбөйтүүчүлөргө ажыратуу",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-11-16",
+    "8в": "2026-11-16"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 36,
+   "number": 2,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-11-17",
+    "8в": "2026-11-17"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 37,
+   "number": 3,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-11-19",
+    "8в": "2026-11-18"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 38,
+   "number": 4,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Алгебралык тендемелерди чыгаруу",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-11-20",
+    "8в": "2026-11-19"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 39,
+   "number": 5,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-11-21",
+    "8в": "2026-11-21"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 40,
+   "number": 6,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Квадраттык тендемелердин жалпы түрү",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-11-23",
+    "8в": "2026-11-23"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 41,
+   "number": 7,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Толук эмес квадраттык тендемелер",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-11-24",
+    "8в": "2026-11-24"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 42,
+   "number": 8,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-11-26",
+    "8в": "2026-11-25"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 43,
+   "number": 9,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Толук квадраттык тендемелерди чыгаруу",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-11-27",
+    "8в": "2026-11-26"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 44,
+   "number": 10,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Мисал ишөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-11-30",
+    "8в": "2026-11-30"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 45,
+   "number": 11,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-12-01",
+    "8в": "2026-12-01"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 46,
+   "number": 12,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Квадраттык тендемелерди көбөйтүүчүлөргө ажыратуу",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-12-03",
+    "8в": "2026-12-02"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 47,
+   "number": 13,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-12-04",
+    "8в": "2026-12-03"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 48,
+   "number": 14,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-12-07",
+    "8в": "2026-12-07"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 49,
+   "number": 15,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Тендемелердин жардамы менен маселелерди чыгаруу",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-12-08",
+    "8в": "2026-12-08"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 50,
+   "number": 16,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-12-10",
+    "8в": "2026-12-09"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 51,
+   "number": 17,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Текшерүү иши №5",
+   "hours": 1,
+   "type": "test",
+   "dates": {
+    "8б": "2026-12-11",
+    "8в": "2026-12-10"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 52,
+   "number": 18,
+   "section": {
+    "title": "Алгебралык өзгөртүп түзүүлөр",
+    "hours": 24
+   },
+   "title": "Текшерүү ишти анализдөө",
+   "hours": 1,
+   "type": "analysis",
+   "dates": {
+    "8б": "2026-12-14",
+    "8в": "2026-12-14"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 53,
+   "number": 19,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Барабарсыздыктар",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-12-15",
+    "8в": "2026-12-15"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 54,
+   "number": 20,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-12-17",
+    "8в": "2026-12-16"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 55,
+   "number": 21,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-12-18",
+    "8в": "2026-12-17"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 56,
+   "number": 22,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Квадраттык барабарсыздыктар",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-12-19",
+    "8в": "2026-12-19"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 57,
+   "number": 23,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-12-21",
+    "8в": "2026-12-21"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 58,
+   "number": 24,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-12-22",
+    "8в": "2026-12-22"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 59,
+   "number": 25,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-12-24",
+    "8в": "2026-12-23"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 60,
+   "number": 26,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Сан удаалаштыгы",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2026-12-25",
+    "8в": "2026-12-24"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 61,
+   "number": 27,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2026-12-28",
+    "8в": "2026-12-28"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 62,
+   "number": 28,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Текшерүү иши №6",
+   "hours": 1,
+   "type": "test",
+   "dates": {
+    "8б": "2026-12-29",
+    "8в": "2026-12-29"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 63,
+   "number": 29,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Текшерүү ишти анализдөө",
+   "hours": 1,
+   "type": "analysis",
+   "dates": {
+    "8б": "2026-12-31",
+    "8в": "2026-12-30"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 64,
+   "number": 1,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Функция",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-01-11",
+    "8в": "2027-01-11"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 65,
+   "number": 2,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Сызыктуу функциялардын графиктери",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-01-12",
+    "8в": "2027-01-12"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 66,
+   "number": 3,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-01-14",
+    "8в": "2027-01-13"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 67,
+   "number": 4,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-01-15",
+    "8в": "2027-01-14"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 68,
+   "number": 5,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": ". графиктери",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-01-16",
+    "8в": "2027-01-16"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 69,
+   "number": 6,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-01-18",
+    "8в": "2027-01-18"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 70,
+   "number": 7,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-01-19",
+    "8в": "2027-01-19"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 71,
+   "number": 8,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Практикалык (реалдуу) кырдаалдарды графикалык көрсөтүү",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-01-21",
+    "8в": "2027-01-20"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 72,
+   "number": 9,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-01-22",
+    "8в": "2027-01-21"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 73,
+   "number": 10,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Текшерүү иши №7",
+   "hours": 1,
+   "type": "test",
+   "dates": {
+    "8б": "2027-01-25",
+    "8в": "2027-01-25"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 74,
+   "number": 11,
+   "section": {
+    "title": "Барабарсыздыктар,удаалаштыктар, функциялар жана графиктер",
+    "hours": 22
+   },
+   "title": "Текшерүү ишти анализдөө",
+   "hours": 1,
+   "type": "analysis",
+   "dates": {
+    "8б": "2027-01-26",
+    "8в": "2027-01-26"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 75,
+   "number": 12,
+   "section": {
+    "title": "Ченөөлөр, аралыктар жана бурчтар",
+    "hours": 14
+   },
+   "title": "Үч бурчтук",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-01-28",
+    "8в": "2027-01-27"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "pythagorean-theorem",
+   "match": {
+    "auto": true,
+    "score": 0.54
+   }
+  },
+  {
+   "index": 76,
+   "number": 13,
+   "section": {
+    "title": "Ченөөлөр, аралыктар жана бурчтар",
+    "hours": 14
+   },
+   "title": "Тик бурчтуу үч бурчтук. Пифагордун теоремасы",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-01-29",
+    "8в": "2027-01-28"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "pythagorean-theorem",
+   "match": {
+    "auto": true,
+    "score": 0.54
+   }
+  },
+  {
+   "index": 77,
+   "number": 14,
+   "section": {
+    "title": "Ченөөлөр, аралыктар жана бурчтар",
+    "hours": 14
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-02-01",
+    "8в": "2027-02-01"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 78,
+   "number": 15,
+   "section": {
+    "title": "Ченөөлөр, аралыктар жана бурчтар",
+    "hours": 14
+   },
+   "title": "Аралыктарды өлчөө жана төрт бурчтуктардын түрлөрү",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-02-02",
+    "8в": "2027-02-02"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 79,
+   "number": 16,
+   "section": {
+    "title": "Ченөөлөр, аралыктар жана бурчтар",
+    "hours": 14
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-02-04",
+    "8в": "2027-02-03"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 80,
+   "number": 17,
+   "section": {
+    "title": "Ченөөлөр, аралыктар жана бурчтар",
+    "hours": 14
+   },
+   "title": "Параллелограммдар жана трапециялар",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-02-05",
+    "8в": "2027-02-04"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 81,
+   "number": 18,
+   "section": {
+    "title": "Ченөөлөр, аралыктар жана бурчтар",
+    "hours": 14
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-02-08",
+    "8в": "2027-02-08"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 82,
+   "number": 19,
+   "section": {
+    "title": "Ченөөлөр, аралыктар жана бурчтар",
+    "hours": 14
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-02-09",
+    "8в": "2027-02-09"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 83,
+   "number": 20,
+   "section": {
+    "title": "Ченөөлөр, аралыктар жана бурчтар",
+    "hours": 14
+   },
+   "title": "Айлананын узундугу",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-02-11",
+    "8в": "2027-02-10"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 84,
+   "number": 21,
+   "section": {
+    "title": "Ченөөлөр, аралыктар жана бурчтар",
+    "hours": 14
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-02-12",
+    "8в": "2027-02-11"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 85,
+   "number": 22,
+   "section": {
+    "title": "Ченөөлөр, аралыктар жана бурчтар",
+    "hours": 14
+   },
+   "title": "Бурч жана пеленгдер",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-02-15",
+    "8в": "2027-02-15"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 86,
+   "number": 23,
+   "section": {
+    "title": "Ченөөлөр, аралыктар жана бурчтар",
+    "hours": 14
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-02-16",
+    "8в": "2027-02-16"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 87,
+   "number": 24,
+   "section": {
+    "title": "Ченөөлөр, аралыктар жана бурчтар",
+    "hours": 14
+   },
+   "title": "Геометриялык фигураларды чийүү (тургузуу)",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-02-18",
+    "8в": "2027-02-17"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 88,
+   "number": 25,
+   "section": {
+    "title": "Ченөөлөр, аралыктар жана бурчтар",
+    "hours": 14
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-02-19",
+    "8в": "2027-02-18"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 89,
+   "number": 26,
+   "section": {
+    "title": "3D фигуралар (мүнөздөмө жана касиеттери)",
+    "hours": 13
+   },
+   "title": "3D фигуранын чокулары,грандары(жактары) жана кырлары",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-02-22",
+    "8в": "2027-02-22"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "cube-pyramid",
+   "match": {
+    "auto": true,
+    "score": 0.71
+   }
+  },
+  {
+   "index": 90,
+   "number": 27,
+   "section": {
+    "title": "3D фигуралар (мүнөздөмө жана касиеттери)",
+    "hours": 13
+   },
+   "title": "3D проекциясы( 3D фигуранын ар кайсы тарабынан көрүнүшү",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-02-23",
+    "8в": "2027-02-23"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "cube-pyramid",
+   "match": {
+    "auto": true,
+    "score": 0.71
+   }
+  },
+  {
+   "index": 91,
+   "number": 28,
+   "section": {
+    "title": "3D фигуралар (мүнөздөмө жана касиеттери)",
+    "hours": 13
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-02-25",
+    "8в": "2027-02-24"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "cube-pyramid",
+   "match": {
+    "auto": true,
+    "score": 0.71
+   }
+  },
+  {
+   "index": 92,
+   "number": 29,
+   "section": {
+    "title": "3D фигуралар (мүнөздөмө жана касиеттери)",
+    "hours": 13
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-02-26",
+    "8в": "2027-02-25"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "cube-pyramid",
+   "match": {
+    "auto": true,
+    "score": 0.71
+   }
+  },
+  {
+   "index": 93,
+   "number": 30,
+   "section": {
+    "title": "3D фигуралар (мүнөздөмө жана касиеттери)",
+    "hours": 13
+   },
+   "title": "Текшерүү иши №8",
+   "hours": 1,
+   "type": "test",
+   "dates": {
+    "8б": "2027-03-01",
+    "8в": "2027-03-01"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "cube-pyramid",
+   "match": {
+    "auto": true,
+    "score": 0.71
+   }
+  },
+  {
+   "index": 94,
+   "number": 31,
+   "section": {
+    "title": "3D фигуралар (мүнөздөмө жана касиеттери)",
+    "hours": 13
+   },
+   "title": "Текшерүү ишти анализдөө",
+   "hours": 1,
+   "type": "analysis",
+   "dates": {
+    "8б": "2027-03-02",
+    "8в": "2027-03-02"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "cube-pyramid",
+   "match": {
+    "auto": true,
+    "score": 0.71
+   }
+  },
+  {
+   "index": 95,
+   "number": 1,
+   "section": {
+    "title": "3D фигуралар (мүнөздөмө жана касиеттери)",
+    "hours": 13
+   },
+   "title": "Призманын жана пирамиданын бетинин аянты",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-03-09",
+    "8в": "2027-03-09"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "cube-pyramid",
+   "match": {
+    "auto": true,
+    "score": 0.71
+   }
+  },
+  {
+   "index": 96,
+   "number": 2,
+   "section": {
+    "title": "3D фигуралар (мүнөздөмө жана касиеттери)",
+    "hours": 13
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-03-11",
+    "8в": "2027-03-10"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "cube-pyramid",
+   "match": {
+    "auto": true,
+    "score": 0.71
+   }
+  },
+  {
+   "index": 97,
+   "number": 3,
+   "section": {
+    "title": "3D фигуралар (мүнөздөмө жана касиеттери)",
+    "hours": 13
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-03-12",
+    "8в": "2027-03-11"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "cube-pyramid",
+   "match": {
+    "auto": true,
+    "score": 0.71
+   }
+  },
+  {
+   "index": 98,
+   "number": 4,
+   "section": {
+    "title": "3D фигуралар (мүнөздөмө жана касиеттери)",
+    "hours": 13
+   },
+   "title": "Призманын көлөмү",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-03-15",
+    "8в": "2027-03-15"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "cube-pyramid",
+   "match": {
+    "auto": true,
+    "score": 0.71
+   }
+  },
+  {
+   "index": 99,
+   "number": 5,
+   "section": {
+    "title": "3D фигуралар (мүнөздөмө жана касиеттери)",
+    "hours": 13
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-03-16",
+    "8в": "2027-03-16"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "cube-pyramid",
+   "match": {
+    "auto": true,
+    "score": 0.71
+   }
+  },
+  {
+   "index": 100,
+   "number": 6,
+   "section": {
+    "title": "3D фигуралар (мүнөздөмө жана касиеттери)",
+    "hours": 13
+   },
+   "title": "Текшерүү иши №9",
+   "hours": 1,
+   "type": "test",
+   "dates": {
+    "8б": "2027-03-18",
+    "8в": "2027-03-17"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "cube-pyramid",
+   "match": {
+    "auto": true,
+    "score": 0.71
+   }
+  },
+  {
+   "index": 101,
+   "number": 7,
+   "section": {
+    "title": "3D фигуралар (мүнөздөмө жана касиеттери)",
+    "hours": 13
+   },
+   "title": "Текшерүү ишти анализдөө",
+   "hours": 1,
+   "type": "analysis",
+   "dates": {
+    "8б": "2027-03-19",
+    "8в": "2027-03-18"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": "cube-pyramid",
+   "match": {
+    "auto": true,
+    "score": 0.71
+   }
+  },
+  {
+   "index": 102,
+   "number": 8,
+   "section": {
+    "title": "Координаталар жана өзгөртүп түзүүлөр",
+    "hours": 8
+   },
+   "title": "Координата жөнүндө түшүнүк",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-03-20",
+    "8в": "2027-03-20"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 103,
+   "number": 9,
+   "section": {
+    "title": "Координаталар жана өзгөртүп түзүүлөр",
+    "hours": 8
+   },
+   "title": "Параллель которуу",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-03-22",
+    "8в": "2027-03-22"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 104,
+   "number": 10,
+   "section": {
+    "title": "Координаталар жана өзгөртүп түзүүлөр",
+    "hours": 8
+   },
+   "title": "Чагылдыруу (симметрия)",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-03-23",
+    "8в": "2027-03-23"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 105,
+   "number": 11,
+   "section": {
+    "title": "Координаталар жана өзгөртүп түзүүлөр",
+    "hours": 8
+   },
+   "title": "Өз алдынча иштөө",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-03-25",
+    "8в": "2027-03-24"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 106,
+   "number": 12,
+   "section": {
+    "title": "Координаталар жана өзгөртүп түзүүлөр",
+    "hours": 8
+   },
+   "title": "Айландыруу (буруу)",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-03-26",
+    "8в": "2027-03-25"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 107,
+   "number": 13,
+   "section": {
+    "title": "Координаталар жана өзгөртүп түзүүлөр",
+    "hours": 8
+   },
+   "title": "Чонойтуу (масштабдоо)",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-03-29",
+    "8в": "2027-03-29"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 108,
+   "number": 14,
+   "section": {
+    "title": "Координаталар жана өзгөртүп түзүүлөр",
+    "hours": 8
+   },
+   "title": "Текшерүү иши №10",
+   "hours": 1,
+   "type": "test",
+   "dates": {
+    "8б": "2027-03-30",
+    "8в": "2027-03-30"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 109,
+   "number": 15,
+   "section": {
+    "title": "Координаталар жана өзгөртүп түзүүлөр",
+    "hours": 8
+   },
+   "title": "Текшерүү ишти анализдөө",
+   "hours": 1,
+   "type": "analysis",
+   "dates": {
+    "8б": "2027-04-01",
+    "8в": null
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null,
+   "invalid": {
+    "8в": "31.04.27"
+   }
+  },
+  {
+   "index": 110,
+   "number": 16,
+   "section": {
+    "title": "Статистика",
+    "hours": 9
+   },
+   "title": "Маалыматтарды топтоо,тапдап алуу жана маалыматтарды таблицада чагылдыруу",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-04-02",
+    "8в": "2027-04-01"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 111,
+   "number": 17,
+   "section": {
+    "title": "Статистика",
+    "hours": 9
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-04-05",
+    "8в": "2027-04-05"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 112,
+   "number": 18,
+   "section": {
+    "title": "Статистика",
+    "hours": 9
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-04-06",
+    "8в": "2027-04-06"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 113,
+   "number": 19,
+   "section": {
+    "title": "Статистика",
+    "hours": 9
+   },
+   "title": "Маалыматтарды чагылдыруу",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-04-08",
+    "8в": "2027-04-07"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 114,
+   "number": 20,
+   "section": {
+    "title": "Статистика",
+    "hours": 9
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-04-09",
+    "8в": "2027-04-08"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 115,
+   "number": 21,
+   "section": {
+    "title": "Статистика",
+    "hours": 9
+   },
+   "title": "Маалыматтарды чечмелөө",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-04-12",
+    "8в": "2027-04-12"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 116,
+   "number": 22,
+   "section": {
+    "title": "Статистика",
+    "hours": 9
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-04-13",
+    "8в": "2027-04-13"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 117,
+   "number": 23,
+   "section": {
+    "title": "Статистика",
+    "hours": 9
+   },
+   "title": "Текшерүү иши №11",
+   "hours": 1,
+   "type": "test",
+   "dates": {
+    "8б": "2027-04-15",
+    "8в": "2027-04-14"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 118,
+   "number": 24,
+   "section": {
+    "title": "Статистика",
+    "hours": 9
+   },
+   "title": "Текшерүү ишти анализдөө",
+   "hours": 1,
+   "type": "analysis",
+   "dates": {
+    "8б": "2027-04-16",
+    "8в": "2027-04-15"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 119,
+   "number": 25,
+   "section": {
+    "title": "Ыктымалдуулук",
+    "hours": 9
+   },
+   "title": "",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-04-17",
+    "8в": "2027-04-17"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 120,
+   "number": 26,
+   "section": {
+    "title": "Ыктымалдуулук",
+    "hours": 9
+   },
+   "title": "Биргелешкен окуялар жана ыктымалдык",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-04-19",
+    "8в": "2027-04-19"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 121,
+   "number": 27,
+   "section": {
+    "title": "Ыктымалдуулук",
+    "hours": 9
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-04-20",
+    "8в": "2027-04-20"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 122,
+   "number": 28,
+   "section": {
+    "title": "Ыктымалдуулук",
+    "hours": 9
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-04-22",
+    "8в": "2027-04-21"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 123,
+   "number": 29,
+   "section": {
+    "title": "Ыктымалдуулук",
+    "hours": 9
+   },
+   "title": "Эксперименталдык ыктымалдуулук",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-04-23",
+    "8в": "2027-04-22"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 124,
+   "number": 30,
+   "section": {
+    "title": "Ыктымалдуулук",
+    "hours": 9
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-04-26",
+    "8в": "2027-04-26"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 125,
+   "number": 31,
+   "section": {
+    "title": "Ыктымалдуулук",
+    "hours": 9
+   },
+   "title": "Мисал иштөө",
+   "hours": 1,
+   "type": "practice",
+   "dates": {
+    "8б": "2027-04-27",
+    "8в": "2027-04-27"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 126,
+   "number": 32,
+   "section": {
+    "title": "Ыктымалдуулук",
+    "hours": 9
+   },
+   "title": "Текшерүү иши №12",
+   "hours": 1,
+   "type": "test",
+   "dates": {
+    "8б": "2027-04-29",
+    "8в": "2027-04-28"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 127,
+   "number": 33,
+   "section": {
+    "title": "Ыктымалдуулук",
+    "hours": 9
+   },
+   "title": "Текшерүү ишти анализдөө",
+   "hours": 1,
+   "type": "analysis",
+   "dates": {
+    "8б": "2027-04-30",
+    "8в": "2027-04-29"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 128,
+   "number": 34,
+   "section": {
+    "title": "Кайталоо",
+    "hours": 8
+   },
+   "title": "Сандар",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-05-10",
+    "8в": "2027-05-10"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 129,
+   "number": 35,
+   "section": {
+    "title": "Кайталоо",
+    "hours": 8
+   },
+   "title": "Бөлчөктө,ондук бөлчөктөр жана проценттар (кайталоо)",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-05-11",
+    "8в": "2027-05-11"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 130,
+   "number": 36,
+   "section": {
+    "title": "Кайталоо",
+    "hours": 8
+   },
+   "title": "Катыштар жана пропорциялар (кайталоо)",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-05-13",
+    "8в": "2027-05-12"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 131,
+   "number": 37,
+   "section": {
+    "title": "Кайталоо",
+    "hours": 8
+   },
+   "title": "Алгебралык өзгөртүп түзүүлөр,",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-05-14",
+    "8в": "2027-05-13"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 132,
+   "number": 38,
+   "section": {
+    "title": "Кайталоо",
+    "hours": 8
+   },
+   "title": "барабарсыздыктар",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-05-17",
+    "8в": "2027-05-17"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 133,
+   "number": 39,
+   "section": {
+    "title": "Кайталоо",
+    "hours": 8
+   },
+   "title": "Төрт бурчтуктар,",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-05-18",
+    "8в": "2027-05-18"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 134,
+   "number": 40,
+   "section": {
+    "title": "Кайталоо",
+    "hours": 8
+   },
+   "title": "3д фигуралар",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-05-20",
+    "8в": "2027-05-19"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 135,
+   "number": 41,
+   "section": {
+    "title": "Кайталоо",
+    "hours": 8
+   },
+   "title": "Текшерүү иши №13",
+   "hours": 1,
+   "type": "test",
+   "dates": {
+    "8б": "2027-05-21",
+    "8в": "2027-05-20"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 136,
+   "number": 42,
+   "section": {
+    "title": "Кайталоо",
+    "hours": 8
+   },
+   "title": "Текшерүү ишти анализдөө",
+   "hours": 1,
+   "type": "analysis",
+   "dates": {
+    "8б": "2027-05-22",
+    "8в": "2027-05-22"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 137,
+   "number": 43,
+   "section": {
+    "title": "Кайталоо",
+    "hours": 8
+   },
+   "title": "Жалпы кайталоо",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-05-24",
+    "8в": "2027-05-24"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  },
+  {
+   "index": 138,
+   "number": 44,
+   "section": {
+    "title": "Кайталоо",
+    "hours": 8
+   },
+   "title": "Жалпы кайталоо",
+   "hours": 1,
+   "type": "new",
+   "dates": {
+    "8б": "2027-05-25",
+    "8в": "2027-05-25"
+   },
+   "homework": "",
+   "note": "",
+   "topicKey": null
+  }
+ ]
+}

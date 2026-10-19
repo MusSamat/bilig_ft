@@ -1,0 +1,186 @@
+{
+  "tab": "Планы уроков",
+  "promise": "План урока за 1 минуту из вашего КТП",
+  "intro": "Загрузите календарно-тематический план (.docx). Bilig проверит даты и часы, свяжет каждый урок с темой Bilig и в один клик соберёт официальный план урока.",
+  "upload": {
+    "button": "Выбрать файл .docx",
+    "inputLabel": "Файл КТП (.docx)",
+    "drop": "или перетащите его сюда",
+    "hint": "Документ Word (.docx), до {{mb}} МБ",
+    "sending": "Загружаем и проверяем КТП…",
+    "notDocx": "Это не файл .docx. Сохраните КТП в Word как «Документ Word (.docx)» и попробуйте снова.",
+    "empty": "Файл пустой.",
+    "tooLarge": "Файл больше {{mb}} МБ.",
+    "done": "КТП «{{title}}» загружен"
+  },
+  "list": {
+    "title": "Мои КТП",
+    "empty": "КТП пока нет. Загрузите первый — здесь появятся уроки и даты.",
+    "loadError": "Не удалось загрузить КТП",
+    "open": "Открыть «{{title}}»",
+    "classes": "классы {{list}}",
+    "lessons_one": "{{count}} урок",
+    "lessons_few": "{{count}} урока",
+    "lessons_many": "{{count}} уроков",
+    "lessons_other": "{{count}} урока",
+    "updated": "изменён {{date}}",
+    "delete": "Удалить «{{title}}»",
+    "confirmDelete": "Удалить КТП «{{title}}»? Уже скачанные планы останутся на вашем компьютере.",
+    "deleted": "КТП удалён"
+  },
+  "issues": {
+    "errors_one": "{{count}} ошибка",
+    "errors_few": "{{count}} ошибки",
+    "errors_many": "{{count}} ошибок",
+    "errors_other": "{{count}} ошибки",
+    "warnings_one": "{{count}} предупреждение",
+    "warnings_few": "{{count}} предупреждения",
+    "warnings_many": "{{count}} предупреждений",
+    "warnings_other": "{{count}} предупреждения",
+    "infos_one": "{{count}} заметка",
+    "infos_few": "{{count}} заметки",
+    "infos_many": "{{count}} заметок",
+    "infos_other": "{{count}} заметки",
+    "none": "Проблем не найдено",
+    "onlyProblems": "Только проблемы",
+    "showAll_one": "Показать {{count}} проблему",
+    "showAll_few": "Показать все {{count}} проблемы",
+    "showAll_many": "Показать все {{count}} проблем",
+    "showAll_other": "Показать все {{count}} проблемы",
+    "at": "Урок {{row}} · {{class}}:"
+  },
+  "issue": {
+    "no_lessons": "В файле не найдена таблица уроков",
+    "title_missing": "У урока нет темы",
+    "date_missing": "Нет даты для {{class}}",
+    "date_invalid": "Несуществующая дата: {{date}}",
+    "date_order": "{{date}} — раньше предыдущего урока ({{prev}})",
+    "date_same_day": "Второй урок в тот же день ({{date}})",
+    "date_sunday": "{{date}} — воскресенье",
+    "date_holiday": "{{date}} — праздничный день",
+    "date_out_of_year": "{{date}} — вне учебного года",
+    "hours_mismatch": "В шапке указано {{declared}} ч, а по урокам выходит {{actual}} ч",
+    "section_hours_mismatch": "У раздела указано {{declared}} ч, а уроков в нём на {{actual}} ч"
+  },
+  "plan": {
+    "back": "Все КТП",
+    "notFound": "КТП не найден. Возможно, его удалили.",
+    "loadError": "Не удалось загрузить КТП",
+    "year": "{{from}}–{{to}} учебный год",
+    "hours": "{{actual}} из {{declared}} ч",
+    "hoursOnly_one": "{{count}} час",
+    "hoursOnly_few": "{{count}} часа",
+    "hoursOnly_many": "{{count}} часов",
+    "hoursOnly_other": "{{count}} часа",
+    "teacher": "Учитель: {{name}}",
+    "class": "Класс",
+    "lang": "Язык планов",
+    "noRows": "В этом файле не нашлось уроков. Проверьте, что в КТП есть таблица с темами и датами.",
+    "noProblems": "В уроках {{class}} проблем нет."
+  },
+  "langName": {
+    "ky": "Кыргызча",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "week": {
+    "title": "Эта неделя · {{class}}",
+    "today": "Сегодня",
+    "noToday": "Сегодня уроков нет.",
+    "empty": "На этой неделе у {{class}} уроков нет.",
+    "next": "Следующий урок: {{date}}, «{{title}}».",
+    "download_one": "Скачать неделю ({{count}} план)",
+    "download_few": "Скачать неделю ({{count}} плана)",
+    "download_many": "Скачать неделю ({{count}} планов)",
+    "download_other": "Скачать неделю ({{count}} плана)",
+    "tooMany": "На неделе больше {{max}} уроков — скачайте её частями ниже"
+  },
+  "lessons": {
+    "title": "Уроки · {{class}}"
+  },
+  "table": {
+    "caption": "Уроки КТП с датами для {{class}}"
+  },
+  "col": {
+    "index": "№",
+    "number": "№ в КТП",
+    "title": "Тема урока",
+    "type": "Тип",
+    "hours": "Часы",
+    "date": "Дата ({{class}})",
+    "topic": "Тема Bilig",
+    "homework": "Домашнее задание",
+    "issues": "Проблемы",
+    "actions": "Действия"
+  },
+  "section": {
+    "untitled": "Без раздела",
+    "declared_one": "указан {{count}} ч",
+    "declared_few": "указано {{count}} ч",
+    "declared_many": "указано {{count}} ч",
+    "declared_other": "указано {{count}} ч",
+    "actual_one": "уроков на {{count}} ч",
+    "actual_few": "уроков на {{count}} ч",
+    "actual_many": "уроков на {{count}} ч",
+    "actual_other": "уроков на {{count}} ч"
+  },
+  "untitled": "Урок без темы",
+  "type": {
+    "label": "Тип урока {{n}}",
+    "new": "Новый материал",
+    "practice": "Практика",
+    "test": "Контрольная",
+    "analysis": "Анализ контрольной"
+  },
+  "date": {
+    "label": "Дата урока {{n}} для {{class}}"
+  },
+  "badge": {
+    "saturday": "Суббота",
+    "sunday": "Воскресенье",
+    "holiday": "Праздник"
+  },
+  "homework": {
+    "label": "Домашнее задание к уроку {{n}}",
+    "placeholder": "Не задано"
+  },
+  "topic": {
+    "none": "Не связана",
+    "auto": "авто · {{score}}%",
+    "autoTitle": "Подобрано автоматически, уверенность {{score}}%",
+    "change": "Изменить тему урока {{n}}",
+    "link": "Связать урок {{n}} с темой",
+    "open": "Открыть тему «{{title}}»",
+    "pickFor": "Тема Bilig для «{{title}}»",
+    "search": "Поиск темы",
+    "searchPlaceholder": "Название темы",
+    "results": "Темы",
+    "suggested": "Темы этого предмета:",
+    "noResults": "Темы не найдены",
+    "clear": "Убрать связь"
+  },
+  "action": {
+    "plan": "План",
+    "planFor": "Скачать план урока {{n}} для {{class}} (.docx)"
+  },
+  "range": {
+    "title": "Планы нескольких уроков одним файлом",
+    "selectCol": "Выбор",
+    "select": "Выбрать урок {{n}}",
+    "from": "С урока",
+    "to": "По урок",
+    "download_one": "Скачать {{count}} план",
+    "download_few": "Скачать {{count}} плана",
+    "download_many": "Скачать {{count}} планов",
+    "download_other": "Скачать {{count}} плана",
+    "downloadNone": "Скачать выбранные",
+    "clear": "Снять выбор",
+    "hint": "Отметьте уроки (Shift+клик выделяет диапазон) или введите их номера.",
+    "tooMany": "В одном файле — не больше {{max}} уроков"
+  },
+  "draftNote": "Каждый план — черновик: проверьте его и выберите коды компетенций перед уроком.",
+  "conflict": "КТП изменили в другом месте. Мы загрузили свежую версию — проверьте правку и повторите её.",
+  "saveError": "Не удалось сохранить изменение",
+  "downloaded": "План скачан",
+  "downloadError": "Не удалось собрать план. Попробуйте ещё раз."
+}

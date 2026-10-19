@@ -35,7 +35,16 @@ export type PartShape =
   /** Instanced spheres (crystal ions). */
   | { kind: 'instances'; positions: Vec3[]; radius: number }
   /** Thin tube along a polyline through the points (filaments, coils, curved guides). */
-  | { kind: 'polyline'; points: Vec3[]; radius: number; closed?: boolean };
+  | { kind: 'polyline'; points: Vec3[]; radius: number; closed?: boolean }
+  /**
+   * Text drawn into a canvas texture on a plane (numbers next to arrows, axis
+   * titles, readouts). `size` is the line height in scene units; the part's
+   * `color` colours the glyphs (white by default). Faces the camera unless
+   * `billboard: false` (then it lies in the local XY plane, facing +Z).
+   * `align` puts the anchor at the left / centre / right edge; `plate` draws a
+   * dark rounded plate behind the text so it reads on any stage. Never picks.
+   */
+  | { kind: 'text'; text: string; size: number; billboard?: boolean; align?: 'left' | 'center' | 'right'; plate?: boolean; bold?: boolean };
 
 /**
  * Surface presets (optional; without one a part keeps the default satin
@@ -87,6 +96,11 @@ export interface Part {
   noPick?: boolean;
   /** Per-frame motion; `t` is the plugin clock in seconds. */
   motion?: (t: number) => { position?: Vec3; rotation?: Vec3; scale?: Vec3; visible?: boolean };
+  /**
+   * Per-frame position of instance `i` of an `instances` shape (particles in
+   * thermal motion). Called for every instance each frame; keep it cheap.
+   */
+  instanceMotion?: (t: number, i: number) => Vec3;
   metalness?: number;
   roughness?: number;
   /** Surface preset (see PartMaterial). */

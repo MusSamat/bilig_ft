@@ -5,7 +5,7 @@
  * Pure transitions come from @bilig/scene-core — this store only holds them.
  */
 import { create } from 'zustand';
-import type { Camera, ResolvedConcept, Topic } from '@bilig/content-model';
+import type { Camera, ResolvedConcept, Sample, Topic } from '@bilig/content-model';
 import {
   applyModes,
   conceptVisibility,
@@ -47,6 +47,12 @@ export interface ViewerStore {
   resetNonce: number;
   /** Camera override for a tour step. */
   stepCamera: Camera | null;
+  /** v0.5.0: sample shown on the stage (its `scene` applies); null = the topic scene. */
+  sample: string | null;
+  /** The stage sample's camera: the stage's home view while it is shown. */
+  sampleCamera: Camera | null;
+  /** The stage sample's mode patch (re-applied by «Сброс»). */
+  sampleModes: Record<string, boolean | string> | null;
 
   initTopic(topic: Topic, concepts: ResolvedConcept[], defs: ModeDef[], init: { focus?: string | null; modeTokens?: string[] }): void;
   select(key: string | null): void;
@@ -63,6 +69,12 @@ export interface ViewerStore {
   setLessonStep(i: number): void;
   setStepFrame(frame: { visibility: Record<string, ConceptVisibility> | null; camera: Camera | null }): void;
   setFindItem(key: string | null): void;
+  /**
+   * Put a sample on the stage (null = the topic scene). `defs` are the mode
+   * definitions of the resulting scene (params may change them). Clears the
+   * focus; the sample's modes apply over the defaults.
+   */
+  showSample(sample: Pick<Sample, 'key' | 'scene'> | null, defs: ModeDef[]): void;
   /** Route a pick (3D click or structure tree) to the quiz when in find mode, else select. */
   pick(key: string | null): void;
 }
@@ -83,6 +95,9 @@ export const useViewer = create<ViewerStore>((set, get) => ({
   findAnswer: null,
   resetNonce: 0,
   stepCamera: null,
+  sample: null,
+  sampleCamera: null,
+  sampleModes: null,
 
   initTopic(topic, concepts, defs, init) {
     // Modes reset to the plugin defaults whenever the topic changes (W-23).
@@ -97,6 +112,9 @@ export const useViewer = create<ViewerStore>((set, get) => ({
       toolbar: 'none',
       stepVisibility: null,
       stepCamera: null,
+      sample: null,
+      sampleCamera: null,
+      sampleModes: null,
       cited: [],
       process: null,
       lessonStep: 0,
@@ -123,7 +141,14 @@ export const useViewer = create<ViewerStore>((set, get) => ({
   isolate: () => set((s) => ({ toolbar: s.selected ? (s.toolbar === 'isolate' ? 'none' : 'isolate') : 'none' })),
   hideOthers: () => set((s) => ({ toolbar: s.selected ? (s.toolbar === 'hide' ? 'none' : 'hide') : 'none' })),
   resetView: () =>
-    set((s) => ({ toolbar: 'none', selected: null, cited: [], modes: defaultModeState(s.modeDefs), resetNonce: s.resetNonce + 1, stepCamera: null })),
+    set((s) => ({
+      toolbar: 'none',
+      selected: null,
+      cited: [],
+      modes: applyModes(defaultModeState(s.modeDefs), s.modeDefs, s.sampleModes ?? {}),
+      resetNonce: s.resetNonce + 1,
+      stepCamera: null,
+    })),
   setCited: (cited) => set({ cited }),
   openProcess(key, steps = [], stepIndex) {
     if (!key) return set({ process: null });
@@ -140,6 +165,29 @@ export const useViewer = create<ViewerStore>((set, get) => ({
   setLessonStep: (lessonStep) => set({ lessonStep }),
   setStepFrame: ({ visibility, camera }) => set({ stepVisibility: visibility, stepCamera: camera }),
   setFindItem: (findItemKey) => set({ findItemKey, findAnswer: null }),
+  showSample(sample, defs) {
+    const s = get();
+    const key = sample?.key ?? null;
+    if (key === s.sample) return;
+    const patch = sample?.scene?.modes ?? null;
+    // Leaving a sample that set modes restores the defaults; otherwise the teacher's
+    // toggles carry over (where the new scene still offers them).
+    // Carry the teacher's own changes (differences from the old scene's defaults), so the new
+    // scene's defaults (e.g. shells off for a sample) still apply.
+    const before = defaultModeState(s.modeDefs);
+    const changed = s.sampleModes ? {} : Object.fromEntries(Object.entries(s.modes).filter(([k, val]) => before[k] !== val));
+    const base = applyModes(defaultModeState(defs), defs, changed);
+    set({
+      sample: key,
+      sampleCamera: sample?.scene?.camera ?? null,
+      sampleModes: patch,
+      modeDefs: defs,
+      modes: applyModes(base, defs, patch ?? {}),
+      selected: null,
+      toolbar: 'none',
+      cited: [],
+    });
+  },
   pick(key) {
     const { findItemKey } = get();
     if (findItemKey) {

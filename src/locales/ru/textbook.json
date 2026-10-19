@@ -1,0 +1,31 @@
+{
+  "my": "Мой учебник",
+  "myHint": "Урок за 5 минут по вашему учебнику",
+  "continue": "Продолжить: {{title}}",
+  "continueChapter": "Продолжить: {{title}} · глава {{number}}",
+  "short": "{{title}} {{grade}}",
+  "grade": "{{grade}} класс",
+  "part": "часть {{part}}",
+  "chapters_one": "{{count}} глава",
+  "chapters_few": "{{count}} главы",
+  "chapters_many": "{{count}} глав",
+  "chapters_other": "{{count}} главы",
+  "chapter": "Глава {{number}}",
+  "contents": "Содержание",
+  "pages": "стр. {{from}}–{{to}}",
+  "page": "стр. {{from}}",
+  "kind": {
+    "lesson": "Урок",
+    "review": "Повторение",
+    "extra": "Дополнительно"
+  },
+  "soon": "скоро",
+  "soonHint": "Модель к этому уроку готовится",
+  "reviewHint": "Темы главы для повторения и самопроверки",
+  "lead": "Выберите урок — откроется готовая 3D-модель с материалами к нему.",
+  "placeLabel": "В учебнике: {{place}}",
+  "loadError": "Не удалось загрузить учебник",
+  "notFound": "Учебник не найден",
+  "notFoundHint": "Возможно, ссылка устарела. Выберите учебник на главной.",
+  "loadListError": "Не удалось загрузить учебники"
+}

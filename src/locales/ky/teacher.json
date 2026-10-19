@@ -94,5 +94,10 @@
   "page": "{{n}}/{{m}} бет",
   "prevPage": "Мурунку бет",
   "nextPage": "Кийинки бет",
-  "pagination": "Беттер"
+  "pagination": "Беттер",
+  "sectionsLabel": "Кабинеттин бөлүмдөрү",
+  "section": {
+    "classes": "Класстар",
+    "ktp": "Сабак пландары"
+  }
 }

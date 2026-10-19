@@ -19,6 +19,7 @@
     "@bilig/scene-core": "*",
     "@bilig/content-model": "*",
     "@bilig/scene-kit": "*",
-    "zod": "*"
+    "zod": "*",
+    "@bilig/plugin-molecule": "*"
   }
 }

@@ -42,8 +42,8 @@ export function topicPkg(key: string): ContentPackage {
 }
 
 /** Render topic components with a real package, viewer store initialised as the page would. */
-export function renderTopic(ui: ReactNode, opts: { topic?: string; lang?: 'ky' | 'ru' | 'en'; lesson?: boolean; path?: string } = {}) {
-  const pkg = topicPkg(opts.topic ?? 'water');
+export function renderTopic(ui: ReactNode, opts: { topic?: string; pkg?: ContentPackage; lang?: 'ky' | 'ru' | 'en'; lesson?: boolean; path?: string } = {}) {
+  const pkg = opts.pkg ?? topicPkg(opts.topic ?? 'water');
   const lang = opts.lang ?? 'en';
   void i18n.changeLanguage(lang);
   const concepts = topicConcepts(pkg);

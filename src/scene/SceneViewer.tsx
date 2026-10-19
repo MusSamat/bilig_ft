@@ -36,6 +36,10 @@ export interface SceneViewerProps {
   reducedMotion: boolean;
   resetNonce: number;
   stepCamera: Camera | null;
+  /** v0.5.0: key of the sample on the stage (a change re-frames the view). */
+  stageSample?: string | null;
+  /** The stage sample's camera: the home view (exact) while the sample is shown. */
+  sampleCamera?: Camera | null;
   /** Subject hue for the rim light. */
   hue?: number;
 }
@@ -98,8 +102,11 @@ const DEFAULT_CAMERA: Camera = { position: [0, 1.5, 6], target: [0, 0, 0], fov: 
 const NEAR_PX = 26;
 
 export default function SceneViewer(props: SceneViewerProps): JSX.Element {
-  const { topic, concepts, plugin, state, onPick, onHover, onMiss, assetBaseUrl, labelsAll, autoRotate, reducedMotion, resetNonce, stepCamera, hue = 200 } = props;
+  const { topic, concepts, plugin, state, onPick, onHover, onMiss, assetBaseUrl, labelsAll, autoRotate, reducedMotion, resetNonce, stepCamera, stageSample = null, sampleCamera = null, hue = 200 } = props;
   const cam = topic.scene.camera ?? DEFAULT_CAMERA;
+  // The canvas camera is created once per topic; sample cameras are flown to by the rig.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const canvasCam = useMemo(() => ({ position: cam.position, fov: cam.fov ?? 45, near: 0.05, far: 200 }), [topic.key]);
   // From the worker probe; the real renderer corrects it in onCreated when the worker could not tell.
   const [lowPower, setLowPower] = useState(isSoftwareGL);
   const maxDpr = typeof window === 'undefined' ? 1 : lowPower ? 0.7 : Math.min(2, window.devicePixelRatio || 1);
@@ -150,7 +157,7 @@ export default function SceneViewer(props: SceneViewerProps): JSX.Element {
       <ModelProgress status={assetStatus} onRetry={() => setRetryNonce((n) => n + 1)} />
       <Canvas
         dpr={dpr}
-        camera={{ position: cam.position, fov: cam.fov ?? 45, near: 0.05, far: 200 }}
+        camera={canvasCam}
         gl={{ antialias: !lowPower, alpha: true, stencil: true, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
         shadows={lowPower ? false : 'soft'}
         onCreated={({ gl }) => {
@@ -197,7 +204,8 @@ export default function SceneViewer(props: SceneViewerProps): JSX.Element {
           bounds={bounds}
           selected={state.selectedConceptKey}
           initial={cam}
-          resetKey={`${topic.key}:${resetNonce}`}
+          home={sampleCamera}
+          resetKey={`${topic.key}:${stageSample ?? ''}:${resetNonce}`}
           stepCamera={stepCamera}
           instant={reducedMotion}
         />
@@ -403,18 +411,21 @@ const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 
 
 /**
  * W-20: frame the whole model (keeping the topic camera's direction), fly to
- * the selected structure, to a tour step camera, or back to the framed view.
+ * the selected structure, to a tour step camera, or back to the framed view —
+ * or, while a stage sample with a camera is shown, to that exact camera.
  */
 function CameraRig(props: {
   anchors: MutableRefObject<Anchors>;
   bounds: MutableRefObject<Bounds | null>;
   selected: string | null;
   initial: Camera;
+  /** Exact home pose (a stage sample's camera) instead of framing the bounds. */
+  home?: Camera | null;
   resetKey: string;
   stepCamera: Camera | null;
   instant: boolean;
 }): null {
-  const { anchors, bounds, selected, initial, resetKey, stepCamera, instant } = props;
+  const { anchors, bounds, selected, initial, home, resetKey, stepCamera, instant } = props;
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
   const controls = useThree((s) => s.controls) as OrbitControlsImpl | null;
@@ -431,6 +442,7 @@ function CameraRig(props: {
 
   /** Camera pose that fits the model bounds in the viewport (both axes), from the topic camera direction. */
   const homePose = (): { pos: THREE.Vector3; target: THREE.Vector3 } | null => {
+    if (home) return { pos: new THREE.Vector3(...home.position), target: new THREE.Vector3(...home.target) };
     const b = bounds.current;
     if (!b) return null;
     const dir = new THREE.Vector3(...initial.position).sub(new THREE.Vector3(...initial.target));

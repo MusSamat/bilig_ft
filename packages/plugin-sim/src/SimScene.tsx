@@ -6,7 +6,7 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { SceneProps } from '@bilig/scene-core';
-import { PartsView } from '@bilig/scene-kit';
+import { PartsView, bindParts } from '@bilig/scene-kit';
 import { modelFor } from './models.js';
 
 export function SimScene({ topic, concepts, state, onSelectConcept }: SceneProps): JSX.Element {
@@ -16,10 +16,20 @@ export function SimScene({ topic, concepts, state, onSelectConcept }: SceneProps
   // Rebuild only when modes or the discrete step change (motion handles the rest).
   const stepIndex = pb?.stepIndex;
   const hasProcess = !!pb;
+  const lang = state.lang;
+  // Selection-aware models (food tests on the selected food) rebuild when the selection changes.
+  const selectedKey = model.usesSelection ? state.selectedConceptKey : null;
   const parts = useMemo(
-    () => model.build(raw, { modes: state.modes, playback: pb }),
+    () => {
+      const ctx = { modes: state.modes, playback: pb, lang };
+      const first = model.build(raw, ctx);
+      if (!selectedKey) return first;
+      const binding = bindParts(first, concepts);
+      const selected = new Set(first.filter((p) => binding.get(p.name) === selectedKey).map((p) => p.name));
+      return model.build(raw, { ...ctx, selected });
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [model, raw, state.modes, stepIndex, hasProcess],
+    [model, raw, state.modes, stepIndex, hasProcess, lang, selectedKey, concepts],
   );
   const latest = useRef(pb);
   latest.current = pb;

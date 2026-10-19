@@ -37,6 +37,75 @@
     color: var(--muted);
     font-size: 13px;
   }
+  .home-hero__side {
+    display: grid;
+    gap: var(--sp-2);
+    min-width: 0;
+  }
+  .home-hero__side .grp {
+    margin-top: 0;
+  }
+  .home-textbooks {
+    display: grid;
+    gap: 10px;
+  }
+  .home-textbooks .grp {
+    margin-bottom: 0;
+  }
+  .home-textbooks__continue {
+    justify-self: start;
+    max-width: 100%;
+  }
+  .home-textbooks__list {
+    display: grid;
+    gap: 10px;
+  }
+  .home-textbooks__hint {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .tb-card {
+    display: flex;
+    gap: var(--sp-3);
+    align-items: flex-start;
+    padding: 12px 14px;
+    border-radius: var(--r-lg);
+    border: 1.5px solid var(--line);
+    background: var(--chip);
+    color: var(--ink);
+    text-decoration: none;
+    min-width: 0;
+    transition: border-color var(--t-fast);
+  }
+  .tb-card:hover {
+    border-color: var(--accent);
+  }
+  .tb-card__ic {
+    width: 46px;
+    height: 46px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: var(--r-md);
+    background: var(--soft);
+    color: var(--accent);
+  }
+  .tb-card__body {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+  .tb-card__body b {
+    font: 700 15.5px / 1.25 var(--serif);
+  }
+  .tb-card__body small {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .tb-card .chips {
+    gap: 6px;
+    margin-top: 2px;
+  }
   .home-subjects {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -94,5 +94,10 @@
   "page": "Page {{n}} of {{m}}",
   "prevPage": "Previous page",
   "nextPage": "Next page",
-  "pagination": "Pages"
+  "pagination": "Pages",
+  "sectionsLabel": "Dashboard sections",
+  "section": {
+    "classes": "Classes",
+    "ktp": "Lesson plans"
+  }
 }

@@ -2,8 +2,8 @@
  * Lesson mode stepper for the projector (W-50), inside the inspector: the
  * tour step text, the teacher note, «Шаг N из M» with Back / Next, keyboard
  * arrows and presentation remotes (PageUp/PageDown). Steps come from the
- * topic's `tour` activity (camera, visibility, modes, focus, text, teacher
- * note, alt text); without a tour the structures are stepped through.
+ * topic's `tour` activity (sample, camera, visibility, modes, focus, text,
+ * teacher note, alt text); without a tour the structures are stepped through.
  */
 import { useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -15,6 +15,7 @@ import { useKeydown, useLang } from '../lib/hooks';
 import { useViewer } from '../state/viewer';
 import { takeSnapshot } from './actions';
 import { useTopic } from './context';
+import { showStageSample } from './stageSample';
 import { toggleStage, useStageView } from './stageView';
 
 export function LessonPanel({ ready }: { ready: boolean }): JSX.Element | null {
@@ -37,9 +38,12 @@ export function LessonPanel({ ready }: { ready: boolean }): JSX.Element | null {
   const s = stepper.createStepper(tour.steps.length, index);
   const frame = stepper.lessonFrame(tour, s, concepts.map((c) => c.key));
 
-  // Apply the step to the viewer: focus, visibility, modes, camera.
+  // A tour that puts samples on the stage shows the topic scene at its steps without one.
+  const usesSamples = tour.steps.some((st) => st.sample);
+  // Apply the step to the viewer: sample on the stage, then focus, visibility, modes, camera on top.
   useEffect(() => {
     if (!ready || !frame) return;
+    if (usesSamples) showStageSample(pkg.topic, frame.step.sample ?? null);
     const v = useViewer.getState();
     v.setStepFrame({ visibility: frame.step.visibility ? frame.visibility : null, camera: frame.step.camera ?? null });
     if (frame.step.modes) v.applyModePatch(frame.step.modes);

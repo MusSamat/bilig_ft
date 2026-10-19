@@ -1,0 +1,439 @@
+{
+  "manifest": {
+    "topicKey": "sim-food-web",
+    "version": "0.0.1",
+    "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "files": [],
+    "builtAt": "2026-10-19T00:00:00Z"
+  },
+  "subject": {
+    "key": "bio",
+    "icon": "cell",
+    "hue": 168,
+    "group": "natural",
+    "order": 0,
+    "status": "live",
+    "title": {
+      "ky": "Биология",
+      "ru": "Биология",
+      "en": "Biology"
+    }
+  },
+  "course": {
+    "key": "bio.g7",
+    "subjectKey": "bio",
+    "grade": 7,
+    "curriculum": "kg-2024",
+    "title": {
+      "ky": "Биология, 7-класс",
+      "ru": "Биология, 7 класс",
+      "en": "Biology, grade 7"
+    }
+  },
+  "unit": {
+    "key": "bio.g7.plants",
+    "courseKey": "bio.g7",
+    "order": 2,
+    "title": {
+      "ky": "Өсүмдүктөрдүн азыктануусу",
+      "ru": "Питание растений",
+      "en": "Plant nutrition"
+    }
+  },
+  "objectives": [
+    {
+      "key": "bio.g7.plants.o1",
+      "code": "BIO-7.3.1",
+      "unitKey": "bio.g7.plants",
+      "text": {
+        "ky": "Фотосинтездин шарттарын, баштапкы заттарын жана продуктуларын сүрөттөө.",
+        "ru": "Описывать условия, исходные вещества и продукты фотосинтеза.",
+        "en": "Describe the conditions, reactants and products of photosynthesis."
+      }
+    },
+    {
+      "key": "bio.g7.plants.o2",
+      "code": "BIO-7.3.2",
+      "unitKey": "bio.g7.plants",
+      "text": {
+        "ky": "Фотосинтездин жер бетиндеги жашоо үчүн маанисин түшүндүрүү.",
+        "ru": "Объяснять значение фотосинтеза для жизни на Земле.",
+        "en": "Explain why photosynthesis matters for life on Earth."
+      }
+    }
+  ],
+  "topic": {
+    "key": "sim-food-web",
+    "unitKey": "bio.g7.plants",
+    "status": "published",
+    "title": {
+      "ky": "Азык торчосу",
+      "ru": "Пищевая сеть",
+      "en": "Food web"
+    },
+    "classification": {
+      "ky": "Дев-макет",
+      "ru": "Дев-макет",
+      "en": "Dev mock"
+    },
+    "description": {
+      "ky": "Процедуралык sim-модель (контракт 0.5.0).",
+      "ru": "Процедурная sim-модель (контракт 0.5.0) для разработки.",
+      "en": "Procedural sim model (contract 0.5.0) for development."
+    },
+    "goal": {
+      "ky": "Моделди көрүү.",
+      "ru": "Посмотреть модель.",
+      "en": "View the model."
+    },
+    "objectiveKeys": [],
+    "durationMin": 45,
+    "scene": {
+      "plugin": "sim",
+      "params": {
+        "model": "food-web",
+        "biome": "lake",
+        "organisms": [
+          {
+            "id": "algae",
+            "level": "producer",
+            "icon": "algae",
+            "count": 8
+          },
+          {
+            "id": "daphnia",
+            "level": "primary",
+            "icon": "daphnia",
+            "count": 6
+          },
+          {
+            "id": "snail",
+            "level": "primary",
+            "icon": "snail"
+          },
+          {
+            "id": "roach",
+            "level": "secondary",
+            "icon": "fish"
+          },
+          {
+            "id": "frog",
+            "level": "secondary",
+            "icon": "frog"
+          },
+          {
+            "id": "pike",
+            "level": "tertiary",
+            "icon": "pike",
+            "count": 1
+          },
+          {
+            "id": "heron",
+            "level": "tertiary",
+            "icon": "heron"
+          },
+          {
+            "id": "bacteria",
+            "level": "decomposer",
+            "icon": "bacteria"
+          }
+        ],
+        "links": [
+          [
+            "algae",
+            "daphnia"
+          ],
+          [
+            "algae",
+            "snail"
+          ],
+          [
+            "daphnia",
+            "roach"
+          ],
+          [
+            "snail",
+            "frog"
+          ],
+          [
+            "daphnia",
+            "frog"
+          ],
+          [
+            "roach",
+            "pike"
+          ],
+          [
+            "frog",
+            "heron"
+          ],
+          [
+            "roach",
+            "heron"
+          ],
+          [
+            "pike",
+            "bacteria"
+          ],
+          [
+            "heron",
+            "bacteria"
+          ]
+        ],
+        "removed": [
+          "pike"
+        ],
+        "pollutant": {
+          "name": "DDT",
+          "start": 0.001,
+          "factor": 10
+        }
+      },
+      "camera": {
+        "position": [
+          0,
+          2.3,
+          9.5
+        ],
+        "target": [
+          0,
+          2.2,
+          0
+        ],
+        "fov": 45
+      },
+      "modes": [
+        "energy",
+        "pollutant",
+        "labels"
+      ]
+    },
+    "conceptKeys": [
+      "mock.food-web.producer",
+      "mock.food-web.predator",
+      "mock.food-web.link"
+    ],
+    "overrides": {
+      "mock.food-web.producer": {
+        "nodes": [
+          "Organism_algae",
+          "Level_producer"
+        ]
+      },
+      "mock.food-web.predator": {
+        "nodes": [
+          "Organism_pike",
+          "Organism_heron"
+        ]
+      },
+      "mock.food-web.link": {
+        "nodes": [
+          "Link_*"
+        ]
+      }
+    },
+    "samples": [],
+    "activities": {
+      "processKeys": []
+    },
+    "examples": {
+      "stem": [
+        {
+          "field": "e",
+          "title": {
+            "ky": "Мисал",
+            "ru": "Пример",
+            "en": "Example"
+          },
+          "text": {
+            "ky": "Дев-макет үчүн мисал.",
+            "ru": "Пример для дев-макета.",
+            "en": "An example for the dev mock."
+          }
+        }
+      ],
+      "simple": [
+        {
+          "title": {
+            "ky": "Мисал",
+            "ru": "Пример",
+            "en": "Example"
+          },
+          "text": {
+            "ky": "Дев-макет үчүн мисал.",
+            "ru": "Пример для дев-макета.",
+            "en": "An example for the dev mock."
+          }
+        }
+      ]
+    },
+    "demo": true
+  },
+  "concepts": [
+    {
+      "key": "mock.food-web.producer",
+      "kind": "part",
+      "hue": 161,
+      "isContainer": false,
+      "title": {
+        "ky": "Продуцент",
+        "ru": "Продуцент",
+        "en": "Producer"
+      },
+      "description": {
+        "ky": "Дев-макет",
+        "ru": "Дев-макет для просмотра модели.",
+        "en": "Dev mock for viewing the model."
+      },
+      "props": [],
+      "related": [],
+      "misconceptions": [],
+      "examples": {
+        "stem": [
+          {
+            "field": "e",
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ],
+        "simple": [
+          {
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "mock.food-web.predator",
+      "kind": "part",
+      "hue": 228,
+      "isContainer": false,
+      "title": {
+        "ky": "Жырткыч",
+        "ru": "Хищник",
+        "en": "Predator"
+      },
+      "description": {
+        "ky": "Дев-макет",
+        "ru": "Дев-макет для просмотра модели.",
+        "en": "Dev mock for viewing the model."
+      },
+      "props": [],
+      "related": [],
+      "misconceptions": [],
+      "examples": {
+        "stem": [
+          {
+            "field": "e",
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ],
+        "simple": [
+          {
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "mock.food-web.link",
+      "kind": "part",
+      "hue": 295,
+      "isContainer": false,
+      "title": {
+        "ky": "Азык байланышы",
+        "ru": "Пищевая связь",
+        "en": "Feeding link"
+      },
+      "description": {
+        "ky": "Дев-макет",
+        "ru": "Дев-макет для просмотра модели.",
+        "en": "Dev mock for viewing the model."
+      },
+      "props": [],
+      "related": [],
+      "misconceptions": [],
+      "examples": {
+        "stem": [
+          {
+            "field": "e",
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ],
+        "simple": [
+          {
+            "title": {
+              "ky": "Мисал",
+              "ru": "Пример",
+              "en": "Example"
+            },
+            "text": {
+              "ky": "Дев-макет үчүн мисал.",
+              "ru": "Пример для дев-макета.",
+              "en": "An example for the dev mock."
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "processes": [],
+  "items": [],
+  "glossary": [],
+  "propertyTypes": [
+    {
+      "key": "composition",
+      "icon": "flask-conical",
+      "valueKind": "text",
+      "label": {
+        "ky": "Курамы",
+        "ru": "Состав",
+        "en": "Composition"
+      }
+    }
+  ]
+}

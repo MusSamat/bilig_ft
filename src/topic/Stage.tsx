@@ -22,6 +22,7 @@ import { takeSnapshot } from './actions';
 import { ConceptCard } from './ConceptCard';
 import { fileUrl, useTopic } from './context';
 import { ModePanel } from './ModePanel';
+import { stageScene } from './stageSample';
 import { StructureTree } from './StructureTree';
 import { collapseStage, fullscreenSupported, onFullscreenChange, resetStageView, toggleFullscreen, toggleStage, useStageView } from './stageView';
 
@@ -218,7 +219,10 @@ export function Stage({ ready }: { ready: boolean }): JSX.Element {
   const reducedMotion = useReducedMotion();
   const touch = useCoarsePointer();
   const v = useViewer();
-  const plugin = ready ? registry.get(pkg.topic.scene.plugin) : undefined;
+  // v0.5.0: the stage renders the selected sample's scene (params merged, camera); the canvas stays mounted.
+  const scene = useMemo(() => stageScene(pkg.topic, v.sample), [pkg.topic, v.sample]);
+  const stageTopic = useMemo(() => (scene === pkg.topic.scene ? pkg.topic : { ...pkg.topic, scene }), [pkg.topic, scene]);
+  const plugin = ready ? registry.get(scene.plugin) : undefined;
   // null while the (off-main-thread) probe runs: the stage shows its loader meanwhile.
   const webgl = useWebGLSupport();
   const [coach, setCoach] = useState(() => !coachSeen());
@@ -287,6 +291,8 @@ export function Stage({ ready }: { ready: boolean }): JSX.Element {
   useEffect(() => {
     if (!plugin || thumbRendered || hasLiveThumb(pkg.topic.key)) return;
     const id = setTimeout(() => {
+      // Only the topic scene stands for the topic's preview.
+      if (useViewer.getState().sample) return;
       const frame = sceneHandle.get()?.capture();
       if (frame) void storeLiveThumb(pkg.topic.key, frame);
     }, 3000);
@@ -373,7 +379,7 @@ export function Stage({ ready }: { ready: boolean }): JSX.Element {
           >
             <Suspense fallback={<StageLoading />}>
               <SceneViewer
-                topic={pkg.topic}
+                topic={stageTopic}
                 concepts={concepts}
                 plugin={plugin}
                 state={state}
@@ -386,6 +392,8 @@ export function Stage({ ready }: { ready: boolean }): JSX.Element {
                 reducedMotion={reducedMotion}
                 resetNonce={v.resetNonce}
                 stepCamera={v.stepCamera}
+                stageSample={v.sample}
+                sampleCamera={v.sampleCamera}
                 hue={pkg.subject.hue}
               />
             </Suspense>

@@ -13,6 +13,7 @@ import { useLang } from '../lib/hooks';
 import { useTopic } from './context';
 import { SampleStrip } from './SampleStrip';
 import { StatusTiles } from './StatusTiles';
+import { TextbookPlaces } from './TextbookPlaces';
 
 export function TopicHero({ catalog }: { catalog: Catalog | undefined }): JSX.Element {
   const { t } = useTranslation();
@@ -30,6 +31,7 @@ export function TopicHero({ catalog }: { catalog: Catalog | undefined }): JSX.El
     <section className="hero panel glass" aria-labelledby="topic-title">
       <div className="hero__main">
         <Breadcrumbs catalog={catalog} topicKey={topic.key} fallback={fallback} icon={pkg.subject.icon} />
+        <TextbookPlaces catalog={catalog} topicKey={topic.key} />
         <h1 id="topic-title">
           {tr(topic.title, lang)}
           {topic.formula && (

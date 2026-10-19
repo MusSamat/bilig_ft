@@ -4,7 +4,8 @@
  * model clock derived from the process playback (or a free clock).
  */
 import type { Localized, Vec3 } from '@bilig/content-model';
-import type { ModeDef, ModeState, PlayerView } from '@bilig/scene-core';
+import type { ModeDef, ModeState } from '@bilig/scene-core';
+import type { SimModel } from './models/common.js';
 import type { Part, PartTexture } from '@bilig/scene-kit';
 import { add, len3, norm3, scale3, sub } from '@bilig/scene-kit';
 import { Euler, Quaternion, Vector3 } from 'three';
@@ -13,7 +14,21 @@ import {
   type CircuitParams, type InclineParams, type PendulumParams,
 } from './physics.js';
 
-export const SIM_MODELS = ['pendulum', 'inclined-plane', 'dc-circuit', 'orbits', 'moon-phases', 'seasons'] as const;
+import { kinematics } from './models/kinematics.js';
+import { forces } from './models/forces.js';
+import { lever } from './models/lever.js';
+import { particles } from './models/particles.js';
+import { separation } from './models/separation.js';
+import { reactionVessel } from './models/reactionVessel.js';
+import { energyProfileModel } from './models/energyProfile.js';
+import { foodWeb } from './models/foodWeb.js';
+import { nutritionPlate } from './models/nutritionPlate.js';
+
+export const SIM_MODELS = [
+  'pendulum', 'inclined-plane', 'dc-circuit', 'orbits', 'moon-phases', 'seasons',
+  // contract 0.5.0 §4
+  'kinematics', 'forces', 'lever', 'particles', 'separation', 'reaction-vessel', 'energy-profile', 'food-web', 'nutrition-plate',
+] as const;
 export type SimModelId = (typeof SIM_MODELS)[number];
 
 const L = (ky: string, ru: string, en: string): Localized => ({ ky, ru, en });
@@ -29,22 +44,7 @@ const M = {
   trueScale: { id: 'true-scale', label: L('Чыныгы масштаб', 'Истинный масштаб', 'True scale') },
 } satisfies Record<string, ModeDef>;
 
-export interface BuildContext {
-  modes: ModeState;
-  /** Process playback when a process runs. */
-  playback?: Pick<PlayerView, 'time' | 'fraction' | 'stepIndex' | 'stepFraction'>;
-}
-
-export interface SimModel {
-  id: SimModelId;
-  modes: ModeDef[];
-  /** Parts for the scene (motion closures receive the model clock). */
-  build(raw: Record<string, unknown>, ctx: BuildContext): Part[];
-  /** Model clock from the playback, or from the free clock (seconds). */
-  clock(raw: Record<string, unknown>, playback: BuildContext['playback'], free: number): number;
-  /** Uses a directional light from the Sun at this position. */
-  sunAt?(raw: Record<string, unknown>): Vec3;
-}
+export type { BuildContext, SimModel } from './models/common.js';
 
 const on = (modes: ModeState, id: string) => modes[id] === true;
 
@@ -604,6 +604,15 @@ export const MODELS: Record<SimModelId, SimModel> = {
   'moon-phases': moonPhases,
   seasons,
   orbits,
+  kinematics,
+  forces,
+  lever,
+  particles,
+  separation,
+  'reaction-vessel': reactionVessel,
+  'energy-profile': energyProfileModel,
+  'food-web': foodWeb,
+  'nutrition-plate': nutritionPlate,
 };
 
 /** Model for scene params (`model`), pendulum by default. */
@@ -613,4 +622,11 @@ export function modelFor(raw: unknown): SimModel {
 }
 
 /** Every mode across all models (for the unknown-model case and docs). */
-export const ALL_SIM_MODES: ModeDef[] = [M.vectors, M.trace, M.energy, M.schematic, M.electrons, M.orbits, M.earthView, M.sunRays, M.trueScale];
+export const ALL_SIM_MODES: ModeDef[] = (() => {
+  const seen = new Set<string>();
+  return [M.vectors, M.trace, M.energy, M.schematic, M.electrons, M.orbits, M.earthView, M.sunRays, M.trueScale, ...Object.values(MODELS).flatMap((m) => m.modes)].filter((d) => {
+    if (seen.has(d.id)) return false;
+    seen.add(d.id);
+    return true;
+  });
+})();

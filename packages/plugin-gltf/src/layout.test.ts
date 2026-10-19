@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { matchesNodeMask } from '@bilig/content-model';
 import { bindParts, unboundConcepts } from '@bilig/scene-kit';
 import { realTopics } from '../../scene-kit/src/real-packages.test-util.js';
 import { GLOB_INSTANCES, OUTER_SHELL_RADIUS, nodeNamesFor, proceduralParts } from './layout.js';
@@ -39,6 +40,15 @@ describe('gltf plugin', () => {
   });
   const topics = realTopics('gltf');
   it.skipIf(!topics.length)('every gltf topic: procedural scene binds every node-bound concept', () => {
-    for (const { file, concepts } of topics) expect(unboundConcepts(proceduralParts(concepts), concepts), file).toEqual([]);
+    for (const { file, concepts } of topics) {
+      const parts = proceduralParts(concepts);
+      const unbound = unboundConcepts(parts, concepts);
+      // Name the cause: node binding is «first match wins», so an earlier concept's mask can claim every node.
+      const why = unbound.map((k) => {
+        const by = [...new Set([...bindParts(parts, concepts)].filter(([n]) => concepts.find((x) => x.key === k)!.nodes!.some((m) => matchesNodeMask(n, m))).map(([, b]) => b))];
+        return `${k}${by.length ? ` (its nodes are bound to ${by.join(', ')})` : ''}`;
+      });
+      expect(why, file).toEqual([]);
+    }
   });
 });

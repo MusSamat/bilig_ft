@@ -29,5 +29,6 @@
     "noLicence": "Your school has no licence for this subject. Please contact your school administrator.",
     "signIn": "Sign in",
     "demo": "Open the demo: {{title}}"
-  }
+  },
+  "openSampleTopic": "Open the topic «{{title}}»"
 }
