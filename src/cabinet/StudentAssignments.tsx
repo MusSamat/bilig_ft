@@ -2,7 +2,7 @@
  * A student's assignments (W-54, scenario «Ученик» 2): topic, activities, due
  * date (Intl in the UI language) with overdue / due-soon badges, status and
  * score, and a link to the topic with `?assignment=<id>` so the quiz result is
- * attached to the assignment.
+ * attached to the assignment (opened in exploration, `view=study`, where the quiz is).
  */
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -14,6 +14,7 @@ import { useSession } from '../api/session';
 import { Icon } from '../components/Icon';
 import { useLang } from '../lib/hooks';
 import { topicPath } from '../lib/urls';
+import { STUDY_VIEW, VIEW_PARAM } from '../lib/view';
 import { formatDate, formatPercent } from './format';
 
 const DAY = 86_400_000;
@@ -70,7 +71,7 @@ export function StudentAssignments(): JSX.Element | null {
             const topic = catalog?.topics.find((x) => x.key === a.topicKey);
             const title = topic ? tr(topic.title, lang) : a.topicTitle ?? a.topicKey;
             const due = dueState(a);
-            const href = `${topicPath(catalog, lang, a.topicKey)}?assignment=${encodeURIComponent(a.id)}`;
+            const href = `${topicPath(catalog, lang, a.topicKey)}?assignment=${encodeURIComponent(a.id)}&${VIEW_PARAM}=${STUDY_VIEW}`;
             return (
               <li key={a.id} className="assignment">
                 <div className="assignment__head">

@@ -1,7 +1,8 @@
 /** URL helpers (TZ W-05): language segment switching and topic links. */
-import { gradeSegment, type Catalog, type Lang } from '@bilig/content-model';
+import { gradeSegment, type Catalog, type Lang, type SceneState } from '@bilig/content-model';
 import { buildStateUrl } from '@bilig/scene-core';
 import { isUiLang } from '../config';
+import { STUDY_VIEW, VIEW_PARAM } from './view';
 
 /**
  * Same page in another language: replaces the leading `/:lang` segment and
@@ -26,6 +27,17 @@ export function topicPath(catalog: Catalog | undefined, lang: Lang, topicKey: st
     grade: course ? gradeSegment(course.grade) : undefined,
     topicKey,
   });
+}
+
+/**
+ * Live URL of a saved scene state (a snapshot slide). The lesson is the topic
+ * page's default, so a state captured while exploring — or saved before the
+ * view was recorded — reopens with `view=study`.
+ */
+export function sceneStateUrl(state: SceneState): string {
+  const url = buildStateUrl(state);
+  if (state.view === 'lesson') return url;
+  return `${url}${url.includes('?') ? '&' : '?'}${VIEW_PARAM}=${STUDY_VIEW}`;
 }
 
 /** Path without the language segment (stored for «recent topics»). */

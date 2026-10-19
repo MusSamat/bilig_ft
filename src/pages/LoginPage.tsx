@@ -355,6 +355,13 @@ function AdultLogin(): JSX.Element {
       <button type="submit" className="btn btn--primary" disabled={busy}>
         {busy ? t('auth.busy') : t('auth.adult.signIn')}
       </button>
+      <p className="auth__alt">
+        <span className="muted small">{t('auth.adult.noAccount')}</span>
+        <Link className="btn2 btn--sm" to={`/${lang}/register`}>
+          <Icon name="grad" className="sm" />
+          {t('auth.adult.register')}
+        </Link>
+      </p>
     </form>
   );
 }

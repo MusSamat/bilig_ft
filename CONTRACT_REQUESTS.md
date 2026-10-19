@@ -53,3 +53,18 @@ Resolved in contract v0.2.1 and used by the client: `GET /me/assignments`
 8. **`LANGS` beyond ky/ru/en**: the UI picks its language list from
     `src/locales/<lang>/`, but `LocalizedSchema` and `isLang` are fixed to three
     languages, so a fourth UI language needs a contract change.
+
+## Teacher self-registration (v0.6.0)
+
+9. **Error shape of `POST /auth/register/verify`** is not in the contract. The
+   client (and the mock) assume `401 invalid_credentials` with
+   `detail: code_invalid` for a wrong code and `detail: code_expired` once the
+   code is burned (5 wrong tries) or expired, `429 rate_limited` +
+   `retryAfter` for limits; `POST /auth/register/resend` within 60 s →
+   `429 rate_limited` + `retryAfter`. `password_weak` uses the server's
+   `detail` (`too_short` / `leaked` / `too_simple`). Please confirm or add
+   these `detail` values to the contract.
+10. **`region`** is free text in `RegisterRequest`; the client sends a stable
+    key (`bishkek`, `osh-city`, `batken`, `jalal-abad`, `issyk-kul`, `naryn`,
+    `osh`, `talas`, `chui`) and localizes the names. A `RegionSchema` enum in
+    the contract would keep the admin side consistent.

@@ -53,7 +53,9 @@ npm run dev:mock          # same, with the MSW mock API (VITE_MOCK=1) — no bac
 ```
 
 Mock accounts (dev only): teacher `teacher@bilig.kg` / `bilig-teacher-2026`;
-students: class code `ABC123`, any name, PIN `1234`. In the browser console,
+students: class code `ABC123`, any name, PIN `1234`.
+Teacher sign-up (`/:lang/register`, contract 0.6.0): the mock e-mail code is always
+`012345` (like the server's `AUTH_FIXED_OTP`); the UI never shows it. In the browser console,
 `__biligMock.setTutorDown(true)` simulates a 503 from the assistant.
 
 ## Test

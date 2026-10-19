@@ -13,7 +13,8 @@ import { DOCX_MEDIA_TYPE, type KtpPatchRequest, type KtpRowPatch, type TeachingP
 import type { Lang } from '@bilig/content-model';
 import { api, isApiError, rawCall } from '../api/client';
 import { toast } from '../state/ui';
-import { applyRowPatches, checkKtpFile, fileToBase64, filenameFromDisposition } from './model';
+import { readDownload, saveFile, type Download } from '../lib/download';
+import { applyRowPatches, checkKtpFile, fileToBase64 } from './model';
 
 export const ktpKeys = {
   all: ['ktp'] as const,
@@ -155,18 +156,10 @@ async function send(qc: QueryClient, id: string, entry: Pending, pending: Pendin
   }
 }
 
-export interface Download {
-  blob: Blob;
-  filename: string;
-}
+export type { Download };
+export { saveFile };
 
-async function downloadDocx(res: Response, fallback: string): Promise<Download> {
-  const blob = await res.blob();
-  return {
-    blob,
-    filename: filenameFromDisposition(res.headers.get('Content-Disposition')) ?? fallback,
-  };
-}
+const downloadDocx = readDownload;
 
 const DOCX_HEADERS = { Accept: `${DOCX_MEDIA_TYPE}, application/problem+json` };
 
@@ -188,19 +181,6 @@ export async function fetchLessonPlans(id: string, cls: string, from: number, to
     headers: DOCX_HEADERS,
   });
   return downloadDocx(res, `plans-${cls}-${from}-${to}.docx`);
-}
-
-/** Hand a blob to the browser as a file download. */
-export function saveFile({ blob, filename }: Download): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /** Run a download with a busy marker per button; errors become a toast. */

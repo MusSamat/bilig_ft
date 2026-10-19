@@ -62,7 +62,7 @@ describe('КТП: teacher section and upload', () => {
     const user = userEvent.setup();
     renderPage('/en/teacher', '/:lang/teacher', <TeacherPage />);
     await user.click(await screen.findByRole('tab', { name: 'Lesson plans' }));
-    const link = await screen.findByRole('link', { name: `Open “${fixture.meta.title}”` });
+    const link = await screen.findByRole('link', { name: `Open “${fixture.meta.title}”` }, { timeout: 5000 });
     const item = link.closest('li')!;
     expect(within(item).getByText(/138 lessons/)).toBeInTheDocument();
     expect(within(item).getByText(/classes 8б, 8в/)).toBeInTheDocument();

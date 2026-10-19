@@ -28,6 +28,36 @@ export interface MockUser {
   classId?: string;
   hasConsent?: boolean;
   pinFailures?: number;
+  /** v0.6.0: what a self-registered teacher teaches. */
+  teaching?: { subjects: string[]; grades: number[] };
+}
+
+/** v0.6.0: a school's licence (trial for self-registered teachers). */
+export interface MockLicense {
+  schoolId: string;
+  schoolName: string;
+  subjects: string[];
+  grades: number[];
+  startsAt: string;
+  endsAt: string;
+  trial: boolean;
+}
+
+/** v0.6.0: a pending self-registration waiting for its e-mail code. */
+export interface MockRegistration {
+  email: string;
+  displayName: string;
+  password: string;
+  locale: Lang;
+  teaching?: { subjects: string[]; grades: number[] };
+  schoolName?: string;
+  region?: string;
+  /** The address already has an account: it got a «you already have an account» mail, no code. */
+  existing: boolean;
+  /** Wrong tries for the current code (5 burn it). */
+  attempts: number;
+  sentAt: number;
+  expiresAt: number;
 }
 
 export interface MockAnswer {
@@ -62,6 +92,9 @@ export interface MockState {
   generated: AdminGenerated[];
   /** v0.5.0: teachers' КТП (owner-only). */
   ktp: MockKtpPlan[];
+  /** v0.6.0: licences per school; pending registrations by e-mail. */
+  licenses: MockLicense[];
+  registrations: Record<string, MockRegistration>;
 }
 
 export const SCHOOL_ID = '0192a000-0000-7000-8000-000000000001';
@@ -72,6 +105,9 @@ export const CLASS_CODE = 'ABC123';
 export const STUDENT_PIN = '1234';
 export const TEACHER_EMAIL = 'teacher@bilig.kg';
 export const TEACHER_PASSWORD = 'bilig-teacher-2026';
+/** v0.6.0: the mock's fixed e-mail code (like the server's AUTH_FIXED_OTP). Never shown in the UI. */
+export const REGISTER_CODE = '012345';
+export const SCHOOL_NAME = 'Бишкек ш., №5 мектеп-гимназия';
 
 const studentId = (n: number) => `0192a000-0000-7000-8000-0000000005${String(n).padStart(2, '0')}`;
 const STUDENT_NAMES = ['Айбек Т.', 'Нургуль А.', 'Мирлан К.', 'Айпери С.', 'Бектур Ж.'];
@@ -121,6 +157,18 @@ function seed(): MockState {
     syncLog: [],
     flags: { offline: false, tutorDown: false, latencyMs: 0 },
     generated: [],
+    licenses: [
+      {
+        schoolId: SCHOOL_ID,
+        schoolName: SCHOOL_NAME,
+        subjects: ['bio', 'chem', 'phys', 'math'],
+        grades: [5, 6, 7, 8, 9, 10, 11],
+        startsAt: new Date(Date.now() - 60 * 86400_000).toISOString(),
+        endsAt: new Date(Date.now() + 240 * 86400_000).toISOString(),
+        trial: false,
+      },
+    ],
+    registrations: {},
     ktp: [buildKtpPlan(KTP_ID, TEACHER_ID, 'КТП 8-класс алгебра 2026-2027.docx', new Date(Date.now() - 2 * 86400_000).toISOString())],
   };
 }
@@ -136,6 +184,8 @@ function load(): MockState {
         const state = JSON.parse(raw) as MockState;
         state.generated ??= [];
         state.ktp ??= [];
+        state.licenses ??= [];
+        state.registrations ??= {};
         return state;
       }
     } catch {
@@ -177,3 +227,14 @@ export const newId = (): string =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
     : '0192a000-0000-7000-8000-' + Math.random().toString(16).slice(2, 14).padEnd(12, '0');
+
+/** Schools the user works in (teacher / school-admin grants). */
+export const schoolIdsOf = (u: MockUser | undefined): string[] =>
+  (u?.grants ?? []).filter((g) => g.scope === 'school' && g.scopeId).map((g) => g.scopeId!);
+
+/** Active licences of the user's schools. */
+export const licensesOf = (u: MockUser | undefined): MockLicense[] => {
+  const ids = schoolIdsOf(u);
+  const now = Date.now();
+  return mockDb.licenses.filter((l) => ids.includes(l.schoolId) && Date.parse(l.endsAt) > now);
+};

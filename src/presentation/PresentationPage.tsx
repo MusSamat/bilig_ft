@@ -10,13 +10,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { t as tr } from '@bilig/content-model';
 import type { Slide } from '@bilig/content-model/api';
-import { snapshotUrl } from '@bilig/scene-core';
 import { api, isApiError } from '../api/client';
 import { useTopicPackage } from '../api/content';
 import { useSession } from '../api/session';
 import { Icon } from '../components/Icon';
 import { db, type SnapshotRow } from '../lib/db';
 import { useLang } from '../lib/hooks';
+import { sceneStateUrl } from '../lib/urls';
 import { useDeck } from '../state/deck';
 import { toast, useUi } from '../state/ui';
 import { templateSlides } from './template';
@@ -231,7 +231,7 @@ function SnapshotLiveLink({ snapshot, onOpen }: { snapshot?: SnapshotRow; onOpen
   const { t } = useTranslation();
   if (!snapshot) return null;
   return (
-    <button type="button" className="btn2" onClick={() => onOpen(snapshotUrl({ image: snapshot.image, sceneState: snapshot.sceneState }))}>
+    <button type="button" className="btn2" onClick={() => onOpen(sceneStateUrl(snapshot.sceneState))}>
       <Icon name="eye" className="sm" />
       {t('deck.openLive')}
     </button>

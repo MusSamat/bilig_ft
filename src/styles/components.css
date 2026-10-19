@@ -740,6 +740,8 @@
     box-shadow: 0 30px 80px rgb(0 0 0 / 0.3);
     animation: toast-in var(--t-fast) var(--ease);
   }
+  .menu a[role^='menuitem'],
+  .menu button[role^='menuitem'],
   .menu > a,
   .menu > button {
     display: flex;
@@ -755,13 +757,65 @@
     text-align: start;
     font-weight: 600;
   }
+  .menu a[role^='menuitem']:hover,
+  .menu button[role^='menuitem']:hover:not(:disabled),
   .menu > a:hover,
-  .menu > button:hover {
+  .menu > button:hover:not(:disabled) {
     background: var(--soft);
   }
+  .menu button[role^='menuitem']:disabled {
+    opacity: 0.55;
+    cursor: progress;
+  }
+  .menu a[role^='menuitem'] .ic,
+  .menu button[role^='menuitem'] .ic,
   .menu > a .ic,
   .menu > button .ic {
     color: var(--accent);
+  }
+  .menu [aria-checked='true'] {
+    background: var(--soft);
+  }
+  .menu__group {
+    display: grid;
+  }
+  .menu__label {
+    padding: 8px 12px 4px;
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .menu__sep {
+    height: 1px;
+    margin: 4px 6px;
+    background: var(--line);
+  }
+  .menu__code {
+    min-width: 26px;
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+  }
+  .menu .menu__check {
+    margin-inline-start: auto;
+  }
+  .menu--lang {
+    min-width: 190px;
+  }
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spin {
+      animation: none;
+    }
   }
   .menu__head {
     padding: 8px 12px 10px;

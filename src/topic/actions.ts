@@ -24,7 +24,7 @@ export function currentSceneState(pkg: ContentPackage, lang: Lang, lesson: boole
     ...(v.selected ? { focus: v.selected } : {}),
     ...(modes.length ? { modes } : {}),
     ...(v.process ? { process: v.process.key, step: Math.max(0, player.currentStep(v.process.state)) } : {}),
-    ...(lesson ? { view: 'lesson' as const, lessonStep: v.lessonStep } : {}),
+    ...(lesson ? { view: 'lesson' as const, lessonStep: v.lessonStep } : { view: 'study' as const }),
   };
 }
 

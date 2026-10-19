@@ -3,7 +3,7 @@
  * goal, status tiles, specimen strip), the work area (3D stage with overlaid
  * structure chips, «Вид модели» card and toolbar | inspector + tutor), the
  * processes section, the comparison + quiz row and «Вопросы для класса».
- * Lesson mode (W-50) switches to projector typography and hides the
+ * Lesson mode (W-50, the default; `?view=study` explores freely) switches to projector typography and hides the
  * self-check quiz; the assistant (closed by default), the selection toolbar
  * and the class questions stay, since the teacher explains on the screen.
  * Everything is
@@ -22,6 +22,7 @@ import { Icon } from '../components/Icon';
 import { db, nowIso } from '../lib/db';
 import { useLang } from '../lib/hooks';
 import { useTopicProgress } from '../lib/progress';
+import { isLessonView } from '../lib/view';
 import { stripLang, topicPath } from '../lib/urls';
 import { ensurePlugins, usePluginsReady } from '../scene/registry';
 import { probeWebGL } from '../scene/webgl';
@@ -59,7 +60,7 @@ export default function TopicPage(): JSX.Element {
   const pkg = data?.pkg;
   const concepts = useMemo(() => (pkg ? topicConcepts(pkg) : []), [pkg]);
   const progress = useTopicProgress(pkg?.topic);
-  const lesson = params.get('view') === 'lesson';
+  const lesson = isLessonView(params);
 
   // Start everything the 3D stage needs in parallel with the package request:
   // plugins, the viewer chunk (three.js) and the WebGL probe (off the main thread).

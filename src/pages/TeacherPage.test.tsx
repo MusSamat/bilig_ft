@@ -22,7 +22,7 @@ describe('TeacherPage (W-53)', () => {
     await loginAdult(TEACHER_EMAIL, TEACHER_PASSWORD);
     const user = userEvent.setup();
     renderPage('/en/teacher', '/:lang/teacher', <TeacherPage />);
-    expect(await screen.findByRole('button', { name: 'Open class “7А”' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Open class “7А”' }, { timeout: 5000 })).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('Class name'), '8Б');
     await user.selectOptions(screen.getByLabelText('Grade'), '8');

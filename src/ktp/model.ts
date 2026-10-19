@@ -167,20 +167,7 @@ export function fileToBase64(file: Blob): Promise<string> {
   });
 }
 
-/** Server file name from Content-Disposition (`filename*=UTF-8''…` preferred). */
-export function filenameFromDisposition(cd: string | null): string | null {
-  if (!cd) return null;
-  const star = /filename\*\s*=\s*(?:UTF-8|utf-8)''([^;]+)/.exec(cd);
-  if (star) {
-    try {
-      return decodeURIComponent(star[1].trim().replace(/^"|"$/g, ''));
-    } catch {
-      /* fall through to the plain name */
-    }
-  }
-  const plain = /filename\s*=\s*"?([^";]+)"?/.exec(cd);
-  return plain ? plain[1].trim() : null;
-}
+export { filenameFromDisposition } from '../lib/download';
 
 const LAST_CLASS = (id: string) => `bilig.ktp.class.${id}`;
 export function rememberClass(planId: string, cls: string): void {

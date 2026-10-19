@@ -16,5 +16,12 @@
   "version_mismatch": "Changed elsewhere. Reload the page",
   "idempotency_conflict": "Duplicate request",
   "payload_too_large": "The file is too large",
-  "license_required": "This topic needs a sign-in or a school licence"
+  "license_required": "This topic needs a sign-in or a school licence",
+  "password_weak": {
+    "leaked": "This password appears in lists of leaked passwords",
+    "too_short": "The password is too short",
+    "too_simple": "The password is too simple",
+    "other": "The password is not strong enough"
+  },
+  "email_not_verified": "The e-mail is not verified"
 }

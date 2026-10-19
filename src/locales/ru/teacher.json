@@ -23,7 +23,8 @@
     "students": "Ученики",
     "joinCode": "Код входа",
     "assignments": "Задания",
-    "results": "Результаты"
+    "results": "Результаты",
+    "settings": "Настройки"
   },
   "rosterEmpty": "Учеников пока нет",
   "addStudents": "Добавить учеников",

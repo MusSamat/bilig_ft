@@ -21,7 +21,8 @@
     "students": "Окуучулар",
     "joinCode": "Кирүү коду",
     "assignments": "Тапшырмалар",
-    "results": "Жыйынтыктар"
+    "results": "Жыйынтыктар",
+    "settings": "Жөндөөлөр"
   },
   "rosterEmpty": "Азырынча окуучу жок",
   "addStudents": "Окуучуларды кошуу",

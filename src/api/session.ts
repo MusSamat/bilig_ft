@@ -9,7 +9,15 @@
  */
 import { create } from 'zustand';
 import { GUEST, grantedPermissions, type Permission } from '@bilig/permissions';
-import { MeResponseSchema, TokenResponseSchema, type ClassCodeResponse, type MeResponse } from '@bilig/content-model/api';
+import {
+  MeResponseSchema,
+  TokenResponseSchema,
+  type ClassCodeResponse,
+  type MePatchRequest,
+  type MeResponse,
+  type RegisterRequest,
+  type RegisterResponse,
+} from '@bilig/content-model/api';
 import { OFFLINE_SESSION_TTL_MS } from '../config';
 import { api, isApiError, rawCall } from './client';
 import { tokens } from './tokens';
@@ -135,6 +143,34 @@ export async function loginAdult(email: string, password: string, totp?: string)
   tokens.set(res.accessToken, res.expiresIn);
   const me = await loadMe();
   if (!me) throw new Error('session');
+  return me;
+}
+
+/**
+ * v0.6.0 teacher self-registration. Step 1 sends the e-mail code (the answer is the
+ * same whether or not the address is taken); step 2 confirms it and signs in exactly
+ * like `loginAdult` — the account cannot sign in before it is verified.
+ */
+export function registerTeacher(body: RegisterRequest): Promise<RegisterResponse> {
+  return api('register', { body });
+}
+
+export function resendRegistrationCode(email: string): Promise<RegisterResponse> {
+  return api('registerResend', { body: { email } });
+}
+
+export async function verifyRegistration(email: string, code: string): Promise<MeResponse> {
+  const res = await api('registerVerify', { body: { email, code } });
+  tokens.set(res.accessToken, res.expiresIn);
+  const me = await loadMe();
+  if (!me) throw new Error('session');
+  return me;
+}
+
+/** PATCH /me and keep the session's profile (and permissions) in sync with the answer. */
+export async function patchMe(body: MePatchRequest): Promise<MeResponse> {
+  const me = await api('mePatch', { body });
+  setAuthed(me);
   return me;
 }
 

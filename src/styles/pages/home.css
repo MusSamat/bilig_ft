@@ -187,4 +187,12 @@
       grid-template-columns: minmax(0, 1fr);
     }
   }
+
+  .home-hero__teacher {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2) var(--sp-3);
+    margin-top: var(--sp-4);
+  }
 }

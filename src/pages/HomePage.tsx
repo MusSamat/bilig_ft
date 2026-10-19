@@ -133,6 +133,7 @@ export function HomePage(): JSX.Element {
   const openCatalog = useUi((s) => s.openCatalog);
   const setContext = useUi((s) => s.setContext);
   const me = useSession((s) => s.me);
+  const status = useSession((s) => s.status);
   const isStudent = me?.kind === 'student';
   const { data: catalog, isLoading, isError, refetch } = useCatalog();
 
@@ -158,6 +159,15 @@ export function HomePage(): JSX.Element {
               {t('catalog.hotkey')}
             </span>
           </div>
+          {status === 'guest' && (
+            <p className="home-hero__teacher">
+              <Link className="btn2" to={`/${lang}/register`}>
+                <Icon name="grad" className="sm" />
+                {t('home.registerTeacher')}
+              </Link>
+              <span className="muted small">{t('home.registerTeacherHint')}</span>
+            </p>
+          )}
         </div>
         <div className="home-hero__side">
           <HomeTextbooks catalog={catalog} />

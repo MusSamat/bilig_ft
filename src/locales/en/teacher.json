@@ -21,7 +21,8 @@
     "students": "Students",
     "joinCode": "Join code",
     "assignments": "Assignments",
-    "results": "Results"
+    "results": "Results",
+    "settings": "Settings"
   },
   "rosterEmpty": "No students yet",
   "addStudents": "Add students",

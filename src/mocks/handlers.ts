@@ -25,6 +25,7 @@ import {
   API_PREFIX,
   ENDPOINTS,
   HEADERS,
+  TopicDeckQuerySchema,
   encodeSseEvent,
   problem,
   type AdminGenerated,
@@ -39,12 +40,15 @@ import type { Permission } from '@bilig/permissions';
 import { PACKAGES, TEXTBOOKS, buildCatalog, packageByKey } from './data';
 import { cabinetHandlers } from './handlers.cabinet';
 import { ktpHandlers } from './handlers.ktp';
+import { registerHandlers } from './handlers.register';
 import {
   CLASS_ID,
   mockDb,
   newId,
   issueToken,
+  licensesOf,
   permissionsOf,
+  schoolIdsOf,
   saveMockDb,
   userById,
   type MockAttempt,
@@ -116,6 +120,8 @@ const meOf = (u: MockUser): EndpointResponse<'me'> => ({
   locale: u.locale,
   grants: u.grants,
   permissions: permissionsOf(u),
+  ...(u.teaching ? { teaching: u.teaching } : {}),
+  ...(u.kind === 'adult' && schoolIdsOf(u).length ? { licenses: licensesOf(u) } : {}),
 });
 
 const tokenFor = (u: MockUser): EndpointResponse<'login'> => ({ accessToken: issueToken(u.id), tokenType: 'Bearer', expiresIn: 900 });
@@ -201,8 +207,12 @@ function thumbSvg(path: string): string {
 
 // ------------------------------------------------------------------------------
 
+const licensedSubject = (schoolId: string, subjectKey: string) =>
+  mockDb.licenses.some((l) => l.schoolId === schoolId && l.subjects.includes(subjectKey) && Date.parse(l.endsAt) > Date.now());
+
 export const handlers: HttpHandler[] = [
   ...cabinetHandlers,
+  ...registerHandlers({ route, fail, tokenFor }),
   route('health', () => ({ status: 'ok', version: 'mock', contract: '0.2.0' })),
 
   // Auth -------------------------------------------------------------------
@@ -250,7 +260,16 @@ export const handlers: HttpHandler[] = [
   // Me -----------------------------------------------------------------------
   route('me', ({ user }) => meOf(user!)),
   route('mePatch', ({ user, body }) => {
-    Object.assign(user!, body as object);
+    const { teaching, ...rest } = body as EndpointBody<'mePatch'>;
+    if (teaching) {
+      // Only a self-registered teacher (trial licence) changes what they teach; the trial follows.
+      const trial = licensesOf(user).find((l) => l.trial);
+      if (!trial) return fail('forbidden', { detail: 'not_self_registered' });
+      trial.subjects = teaching.subjects;
+      trial.grades = teaching.grades;
+      user!.teaching = teaching;
+    }
+    Object.assign(user!, rest);
     return meOf(user!);
   }),
 
@@ -284,6 +303,21 @@ export const handlers: HttpHandler[] = [
     };
   }),
   route('topicPackage', ({ params }) => packageByKey(params.key) ?? fail('not_found')),
+  // v0.6.0: the topic's ready-made presentation — a small placeholder file with the server-style Content-Disposition.
+  route('topicDeck', ({ params, url, req }) => {
+    const pkg = packageByKey(params.key);
+    if (!pkg) return fail('not_found');
+    const q = TopicDeckQuerySchema.safeParse(Object.fromEntries(url.searchParams));
+    if (!q.success) return fail('validation_failed', { issues: q.error.issues.map((i) => ({ path: i.path, message: i.message })) });
+    const lang = q.data.lang ?? langOf(req);
+    const { format } = q.data;
+    const type = format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+    const magic = format === 'pdf' ? '%PDF-1.4' : 'PK\u0003\u0004';
+    const name = `${t(pkg.topic.title, lang)}.${format}`;
+    return new HttpResponse(new Blob([`${magic} bilig mock deck ${pkg.topic.key} ${lang}\n`], { type }), {
+      headers: { 'Content-Type': type, 'Content-Disposition': `attachment; filename="deck.${format}"; filename*=UTF-8''${encodeURIComponent(name)}` },
+    });
+  }),
   route('textbooks', ({ url }) => {
     const grade = Number(url.searchParams.get('grade')) || undefined;
     const subjectKey = url.searchParams.get('subjectKey');
@@ -403,18 +437,25 @@ export const handlers: HttpHandler[] = [
   route('events', ({ body }) => ({ accepted: (body as { events: unknown[] }).events.length, duplicates: 0 })),
 
   // Classes --------------------------------------------------------------------
-  route('classList', ({ url }) => page(mockDb.classes.map(classWithCount), url)),
-  route('classCreate', ({ body }) => {
-    const b = body as { name: string; grade: number };
+  route('classList', ({ url, user }) => {
+    const schools = schoolIdsOf(user);
+    return page(mockDb.classes.filter((c) => !schools.length || schools.includes(c.schoolId)).map(classWithCount), url);
+  }),
+  route('classCreate', ({ body, user }) => {
+    const b = body as EndpointBody<'classCreate'>;
+    const schoolId = b.schoolId ?? schoolIdsOf(user)[0] ?? mockDb.classes[0]?.schoolId ?? newId();
+    if (b.subjectKey && !licensedSubject(schoolId, b.subjectKey)) return fail('validation_failed', { issues: [{ path: ['subjectKey'], message: 'not licensed' }] });
     const code = Math.random().toString(36).slice(2, 8).toUpperCase().padEnd(6, 'X').replace(/[^A-Z0-9]/g, 'X');
-    const c = { id: newId(), schoolId: mockDb.classes[0]?.schoolId ?? newId(), name: b.name, grade: b.grade, joinCode: code, joinCodeEnabled: true };
+    const c = { id: newId(), schoolId, name: b.name, grade: b.grade, joinCode: code, joinCodeEnabled: true, ...(b.subjectKey ? { subjectKey: b.subjectKey } : {}) };
     mockDb.classes.push(c);
     return classWithCount(c);
   }),
   route('classPatch', ({ params, body }) => {
     const c = mockDb.classes.find((x) => x.id === params.id);
     if (!c) return fail('not_found');
-    Object.assign(c, body as object);
+    const b = body as EndpointBody<'classPatch'>;
+    if (b.subjectKey && !licensedSubject(c.schoolId, b.subjectKey)) return fail('validation_failed', { issues: [{ path: ['subjectKey'], message: 'not licensed' }] });
+    Object.assign(c, b);
     return classWithCount(c);
   }),
   route('classJoinCode', ({ params }) => {

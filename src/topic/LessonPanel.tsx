@@ -12,6 +12,7 @@ import { L, t as tr, type Tour } from '@bilig/content-model';
 import { stepper } from '@bilig/scene-core';
 import { Icon } from '../components/Icon';
 import { useKeydown, useLang } from '../lib/hooks';
+import { withView } from '../lib/view';
 import { useViewer } from '../state/viewer';
 import { takeSnapshot } from './actions';
 import { useTopic } from './context';
@@ -66,12 +67,7 @@ export function LessonPanel({ ready }: { ready: boolean }): JSX.Element | null {
     { enabled: ready },
   );
 
-  const exit = () => {
-    const next = new URLSearchParams(params);
-    next.delete('view');
-    next.delete('lesson');
-    setParams(next);
-  };
+  const exit = () => setParams(withView(params, false));
   if (!frame) return null;
   const label = stepper.stepLabel(s);
   const focusConcept = concepts.find((c) => c.key === frame.focus);

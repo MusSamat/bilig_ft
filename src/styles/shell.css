@@ -105,6 +105,11 @@
   .top__slides .count-badge {
     margin-inline-start: 2px;
   }
+  .top__lang {
+    gap: 6px;
+    padding-inline: 12px;
+    font-weight: 700;
+  }
 
   /* ---------- Page wrap ---------- */
   .wrap,
@@ -253,6 +258,9 @@
     }
     .top .seg > * {
       padding: 6px 10px;
+    }
+    .top__lang {
+      padding-inline: 10px;
     }
     .subjbtn small,
     .top__label {

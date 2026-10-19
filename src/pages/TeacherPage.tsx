@@ -4,6 +4,8 @@
  * assignments, results. Hidden without `class.manage` (the backend enforces it).
  * v0.5.0: a second section «Сабак пландары» (КТП → lesson plans, `lesson.plan`,
  * lazy chunk) — `?tab=ktp`.
+ * v0.6.0: «My subjects» (teaching + licences), a welcome banner after
+ * self-registration (`?welcome=1`), and the class subject (licensed subjects only).
  */
 import { Suspense, lazy, useEffect, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -14,16 +16,20 @@ import { api } from '../api/client';
 import { usePermission, useSession } from '../api/session';
 import { errorKey } from '../cabinet/format';
 import { AssignmentsTab } from '../cabinet/teacher/AssignmentsTab';
+import { ClassSettingsTab } from '../cabinet/teacher/ClassSettingsTab';
 import { JoinCodeTab } from '../cabinet/teacher/JoinCodeTab';
+import { MySubjectsCard } from '../cabinet/teacher/MySubjectsCard';
 import { ResultsTab } from '../cabinet/teacher/ResultsTab';
 import { StudentsTab } from '../cabinet/teacher/StudentsTab';
+import { SubjectKeyChip, SubjectSelect } from '../cabinet/teacher/TeachingPicker';
+import { WelcomeBanner } from '../cabinet/teacher/WelcomeBanner';
 import { Icon } from '../components/Icon';
 import { useLang } from '../lib/hooks';
 import { toast, useUi } from '../state/ui';
 
 const KtpTab = lazy(() => import('../ktp/KtpTab'));
 
-const TABS = ['students', 'joinCode', 'assignments', 'results'] as const;
+const TABS = ['students', 'joinCode', 'assignments', 'results', 'settings'] as const;
 type Tab = (typeof TABS)[number];
 
 export default function TeacherPage(): JSX.Element {
@@ -82,6 +88,15 @@ function TeacherSections({ canManage, canPlan }: { canManage: boolean; canPlan: 
     requestAnimationFrame(() => document.getElementById(`teacher-tab-${next}`)?.focus());
   };
   const tabbed = shown.length > 1;
+  const [welcome, setWelcome] = useState(() => params.get('welcome') === '1');
+  const closeWelcome = () => {
+    setWelcome(false);
+    if (params.has('welcome')) {
+      const next = new URLSearchParams(params);
+      next.delete('welcome');
+      setParams(next, { replace: true });
+    }
+  };
   return (
     <div className="page">
       <header className="page-h panel glass">
@@ -110,6 +125,21 @@ function TeacherSections({ canManage, canPlan }: { canManage: boolean; canPlan: 
           </div>
         )}
       </header>
+      {welcome && (
+        <WelcomeBanner
+          onClose={closeWelcome}
+          onCreateClass={
+            canManage
+              ? () => {
+                  go('classes');
+                  requestAnimationFrame(() => document.getElementById('new-class-name')?.focus());
+                }
+              : undefined
+          }
+          onKtp={canPlan ? () => go('ktp') : undefined}
+        />
+      )}
+      <MySubjectsCard />
       <div role={tabbed ? 'tabpanel' : undefined} id={`teacher-panel-${section}`} aria-labelledby={tabbed ? `teacher-tab-${section}` : undefined}>
         {section === 'classes' ? (
           <TeacherCabinet />
@@ -180,6 +210,7 @@ function TeacherCabinet(): JSX.Element {
                 }}
               >
                 <b>{c.name}</b>
+                {c.subjectKey && <SubjectKeyChip subjectKey={c.subjectKey} />}
                 <span className="muted small">{t('teacher.students', { count: c.studentCount })}</span>
               </button>
             </li>
@@ -207,6 +238,7 @@ function NewClassForm({ onCreated }: { onCreated: (c: SchoolClass) => void }): J
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [grade, setGrade] = useState(7);
+  const [subjectKey, setSubjectKey] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const submit = async (e: FormEvent) => {
@@ -215,7 +247,7 @@ function NewClassForm({ onCreated }: { onCreated: (c: SchoolClass) => void }): J
     setBusy(true);
     setError(null);
     try {
-      const c = await api('classCreate', { body: { name: name.trim(), grade } });
+      const c = await api('classCreate', { body: { name: name.trim(), grade, ...(subjectKey ? { subjectKey } : {}) } });
       toast({ key: 'teacher.created', params: { name: c.name }, kind: 'success' });
       setName('');
       onCreated(c);
@@ -230,7 +262,7 @@ function NewClassForm({ onCreated }: { onCreated: (c: SchoolClass) => void }): J
       <h3>{t('teacher.newClass')}</h3>
       <label className="field">
         <span>{t('teacher.className')}</span>
-        <input className="input" value={name} maxLength={40} placeholder={t('teacher.classNamePlaceholder')} onChange={(e) => setName(e.target.value)} />
+        <input id="new-class-name" className="input" value={name} maxLength={40} placeholder={t('teacher.classNamePlaceholder')} onChange={(e) => setName(e.target.value)} />
       </label>
       <label className="field">
         <span>{t('teacher.grade')}</span>
@@ -242,6 +274,7 @@ function NewClassForm({ onCreated }: { onCreated: (c: SchoolClass) => void }): J
           ))}
         </select>
       </label>
+      <SubjectSelect id="new-class-subject" value={subjectKey} onChange={setSubjectKey} />
       <p className="error-text" role="alert">
         {error ?? ''}
       </p>
@@ -266,6 +299,7 @@ function ClassPanel({ cls, onChange }: { cls: SchoolClass; onChange: (c: SchoolC
       <h2 id="class-title" className="panel-title">
         {cls.name}
         <span className="muted small">{t('teacher.gradeN', { n: cls.grade })}</span>
+        {cls.subjectKey && <SubjectKeyChip subjectKey={cls.subjectKey} />}
       </h2>
       <div
         role="tablist"
@@ -287,6 +321,7 @@ function ClassPanel({ cls, onChange }: { cls: SchoolClass; onChange: (c: SchoolC
         {tab === 'joinCode' && <JoinCodeTab cls={cls} onChange={onChange} />}
         {tab === 'assignments' && <AssignmentsTab cls={cls} />}
         {tab === 'results' && <ResultsTab cls={cls} />}
+        {tab === 'settings' && <ClassSettingsTab cls={cls} onChange={onChange} />}
       </div>
     </section>
   );

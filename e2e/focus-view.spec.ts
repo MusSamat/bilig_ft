@@ -6,7 +6,7 @@ test('focus view keeps the scene state, traps focus, closes with Esc; the assist
   await freshMocks(page);
   await page.evaluate(() => localStorage.setItem('bilig.coach', '1'));
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/en/bio/g7/animal-cell?focus=bio.nucleus');
+  await page.goto('/en/bio/g7/animal-cell?focus=bio.nucleus&view=study');
   await expect(page.locator('.stage canvas')).toBeVisible({ timeout: SCENE_TIMEOUT });
 
   // Desktop: the stage stays on screen while the page scrolls.

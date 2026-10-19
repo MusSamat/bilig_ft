@@ -18,7 +18,7 @@ async function openTopic(page: Page, theme: 'light' | 'dark'): Promise<void> {
     localStorage.setItem('bilig.coach', '1');
   }, theme);
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/en/bio/g7/animal-cell');
+  await page.goto('/en/bio/g7/animal-cell?view=study');
   await expect(page.locator('.stage canvas')).toBeVisible({ timeout: SCENE_TIMEOUT });
   await page.waitForTimeout(1200);
 }

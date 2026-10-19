@@ -1,0 +1,88 @@
+{
+  "title": "Sign up as a teacher",
+  "lead": "Create classes, give assignments and turn your КТП into lesson plans with Bilig. Signing up is free and takes a couple of minutes.",
+  "point": {
+    "classes": "Create classes; students join with a code",
+    "textbook": "«My textbook»: 3D models for every lesson",
+    "ktp": "Upload your КТП and get ready lesson plans"
+  },
+  "trialNote": "After you sign up, a free trial opens for the subjects and grades you choose.",
+  "step1": "About you",
+  "name": "Full name",
+  "email": "E-mail",
+  "emailHint": "We will send a 6-digit code to this address.",
+  "password": "Password",
+  "passwordHint": "At least {{n}} characters. A phrase of a few words is easy to remember.",
+  "showPassword": "Show password",
+  "strength": {
+    "short": "Too short: use at least {{n}} characters",
+    "fair": "Good enough. Longer is even safer",
+    "strong": "Strong password"
+  },
+  "school": "School (optional)",
+  "schoolPlaceholder": "For example, School-gymnasium No. 5",
+  "schoolHint": "If left empty, your workspace is named after you.",
+  "region": {
+    "label": "Region (optional)",
+    "none": "Not selected",
+    "bishkek": "Bishkek",
+    "osh-city": "Osh (city)",
+    "batken": "Batken Region",
+    "jalal-abad": "Jalal-Abad Region",
+    "issyk-kul": "Issyk-Kul Region",
+    "naryn": "Naryn Region",
+    "osh": "Osh Region",
+    "talas": "Talas Region",
+    "chui": "Chüy Region"
+  },
+  "locale": "Interface language",
+  "getCode": "Get a code",
+  "sending": "Sending…",
+  "haveAccount": "Already have an account?",
+  "signIn": "Sign in",
+  "error": {
+    "name": "Enter your name",
+    "emailRequired": "Enter your e-mail",
+    "email": "Check the e-mail, for example: name@mail.kg",
+    "passwordShort": "The password must be at least {{n}} characters",
+    "school": "The school name is too short",
+    "subjects": "Choose at least one subject",
+    "grades": "Choose at least one grade",
+    "weak": {
+      "leaked": "This password appears in lists of leaked passwords. Please choose another one",
+      "too_short": "The password must be at least {{n}} characters",
+      "too_simple": "The password is too simple or contains your name or e-mail",
+      "other": "This password is not strong enough. Please choose another one"
+    },
+    "server": {
+      "name": "Check your name",
+      "email": "Check the e-mail",
+      "password": "Check the password",
+      "schoolName": "Check the school name",
+      "subjects": "Check the subjects and grades",
+      "grades": "Check the grades"
+    },
+    "rateLimited_one": "Too many attempts. Try again in {{count}} minute",
+    "rateLimited_other": "Too many attempts. Try again in {{count}} minutes"
+  },
+  "code": {
+    "title": "Enter the code",
+    "sent": "We sent a 6-digit code to {{email}}.",
+    "valid_one": "The code is valid for {{count}} minute.",
+    "valid_other": "The code is valid for {{count}} minutes.",
+    "label": "The {{n}}-digit code from the e-mail",
+    "digit": "Digit {{n}} of {{total}}",
+    "confirm": "Confirm",
+    "incomplete": "Enter all {{n}} digits of the code",
+    "wrong": "Wrong code. Check the e-mail and enter the code again",
+    "expired": "This code no longer works. Request a new one",
+    "tooMany_one": "Too many attempts. Try again in {{count}} minute",
+    "tooMany_other": "Too many attempts. Try again in {{count}} minutes",
+    "spam": "No e-mail? Check your spam folder.",
+    "wait_one": "No code? You can request a new one in {{count}} second",
+    "wait_other": "No code? You can request a new one in {{count}} seconds",
+    "resend": "No code? Send it again",
+    "resent": "A new code has been sent",
+    "wrongEmail": "Wrong e-mail? Change it"
+  }
+}

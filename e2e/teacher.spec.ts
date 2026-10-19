@@ -32,7 +32,7 @@ test('teacher scenario', async ({ page }) => {
   await page.getByRole('button', { name: 'Give assignment' }).click();
   await expect(page.getByText('Assignment created')).toBeVisible();
 
-  // 4. Lesson mode on the projector, stepping with arrows / remote.
+  // 4. Lesson mode on the projector (the default; old ?view=lesson links still work), stepping with arrows / remote.
   await page.goto('/en/bio/g7/animal-cell?view=lesson');
   await expect(page.getByText(/Step 1 of \d+/)).toBeVisible();
   await expect(page.locator('.stage canvas')).toBeVisible({ timeout: SCENE_TIMEOUT });
