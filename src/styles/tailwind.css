@@ -1,0 +1,82 @@
+/*
+ * Tailwind v4 on top of the Bilig design tokens (tokens.css).
+ *
+ * New UI is written with Tailwind utilities; the existing layered CSS stays
+ * and moves over screen by screen. To keep both looking the same:
+ *  - no preflight (base.css already normalizes; preflight would restyle old screens);
+ *  - the theme is STRICT: Tailwind's default palette, sizes and breakpoints are
+ *    switched off and only our tokens exist, so `bg-accent`, `text-muted`,
+ *    `rounded-pill`, `p-4` (= 16px) work and `bg-blue-500` does not;
+ *  - `inline` keeps utilities pointing at the live variables, so colours
+ *    follow the subject hue and the dark theme without rebuilds.
+ * Utilities live in the `utilities` layer (last in index.css), so a utility
+ * on an element overrides the component CSS of the old screens.
+ */
+@import 'tailwindcss/theme.css' layer(tokens);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+@theme inline {
+  --*: initial;
+
+  /* 1 spacing unit = 4px: p-1 4px, p-2 8px, p-4 16px, p-6 24px … */
+  --spacing: 4px;
+
+  /* breakpoints of the existing CSS */
+  --breakpoint-sm: 480px;
+  --breakpoint-md: 720px;
+  --breakpoint-lg: 980px;
+  --breakpoint-xl: 1200px;
+  --breakpoint-2xl: 1440px;
+
+  --color-accent: var(--accent);
+  --color-on: var(--on);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-edge: var(--edge);
+  --color-soft: var(--soft);
+  --color-chip: var(--chip);
+  --color-surface: var(--surface);
+  --color-panel: var(--panel);
+  --color-ok: var(--ok);
+  --color-bad: var(--bad);
+  --color-gold: var(--gold);
+  --color-g1: var(--g1);
+  --color-g2: var(--g2);
+  --color-g3: var(--g3);
+  --color-g4: var(--g4);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #fff;
+
+  --font-sans: var(--font);
+  --font-serif: var(--serif);
+  --font-mono: var(--mono);
+
+  --text-xs: var(--fs-xs);
+  --text-sm: var(--fs-sm);
+  --text-base: var(--fs-base);
+  --text-md: var(--fs-md);
+  --text-lg: var(--fs-lg);
+  --text-xl: var(--fs-xl);
+  --text-2xl: var(--fs-2xl);
+  --text-h1: var(--fs-h1);
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-pill: var(--r-pill);
+  --radius-full: 9999px;
+
+  --shadow-panel: var(--sh);
+
+  --ease-bilig: var(--ease);
+  --default-transition-duration: var(--t-fast);
+  --default-transition-timing-function: var(--ease);
+}

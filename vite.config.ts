@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -98,6 +99,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1200,
   },
   plugins: [
+    tailwindcss(),
     react(),
     devMockWorker(),
     basisTranscoder(),

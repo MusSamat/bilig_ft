@@ -26,7 +26,7 @@ export function LangMenu({
     <div className={`rel ${className}`.trim()} ref={m.rootRef}>
       <button
         type="button"
-        className="btn2 langbtn"
+        className="btn2 langbtn text-sm"
         {...m.buttonProps}
         aria-label={`${label}: ${t(`header.langName.${lang}`, { lng: lang })}`}
         title={label}

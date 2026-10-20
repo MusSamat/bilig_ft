@@ -108,7 +108,7 @@ function DeckMenu({ topicKey }: { topicKey: string }): JSX.Element {
     <div className="rel" ref={m.rootRef}>
       <button
         type="button"
-        className="cta ttools__deck"
+        className="cta ttools__deck text-sm"
         {...m.buttonProps}
         aria-busy={busy ? true : undefined}
         aria-label={busy ? t('header.deck.preparing') : t('header.deck.menu')}
