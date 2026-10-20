@@ -12,5 +12,12 @@
   "loadError": "Could not load the catalog",
   "hotkey": "Shortcuts: / or Ctrl+K",
   "emptyHint": "Try another word: search works in Kyrgyz, Russian and English.",
-  "signInToOpen": "Opens after signing in"
+  "signInToOpen": "Opens after signing in",
+  "textbooks": "Textbooks",
+  "bookLang": "in {{lang}}",
+  "lang": {
+    "ky": "Kyrgyz",
+    "ru": "Russian",
+    "en": "English"
+  }
 }

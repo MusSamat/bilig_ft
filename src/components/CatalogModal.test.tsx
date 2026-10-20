@@ -58,6 +58,19 @@ describe('CatalogModal (W-02)', () => {
     expect(within(dialog).getAllByText(/\d+ models?/).length).toBeGreaterThan(0);
   });
 
+  it('a subject lists its textbooks (for every teacher of the subject); one opens the textbook', async () => {
+    page();
+    act(() => useUi.getState().openCatalog('phys'));
+    const dialog = await screen.findByRole('dialog', { name: 'Physics' });
+    const books = await within(dialog).findByRole('heading', { name: 'Textbooks' });
+    const list = books.parentElement!;
+    const book = within(list).getByRole('button', { name: /Natural Sciences 8/ });
+    expect(book).toHaveTextContent('Grade 8 · in Kyrgyz');
+    await userEvent.setup().click(book);
+    expect(screen.getByTestId('location')).toHaveTextContent('/en/textbooks/tabigy-ilimder-8-1');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('keeps Tab focus inside the dialog', async () => {
     const user = userEvent.setup();
     page();

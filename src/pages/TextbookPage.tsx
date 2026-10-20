@@ -151,7 +151,7 @@ function Chapter(props: { textbookKey: string; chapter: TextbookChapter; topics:
           {chapter.number}
         </span>
         <div>
-          <p className="tb-chapter__eyebrow">{t('textbook.chapter', { number: chapter.number })}</p>
+          {/^\d+$/.test(chapter.number) && <p className="tb-chapter__eyebrow">{t('textbook.chapter', { number: chapter.number })}</p>}
           <h2 id={headingId}>{tr(chapter.title, lang)}</h2>
         </div>
         <div className="tb-chapter__meta">
