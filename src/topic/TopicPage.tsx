@@ -18,6 +18,7 @@ import { t as tr, topicConcepts } from '@bilig/content-model';
 import { registry } from '@bilig/scene-core';
 import { useCatalog, useTopicPackage } from '../api/content';
 import { isApiError, type ApiError } from '../api/client';
+import type { MeResponse } from '@bilig/content-model/api';
 import { usePermission, useSession } from '../api/session';
 import { Icon } from '../components/Icon';
 import { db, nowIso } from '../lib/db';
@@ -194,14 +195,33 @@ export default function TopicPage(): JSX.Element {
 const isLicenceError = (e: ApiError): boolean =>
   e.i18nKey === 'errors.license_required' || e.problem?.detail === 'license_required' || e.status === 401 || e.status === 403;
 
+/** Why a signed-in user cannot open the topic, in words: its subject and grade, what they have, and what to do. */
+function lockReason(catalog: ReturnType<typeof useCatalog>['data'], topicKey: string, me: MeResponse | null) {
+  const entry = catalog?.topics.find((x) => x.key === topicKey);
+  const unit = catalog?.units.find((u) => u.key === entry?.unitKey);
+  const grade = catalog?.courses.find((c) => c.key === unit?.courseKey)?.grade;
+  const subject = catalog?.subjects.find((s) => s.key === entry?.subjectKey);
+  const licenses = me?.licenses ?? [];
+  const trial = licenses.some((l) => l.trial);
+  const ofSubject = licenses.filter((l) => !!subject && l.subjects.includes(subject.key));
+  const grades = [...new Set(ofSubject.flatMap((l) => l.grades))].sort((a, b) => a - b);
+  return { subject, grade, trial, grades };
+}
+
 function TopicLocked({ topicKey, catalog }: { topicKey: string; catalog: ReturnType<typeof useCatalog>['data'] }): JSX.Element {
   const { t } = useTranslation();
   const lang = useLang();
   const location = useLocation();
   const guest = useSession((s) => s.status !== 'authed');
+  const me = useSession((s) => s.me);
   const entry = catalog?.topics.find((x) => x.key === topicKey);
   const demo = catalog?.topics.find((x) => x.demo && x.subjectKey === entry?.subjectKey && x.key !== topicKey);
   const next = encodeURIComponent(location.pathname + location.search);
+  const why = guest ? null : lockReason(catalog, topicKey, me);
+  const subject = why?.subject ? tr(why.subject.title, lang) : null;
+  // A self-registered teacher's access follows their classes: adding a class of this grade with this subject opens it.
+  const canAdd = !!why?.trial && !!why.subject && !!why.grade;
+  const addHref = canAdd ? `/${lang}/teacher?add=${why.grade}&subject=${encodeURIComponent(why.subject!.key)}` : '';
   return (
     <div className="wrap page--narrow">
       <section className="card stack locked" aria-labelledby="topic-locked">
@@ -211,12 +231,30 @@ function TopicLocked({ topicKey, catalog }: { topicKey: string; catalog: ReturnT
         <h1 id="topic-locked" className="page-title">
           {entry ? tr(entry.title, lang) : t(guest ? 'topic.locked.guestTitle' : 'topic.locked.noLicenceTitle')}
         </h1>
-        <p className="lead">{t(guest ? 'topic.locked.guest' : 'topic.locked.noLicence')}</p>
+        {guest || !why || !subject || !why.grade ? (
+          <p className="lead">{t(guest ? 'topic.locked.guest' : 'topic.locked.noLicence')}</p>
+        ) : (
+          <div className="grid gap-2">
+            <p className="lead">{t('topic.locked.about', { subject, grade: why.grade })}</p>
+            <p className="m-0 text-base text-muted">
+              {why.grades.length ? t('topic.locked.yourAccess', { subject, grades: why.grades.join(', ') }) : t('topic.locked.noSubject', { subject })}
+            </p>
+            <p className="m-0 text-base font-semibold text-ink">
+              {canAdd ? t('topic.locked.howTrial', { subject, grade: why.grade }) : t('topic.locked.howSchool', { subject, grade: why.grade })}
+            </p>
+          </div>
+        )}
         <div className="row">
           {guest && (
             <Link className="cta" to={`/${lang}/login?next=${next}`}>
               <Icon name="user" className="sm" />
               {t('topic.locked.signIn')}
+            </Link>
+          )}
+          {canAdd && (
+            <Link className="cta" to={addHref}>
+              <Icon name="plus" className="sm" />
+              {t('topic.locked.addClass', { grade: why!.grade })}
             </Link>
           )}
           {demo && (

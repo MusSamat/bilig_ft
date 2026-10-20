@@ -36,10 +36,19 @@ const TILE = 'relative grid min-h-40 content-start gap-3 rounded-xl border p-5 t
 
 export function ClassesSection(): JSX.Element {
   const { t } = useTranslation();
-  const [, setParams] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const classes = useClasses();
   const list = classes.data?.pages.flatMap((p) => p.items) ?? [];
   const [adding, setAdding] = useState(false);
+  // `?add=6&subject=geo`: a locked topic sends the teacher here to add a class of its grade and subject.
+  const asked = Number(params.get('add'));
+  const askedGrade = Number.isInteger(asked) && asked >= 1 && asked <= 12 ? asked : null;
+  const askedSubject = params.get('subject');
+  const prefill = askedGrade ? { name: '', grade: askedGrade, subjectKeys: askedSubject ? [askedSubject] : [] } : undefined;
+  const closeAdd = () => {
+    setAdding(false);
+    if (prefill) setParams({}, { replace: true });
+  };
 
   return (
     <div className="grid gap-5">
@@ -84,7 +93,7 @@ export function ClassesSection(): JSX.Element {
         </div>
       )}
       <Hints />
-      {adding && <NewClassSheet onClose={() => setAdding(false)} onCreated={(c) => setParams({ class: c.id }, { replace: false })} />}
+      {(adding || !!prefill) && <NewClassSheet initial={prefill} onClose={closeAdd} onCreated={(c) => setParams({ class: c.id }, { replace: false })} />}
     </div>
   );
 }
