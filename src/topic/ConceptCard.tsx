@@ -11,7 +11,7 @@
  * (labelled, with the teacher's verdict buttons); the card's text is a
  * `data-ask` region for the selection toolbar.
  */
-import type { CSSProperties } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   propertyType,
@@ -21,7 +21,7 @@ import {
   type PropertyTypeDef,
 } from '@bilig/content-model';
 import { conceptColor } from '@bilig/scene-core';
-import { usePermission } from '../api/session';
+import { usePermission, useSession } from '../api/session';
 import { Disclosure } from '../components/Disclosure';
 import { Icon } from '../components/Icon';
 import { formatProp } from '../lib/format';
@@ -30,8 +30,8 @@ import { useLang } from '../lib/hooks';
 import { useViewer } from '../state/viewer';
 import { askAssistant } from './assistantBus';
 import { useTopic } from './context';
-import { loadMore, useGenerated } from './generated';
-import { AiBadge, FeedbackButtons, MoreButton } from './GeneratedBits';
+import { loadMore, loadSeen, useGenerated } from './generated';
+import { AiBadge, GradesBadge, FeedbackButtons, MoreButton } from './GeneratedBits';
 import type { GeneratedExample } from '@bilig/content-model/api';
 import { LessonPanel } from './LessonPanel';
 
@@ -88,6 +88,10 @@ function GeneratedExamples({ kind, conceptKey }: { kind: 'simple' | 'stem'; conc
   const { pkg } = useTopic();
   const canAsk = usePermission('assistant.ask.online');
   const bucket = useGenerated(pkg.topic.key, conceptKey, kind, lang);
+  const authed = useSession((s) => s.status === 'authed');
+  useEffect(() => {
+    if (canAsk && authed) void loadSeen(pkg.topic.key, conceptKey, kind, lang);
+  }, [canAsk, authed, pkg.topic.key, conceptKey, kind, lang]);
   if (!canAsk) return null;
   return (
     <>
@@ -102,6 +106,7 @@ function GeneratedExamples({ kind, conceptKey }: { kind: 'simple' | 'stem'; conc
               extra={
                 <span className="ex__meta">
                   <AiBadge reviewed={ex.reviewed} />
+                  <GradesBadge grades={ex.grades} />
                   <FeedbackButtons id={ex.id} />
                 </span>
               }

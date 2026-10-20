@@ -2,11 +2,11 @@
   "title": "Questions for the class",
   "about": "About “{{name}}”",
   "hint": "AI writes questions from the topic materials. Show a question, let the class answer, then reveal the answer.",
-  "generate": "Write 3 questions",
+  "generate": "Write a question",
   "counter": "Question {{n}} of {{total}}",
   "reveal": "Show the answer",
   "next": "Next",
   "prev": "Back",
-  "more": "More questions",
+  "more": "One more question",
   "correct": "correct answer"
 }
