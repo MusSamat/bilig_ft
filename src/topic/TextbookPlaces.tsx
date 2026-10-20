@@ -20,14 +20,14 @@ export function TextbookPlaces({ catalog, topicKey }: { catalog: Catalog | undef
   const places = placesOfTopic(textbooks, topicKey).sort((a, b) => Number(b.textbookKey === last?.key) - Number(a.textbookKey === last?.key));
   if (!places.length) return null;
   return (
-    <p className="tb-places">
+    <p className="tb-places m-0 flex flex-wrap gap-1.5">
       {places.map((p) => {
         const tb = textbooks.find((x) => x.key === p.textbookKey)!;
         const label = placeLabel(tb, p, lang, t);
         return (
           <Link
             key={`${p.textbookKey}:${p.lessonKey}`}
-            className="badge tb-place"
+            className="inline-flex min-h-8 items-center gap-1.5 rounded-pill border border-line bg-chip px-3 text-sm font-semibold text-accent no-underline hover:bg-accent hover:text-on"
             to={textbookPath(lang, tb.key, p.chapterKey)}
             aria-label={t('textbook.placeLabel', { place: label })}
             onClick={() => remember(tb.key, p.chapterKey)}

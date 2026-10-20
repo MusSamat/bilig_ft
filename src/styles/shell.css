@@ -94,7 +94,6 @@
   .subjbtn small {
     display: block;
     color: var(--muted);
-    font-size: var(--fs-xs);
     line-height: 1.2;
     white-space: nowrap;
     overflow: hidden;
@@ -107,8 +106,7 @@
     flex: none;
   }
   /* menu anchors are flex boxes so the button inside sits on the bar's centre line (no inline baseline gap) */
-  .top > .rel,
-  .ttools > .rel {
+  .top > .rel {
     display: flex;
     align-items: center;
   }
@@ -213,7 +211,7 @@
     align-items: center;
     gap: 4px;
     color: var(--muted);
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
   }
   .sc[aria-current='true'] {
     border-color: var(--accent);

@@ -14,7 +14,7 @@ import type { Lang } from '@bilig/content-model';
 import { api, isApiError, rawCall } from '../api/client';
 import { toast } from '../state/ui';
 import { readDownload, saveFile, type Download } from '../lib/download';
-import { applyRowPatches, checkKtpFile, fileToBase64 } from './model';
+import { applyRowPatches, checkKtpFile, chunkRange, fileToBase64 } from './model';
 
 export const ktpKeys = {
   all: ['ktp'] as const,
@@ -183,13 +183,21 @@ export async function fetchLessonPlans(id: string, cls: string, from: number, to
   return downloadDocx(res, `plans-${cls}-${from}-${to}.docx`);
 }
 
+/** Lessons `range` (by index) as files of at most KTP_MAX_RANGE lessons, fetched one after another. */
+export async function fetchRangeParts(id: string, cls: string, range: { from: number; to: number }, lang?: Lang): Promise<Download[]> {
+  const out: Download[] = [];
+  for (const part of chunkRange(range)) out.push(await fetchLessonPlans(id, cls, part.from, part.to, lang));
+  return out;
+}
+
 /** Run a download with a busy marker per button; errors become a toast. */
 export function useDownloads() {
   const [busy, setBusy] = useState<string | null>(null);
-  const run = useCallback(async (key: string, fetcher: () => Promise<Download>) => {
+  const run = useCallback(async (key: string, fetcher: () => Promise<Download | Download[]>) => {
     setBusy(key);
     try {
-      saveFile(await fetcher());
+      const files = await fetcher();
+      for (const f of Array.isArray(files) ? files : [files]) saveFile(f);
       toast({ key: 'ktp.downloaded', kind: 'success' });
     } catch (e) {
       toast({

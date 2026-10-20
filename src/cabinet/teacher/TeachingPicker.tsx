@@ -1,7 +1,7 @@
 /**
  * What a teacher teaches (contract 0.6.0 `Teaching`): subject chips from the
  * catalog's live subjects (hue + icon) and grade chips 1–11. Shared by the
- * registration form and the «My subjects» card. Toggle buttons (`aria-pressed`)
+ * registration form and the teacher cabinet (setup checklist, profile). Toggle buttons (`aria-pressed`)
  * inside a fieldset whose legend names the group; errors are linked by id.
  */
 import { useState } from 'react';
@@ -14,6 +14,7 @@ import { Icon } from '../../components/Icon';
 import { SubjectChip } from '../../components/SubjectChip';
 import { useLang } from '../../lib/hooks';
 import { useUi } from '../../state/ui';
+import { Field, described, inputCls } from './ui';
 
 export const ALL_GRADES = Array.from({ length: 11 }, (_, i) => i + 1);
 /** Grades shown first: Bilig's content starts in the 5th grade; 1–4 open on demand. */
@@ -151,13 +152,13 @@ export function useLicensedSubjects(): Subject[] {
 export function SubjectKeyChip({ subjectKey }: { subjectKey: string }): JSX.Element {
   const { data } = useCatalog();
   const s = data?.subjects.find((x) => x.key === subjectKey);
-  return s ? <SubjectChip subject={s} /> : <span className="pill pill--muted">{subjectKey}</span>;
+  return s ? <SubjectChip subject={s} className="text-sm" /> : <span className="pill pill--muted text-sm">{subjectKey}</span>;
 }
 
 /**
- * The class subject (optional): only subjects the school is licensed for. Hidden when
- * there are none (e.g. an older server without `me.licenses`); a class's current
- * subject stays listed even if the licence no longer covers it.
+ * The class subject (optional): only subjects the teacher has access to. Hidden
+ * when there are none; a class's current subject stays listed even if access
+ * to it ended.
  */
 export function SubjectSelect({ id, value, onChange, disabled }: { id: string; value: string; onChange: (v: string) => void; disabled?: boolean }): JSX.Element | null {
   const { t } = useTranslation();
@@ -166,10 +167,9 @@ export function SubjectSelect({ id, value, onChange, disabled }: { id: string; v
   if (!licensed.length && !value) return null;
   const known = licensed.some((s) => s.key === value);
   return (
-    <div className="field">
-      <label htmlFor={id}>{t('teaching.classSubject')}</label>
-      <select id={id} className="input" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} aria-describedby={`${id}-hint`}>
-        <option value="">{t('teaching.noSubject')}</option>
+    <Field id={id} label={t('teacher.classForm.subject')} hint={t('teacher.classForm.subjectHint')}>
+      <select id={id} className={inputCls} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} aria-describedby={described(id, true)}>
+        <option value="">{t('teacher.classForm.noSubject')}</option>
         {licensed.map((s) => (
           <option key={s.key} value={s.key}>
             {tr(s.title, lang)}
@@ -177,9 +177,6 @@ export function SubjectSelect({ id, value, onChange, disabled }: { id: string; v
         ))}
         {value && !known && <option value={value}>{value}</option>}
       </select>
-      <span id={`${id}-hint`} className="muted small">
-        {t('teaching.classSubjectHint')}
-      </span>
-    </div>
+    </Field>
   );
 }

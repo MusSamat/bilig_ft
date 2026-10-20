@@ -26,6 +26,7 @@ import {
   ENDPOINTS,
   HEADERS,
   TopicDeckQuerySchema,
+  formatKgPhone,
   encodeSseEvent,
   problem,
   type AdminGenerated,
@@ -122,6 +123,9 @@ const meOf = (u: MockUser): EndpointResponse<'me'> => ({
   permissions: permissionsOf(u),
   ...(u.teaching ? { teaching: u.teaching } : {}),
   ...(u.kind === 'adult' && schoolIdsOf(u).length ? { licenses: licensesOf(u) } : {}),
+  ...(u.phone ? { phone: u.phone } : {}),
+  // v0.7.0: what a self-registered teacher has filled in the cabinet so far.
+  ...(u.selfRegistered ? { setup: { name: !!u.phone && u.displayName !== formatKgPhone(u.phone), school: !!u.schoolNamed, teaching: !!u.teaching } } : {}),
 });
 
 const tokenFor = (u: MockUser): EndpointResponse<'login'> => ({ accessToken: issueToken(u.id), tokenType: 'Bearer', expiresIn: 900 });
@@ -217,8 +221,9 @@ export const handlers: HttpHandler[] = [
 
   // Auth -------------------------------------------------------------------
   route('login', ({ body }) => {
-    const b = body as { email: string; password: string };
-    const u = mockDb.users.find((x) => x.email === b.email.toLowerCase() && x.password === b.password);
+    // v0.7.0: exactly one of `phone` (E.164, normalized by the schema) and `email`.
+    const b = body as EndpointBody<'login'>;
+    const u = mockDb.users.find((x) => (b.phone ? x.phone === b.phone : x.email === b.email?.toLowerCase()) && x.password === b.password);
     return u ? tokenFor(u) : fail('invalid_credentials');
   }),
   route('classCode', ({ body }) => {
@@ -269,7 +274,17 @@ export const handlers: HttpHandler[] = [
       trial.grades = teaching.grades;
       user!.teaching = teaching;
     }
-    Object.assign(user!, rest);
+    const { schoolName, region, ...own } = rest;
+    if (schoolName !== undefined || region !== undefined) {
+      // v0.7.0: only a self-registered teacher's own school can be renamed here.
+      const trial = licensesOf(user).find((l) => l.trial);
+      if (!user!.selfRegistered || !trial) return fail('forbidden', { detail: 'not_own_school' });
+      if (schoolName) {
+        for (const l of mockDb.licenses) if (l.schoolId === trial.schoolId) l.schoolName = schoolName;
+        user!.schoolNamed = true;
+      }
+    }
+    Object.assign(user!, own);
     return meOf(user!);
   }),
 
@@ -440,6 +455,10 @@ export const handlers: HttpHandler[] = [
   route('classList', ({ url, user }) => {
     const schools = schoolIdsOf(user);
     return page(mockDb.classes.filter((c) => !schools.length || schools.includes(c.schoolId)).map(classWithCount), url);
+  }),
+  route('classGet', ({ params }) => {
+    const c = mockDb.classes.find((x) => x.id === params.id);
+    return c ? classWithCount(c) : fail('not_found');
   }),
   route('classCreate', ({ body, user }) => {
     const b = body as EndpointBody<'classCreate'>;

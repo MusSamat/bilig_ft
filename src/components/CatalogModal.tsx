@@ -5,7 +5,7 @@
  * model counts, locked «Скоро»). A subject opens its course tree. Nothing
  * here knows any subject or topic by name.
  */
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -54,6 +54,18 @@ function CatalogDialog(): JSX.Element {
   const [subjectKey, setSubjectKey] = useState<string | null>(() => useUi.getState().catalogSubject);
   const dialogRef = useRef<HTMLDivElement>(null);
   useFocusTrap(dialogRef, true);
+  // Closing (Esc, ×, backdrop, a choice) gives focus back to whatever opened the catalog (WCAG 2.4.3).
+  // Read during the first render: by the time effects run, autoFocus has moved focus into the dialog.
+  const [opener] = useState(() => (document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null));
+  useEffect(
+    () => () => {
+      // Runs after the focus trap's cleanup (which held the autofocused field, now gone).
+      if (document.activeElement && document.activeElement !== document.body && document.activeElement.isConnected) return;
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+      else document.querySelector<HTMLElement>('.subjbtn')?.focus({ preventScroll: true });
+    },
+    [opener],
+  );
   useKeydown((e) => e.key === 'Escape' && close(), { allowInInputs: true });
 
   const debounced = useDebounced(query, 250);

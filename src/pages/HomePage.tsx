@@ -210,10 +210,10 @@ export function HomePage(): JSX.Element {
 
       {(isLoading || (catalog && catalog.topics.length > 0)) && (
         <section className="card" aria-labelledby="featured-title">
-          <div className="home-section-h">
+          <div className="home-section-h flex-wrap">
             <Icon name="cube" className="lg" />
-            <h2 id="featured-title">{t('home.featured')}</h2>
-            <button type="button" className="btn2" onClick={() => openCatalog()}>
+            <h2 id="featured-title" className="min-w-0 flex-1 [hyphens:manual] [overflow-wrap:normal]">{t('home.featured')}</h2>
+            <button type="button" className="btn2 shrink-0 whitespace-nowrap" onClick={() => openCatalog()}>
               <Icon name="layers" className="sm" />
               {t('home.allTopics')}
             </button>

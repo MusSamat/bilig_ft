@@ -37,3 +37,10 @@ export const GUEST_TUTOR_LIMIT = 10;
 
 /** KTX2 transcoder location (copied by vite.config.ts). */
 export const KTX2_TRANSCODER_PATH = '/basis/';
+
+/**
+ * v0.7.0: the student sign-in (class code → name → PIN) stays in the API and in the
+ * code, but the login page shows only the teacher/staff form for now. Off unless a
+ * build sets VITE_SHOW_STUDENT_LOGIN=1 (the e2e mock server does, for the student scenario).
+ */
+export const SHOW_STUDENT_LOGIN: boolean = import.meta.env.VITE_SHOW_STUDENT_LOGIN === '1';

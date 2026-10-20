@@ -29,6 +29,23 @@ describe('CatalogModal (W-02)', () => {
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });
 
+  it('Esc returns focus to the button that opened the catalog, not to <body> (audit C-1)', async () => {
+    const user = userEvent.setup();
+    page();
+    const opener = screen.getByRole('button', { name: /^Open the catalog/ });
+    opener.focus();
+    await user.keyboard('{Enter}');
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('searchbox')).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(opener).toHaveFocus();
+    // The × button too.
+    await user.click(opener);
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Close' }));
+    expect(opener).toHaveFocus();
+  });
+
   it('renders groups and subject cards from data, with model counts and a locked «soon» subject', async () => {
     page();
     act(() => useUi.getState().openCatalog());

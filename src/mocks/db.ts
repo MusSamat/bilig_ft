@@ -30,6 +30,30 @@ export interface MockUser {
   pinFailures?: number;
   /** v0.6.0: what a self-registered teacher teaches. */
   teaching?: { subjects: string[]; grades: number[] };
+  /** v0.7.0: the verified WhatsApp number (E.164). */
+  phone?: string;
+  /** v0.7.0: registered by phone; `/me` reports the setup checklist. */
+  selfRegistered?: boolean;
+  /** v0.7.0: the teacher has named their own school in the cabinet. */
+  schoolNamed?: boolean;
+}
+
+/** v0.7.0: a one-time code sent to a number's WhatsApp (key `${purpose}:${phone}`). */
+export interface MockOtp {
+  phone: string;
+  purpose: 'register' | 'reset';
+  /** register: the number already has an account (it got «you already have an account», no code). reset: unknown number. */
+  noAccountMatch: boolean;
+  attempts: number;
+  sentAt: number;
+  expiresAt: number;
+}
+
+/** v0.7.0: a verified number's single-use token for register/complete or password/set. */
+export interface MockOtpToken {
+  phone: string;
+  purpose: 'register' | 'reset';
+  expiresAt: number;
 }
 
 /** v0.6.0: a school's licence (trial for self-registered teachers). */
@@ -95,6 +119,9 @@ export interface MockState {
   /** v0.6.0: licences per school; pending registrations by e-mail. */
   licenses: MockLicense[];
   registrations: Record<string, MockRegistration>;
+  /** v0.7.0: WhatsApp codes and verified-number tokens. */
+  otps: Record<string, MockOtp>;
+  otpTokens: Record<string, MockOtpToken>;
 }
 
 export const SCHOOL_ID = '0192a000-0000-7000-8000-000000000001';
@@ -105,9 +132,23 @@ export const CLASS_CODE = 'ABC123';
 export const STUDENT_PIN = '1234';
 export const TEACHER_EMAIL = 'teacher@bilig.kg';
 export const TEACHER_PASSWORD = 'bilig-teacher-2026';
-/** v0.6.0: the mock's fixed e-mail code (like the server's AUTH_FIXED_OTP). Never shown in the UI. */
+/** v0.7.0: the same mock teacher also signs in with this WhatsApp number (+996 555 00 00 01). */
+export const TEACHER_PHONE = '+996555000001';
+/** The mock's fixed one-time code, e-mail (v0.6.0) and WhatsApp (v0.7.0), like the server's AUTH_FIXED_OTP. Never shown in the UI. */
 export const REGISTER_CODE = '012345';
 export const SCHOOL_NAME = 'Бишкек ш., №5 мектеп-гимназия';
+/**
+ * v0.7.0 phone-registered teachers (password as the e-mail teacher's):
+ * FRESH just registered — name, school and teaching still to fill (setup all
+ * false, trial with no subjects); READY finished the setup.
+ */
+export const FRESH_TEACHER_ID = '0192a000-0000-7000-8000-0000000000a2';
+export const FRESH_PHONE = '+996555123456';
+export const FRESH_SCHOOL_ID = '0192a000-0000-7000-8000-000000000002';
+export const READY_TEACHER_ID = '0192a000-0000-7000-8000-0000000000a3';
+export const READY_PHONE = '+996700987654';
+export const READY_SCHOOL_ID = '0192a000-0000-7000-8000-000000000003';
+export const TRIAL_DAYS = 30;
 
 const studentId = (n: number) => `0192a000-0000-7000-8000-0000000005${String(n).padStart(2, '0')}`;
 const STUDENT_NAMES = ['Айбек Т.', 'Нургуль А.', 'Мирлан К.', 'Айпери С.', 'Бектур Ж.'];
@@ -118,10 +159,42 @@ function seed(): MockState {
     kind: 'adult',
     displayName: 'Гүлнара Асанова',
     email: TEACHER_EMAIL,
+    phone: TEACHER_PHONE,
     password: TEACHER_PASSWORD,
     locale: 'ky',
     grants: [{ role: 'teacher', scope: 'school', scopeId: SCHOOL_ID }],
   };
+  const fresh: MockUser = {
+    id: FRESH_TEACHER_ID,
+    kind: 'adult',
+    displayName: '+996 555 12 34 56',
+    phone: FRESH_PHONE,
+    password: TEACHER_PASSWORD,
+    locale: 'ky',
+    grants: [{ role: 'teacher', scope: 'school', scopeId: FRESH_SCHOOL_ID }],
+    selfRegistered: true,
+  };
+  const ready: MockUser = {
+    id: READY_TEACHER_ID,
+    kind: 'adult',
+    displayName: 'Айгүл Осмонова',
+    phone: READY_PHONE,
+    password: TEACHER_PASSWORD,
+    locale: 'ky',
+    grants: [{ role: 'teacher', scope: 'school', scopeId: READY_SCHOOL_ID }],
+    teaching: { subjects: ['bio', 'chem'], grades: [7, 8, 9] },
+    selfRegistered: true,
+    schoolNamed: true,
+  };
+  const trial = (schoolId: string, schoolName: string, subjects: string[], grades: number[], usedDays: number): MockLicense => ({
+    schoolId,
+    schoolName,
+    subjects,
+    grades,
+    startsAt: new Date(Date.now() - usedDays * 86400_000).toISOString(),
+    endsAt: new Date(Date.now() + (TRIAL_DAYS - usedDays) * 86400_000).toISOString(),
+    trial: true,
+  });
   const students: MockUser[] = STUDENT_NAMES.map((displayName, i) => ({
     id: studentId(i + 1),
     kind: 'student',
@@ -134,7 +207,7 @@ function seed(): MockState {
   }));
   const due = new Date(Date.now() + 5 * 86400_000).toISOString();
   return {
-    users: [teacher, ...students],
+    users: [teacher, fresh, ready, ...students],
     classes: [{ id: CLASS_ID, schoolId: SCHOOL_ID, name: '7А', grade: 7, joinCode: CLASS_CODE, joinCodeEnabled: true }],
     assignments: [
       {
@@ -167,8 +240,12 @@ function seed(): MockState {
         endsAt: new Date(Date.now() + 240 * 86400_000).toISOString(),
         trial: false,
       },
+      trial(FRESH_SCHOOL_ID, 'Менин мектебим', [], [], 0),
+      trial(READY_SCHOOL_ID, 'Ош ш., №12 мектеп', ['bio', 'chem'], [7, 8, 9], 6),
     ],
     registrations: {},
+    otps: {},
+    otpTokens: {},
     ktp: [buildKtpPlan(KTP_ID, TEACHER_ID, 'КТП 8-класс алгебра 2026-2027.docx', new Date(Date.now() - 2 * 86400_000).toISOString())],
   };
 }
@@ -186,6 +263,8 @@ function load(): MockState {
         state.ktp ??= [];
         state.licenses ??= [];
         state.registrations ??= {};
+        state.otps ??= {};
+        state.otpTokens ??= {};
         return state;
       }
     } catch {

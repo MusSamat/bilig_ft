@@ -52,11 +52,12 @@ export function Header(): JSX.Element {
         <span className="st">
           <Icon name={context?.subject.icon ?? 'search'} />
         </span>
-        <span className="subjbtn__text">
+        {/* Below 480px without a subject only the icon shows (its name is in aria-label), so it never reads «Пре…». */}
+        <span className={context ? 'subjbtn__text' : 'subjbtn__text max-sm:sr-only'}>
           <b>
             {context ? tr(context.subject.title, lang) : t('header.subject')}
           </b>
-          <small>{subtitle ? tr(subtitle, lang) : t('catalog.title')}</small>
+          <small className="text-sm">{subtitle ? tr(subtitle, lang) : t('catalog.title')}</small>
         </span>
         <Icon name="down" className="sm" />
       </button>
@@ -130,15 +131,8 @@ function ProfileButton(): JSX.Element {
             <b>{me.displayName}</b>
             <small>{t('header.profile')}</small>
           </div>
-          <Link
-            role="menuitem"
-            to={`/${lang}/cabinet`}
-            onClick={() => setOpen(false)}
-          >
-            <Icon name="grad" />
-            {t('header.cabinet')}
-          </Link>
-          {canTeach && (
+          {/* One cabinet per person: a teacher's is the teacher cabinet (profile included). */}
+          {canTeach ? (
             <Link
               role="menuitem"
               to={`/${lang}/teacher`}
@@ -146,6 +140,15 @@ function ProfileButton(): JSX.Element {
             >
               <Icon name="users" />
               {t('header.teacher')}
+            </Link>
+          ) : (
+            <Link
+              role="menuitem"
+              to={`/${lang}/cabinet`}
+              onClick={() => setOpen(false)}
+            >
+              <Icon name="grad" />
+              {t('header.cabinet')}
             </Link>
           )}
           <button

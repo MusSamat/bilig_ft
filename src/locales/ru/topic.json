@@ -3,15 +3,6 @@
   "objectives": "Цели программы",
   "notFound": "Тема не найдена",
   "loadError": "Не удалось загрузить тему",
-  "status": "Состояние темы",
-  "tile": {
-    "model": "Модель",
-    "focus": "Фокус",
-    "process": "Процесс",
-    "progress": "Прогресс",
-    "noFocus": "Не выбрано",
-    "noProcess": "Не запущен"
-  },
   "learned": "Изучено {{n}} из {{m}}",
   "progressSaved": {
     "server": "Сохраняется в аккаунте",

@@ -7,6 +7,7 @@ import {
   luminance,
   AA_NORMAL,
   AA_LARGE,
+  subjectSwatch,
 } from './tokens.js';
 
 describe('tokensFromHue — AA contrast for every hue 0–359 (TZ W-03)', () => {
@@ -94,4 +95,17 @@ describe('Workbench prototype formula (backgrounds and glass are verbatim)', () 
     expect(tokensFromHue(350, 'light').g2).toBe('hsl(25 55% 86%)');
     expect(tokensFromHue(3, 'dark').g4).toBe('hsl(355 35% 11%)');
   });
+});
+
+describe('subjectSwatch — subject chips are readable at small sizes (AA 4.5:1)', () => {
+  for (const theme of ['light', 'dark'] as const) {
+    it(`${theme}: chip text passes AA on the chip for all hues`, () => {
+      const failures: number[] = [];
+      for (let hue = 0; hue <= 359; hue++) {
+        const sw = subjectSwatch(hue, theme);
+        if (contrastRatio(parseHsl(sw.fg), parseHsl(sw.bg)) < AA_NORMAL) failures.push(hue);
+      }
+      expect(failures).toEqual([]);
+    });
+  }
 });

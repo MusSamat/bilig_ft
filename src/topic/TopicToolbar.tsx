@@ -24,13 +24,17 @@ import { toast } from '../state/ui';
 export function TopicToolbar({ topicKey }: { topicKey: string }): JSX.Element {
   const { t } = useTranslation();
   return (
-    <div className="ttools" role="toolbar" aria-label={t('topic.toolbar')}>
+    <div className="flex flex-wrap items-center gap-2 max-md:w-full md:ms-auto [&>.rel]:flex" role="toolbar" aria-label={t('topic.toolbar')}>
       <ViewToggle />
       <LangMenu />
       <DeckMenu topicKey={topicKey} />
     </div>
   );
 }
+
+/** One half of the Lesson / Explore switch: 44px tall (audit P-9), the pressed half in the accent. */
+const SEG =
+  'inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-pill border-0 bg-transparent px-3 text-sm sm:px-4 [&>.ic]:max-sm:hidden font-semibold text-muted hover:text-ink aria-pressed:bg-accent aria-pressed:text-on max-md:flex-1';
 
 function ViewToggle(): JSX.Element {
   const { t } = useTranslation();
@@ -42,7 +46,7 @@ function ViewToggle(): JSX.Element {
   };
   return (
     <div
-      className="seg ttools__view"
+      className="inline-flex shrink-0 items-center gap-0.5 rounded-pill border border-edge bg-panel p-0.5 shadow-panel max-md:flex-1"
       role="group"
       aria-label={t('header.viewMode')}
     >
@@ -52,6 +56,7 @@ function ViewToggle(): JSX.Element {
         onClick={() => setView(true)}
         title={t('header.lessonHint')}
         aria-describedby="tt-lesson-hint"
+        className={SEG}
       >
         <Icon name="deck" className="sm" />
         {t('header.lesson')}
@@ -62,6 +67,7 @@ function ViewToggle(): JSX.Element {
         onClick={() => setView(false)}
         title={t('header.studyHint')}
         aria-describedby="tt-study-hint"
+        className={SEG}
       >
         <Icon name="cube" className="sm" />
         {t('header.study')}
@@ -108,7 +114,7 @@ function DeckMenu({ topicKey }: { topicKey: string }): JSX.Element {
     <div className="rel" ref={m.rootRef}>
       <button
         type="button"
-        className="cta ttools__deck text-sm"
+        className="cta min-h-11 gap-2 px-4 text-sm"
         {...m.buttonProps}
         aria-busy={busy ? true : undefined}
         aria-label={busy ? t('header.deck.preparing') : t('header.deck.menu')}
@@ -118,7 +124,7 @@ function DeckMenu({ topicKey }: { topicKey: string }): JSX.Element {
           name={busy ? 'sync' : 'download'}
           className={busy ? 'spin sm' : 'sm'}
         />
-        <span>
+        <span className="max-sm:sr-only">
           {busy ? t('header.deck.preparingShort') : t('header.present')}
         </span>
         <Icon name="down" className="sm" />

@@ -8,11 +8,12 @@
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { formatPropValue, propertyType, t as tr, type ConceptProp } from '@bilig/content-model';
+import { propertyType, t as tr, type ConceptProp } from '@bilig/content-model';
 import { conceptColor } from '@bilig/scene-core';
 import { useCatalog } from '../api/content';
 import { Icon } from '../components/Icon';
 import { Thumb } from '../components/Thumb';
+import { formatProp } from '../lib/format';
 import { Formula } from '../lib/formula';
 import { useLang } from '../lib/hooks';
 import { topicPath } from '../lib/urls';
@@ -51,7 +52,7 @@ export function ComparisonTable(): JSX.Element | null {
 
   const cell = (colKey: string, props: ConceptProp[], row: string) => {
     const p = props.find((x) => x.type === row);
-    if (p) return p.kind === 'formula' ? <Formula tex={p.value} /> : formatPropValue(p, lang, extra);
+    if (p) return p.kind === 'formula' ? <Formula tex={p.value} /> : formatProp(p, lang, extra);
     const manual = cmp.manual?.find((m) => m.column === colKey && m.row === row);
     return manual ? tr(manual.value, lang) : t('compare.noValue');
   };

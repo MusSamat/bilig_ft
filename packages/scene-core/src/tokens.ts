@@ -243,7 +243,7 @@ export function prototypeDeviations(theme: Theme): { token: string; hues: number
 /** Catalog subject icon tile colours (Workbench `.sc .si`), from the subject hue. */
 export function subjectSwatch(hue: number, theme: Theme): { bg: string; fg: string } {
   const h = clampHue(hue);
-  return theme === 'dark' ? { bg: hsl({ h, s: 45, l: 22 }), fg: hsl({ h, s: 75, l: 75 }) } : { bg: hsl({ h, s: 60, l: 88 }), fg: hsl({ h, s: 70, l: 28 }) };
+  return theme === 'dark' ? { bg: hsl({ h, s: 45, l: 22 }), fg: hsl({ h, s: 75, l: 75 }) } : { bg: hsl({ h, s: 60, l: 88 }), fg: hsl({ h, s: 70, l: 25 }) };
 }
 
 /** A structure's colour from its concept hue — the same in 3D, chips, dots, orbs and labels. */

@@ -1,17 +1,27 @@
 /**
- * Sign-in (TZ §6, scenario «Ученик» 1): students — class code → pick your name →
- * PIN (no e-mail); adults — e-mail + password (+ TOTP when required). The
- * access token stays in memory (session.ts); the refresh token is an HttpOnly cookie.
+ * Sign-in (TZ §6, contract 0.7.0). Teachers: WhatsApp number + password, with
+ * «Forgot password?» (→ /reset) and «Sign up» (→ /register). Staff and admins:
+ * a quiet «Sign in with e-mail» switch (+ TOTP when required). The student
+ * sign-in (class code → name → PIN) stays in the code behind SHOW_STUDENT_LOGIN.
+ * The access token stays in memory (session.ts); the refresh token is an HttpOnly cookie.
  */
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { ClassCodeResponse } from '@bilig/content-model/api';
 import { isApiError } from '../api/client';
-import { loginAdult, loginStudent, lookupClassCode, useSession } from '../api/session';
+import { loginStudent, lookupClassCode, signIn, useSession, type LoginId } from '../api/session';
+import { AuthLayout, ErrorSummary } from '../auth/AuthLayout';
+import { classify, problemText, type AuthProblem } from '../auth/errors';
+import { PasswordField } from '../auth/PasswordField';
+import { PhoneField } from '../auth/PhoneField';
+import { digitsOfE164, toE164 } from '../auth/phone';
+import { RetryLine } from '../auth/RetryLine';
+import { cx, fieldCls, fieldErrorCls, h2Cls, helpCls, inputCls, labelCls, linkBtn, primaryBtn, quietLinkBtn, secondaryBtn } from '../auth/ui';
+import { deadlineIn, useSecondsLeft } from '../auth/useCountdown';
 import { Icon } from '../components/Icon';
-import { LogoMark } from '../components/Logo';
 import { errorKey } from '../cabinet/format';
+import { SHOW_STUDENT_LOGIN } from '../config';
 import { useLang } from '../lib/hooks';
 import { useUi } from '../state/ui';
 
@@ -47,44 +57,35 @@ export default function LoginPage(): JSX.Element {
   const lang = useLang();
   const me = useSession((s) => s.me);
   const setContext = useUi((s) => s.setContext);
-  const [tab, setTab] = useState<Tab>('student');
+  const [tab, setTab] = useState<Tab>(SHOW_STUDENT_LOGIN ? 'student' : 'adult');
   useEffect(() => setContext(null), [setContext]);
 
   return (
-    <div className="page">
-      <div className="auth">
-        <section className="auth__brand panel glass" aria-labelledby="auth-title">
-          <div className="home-hero__brand">
-            <LogoMark size={48} />
-            <b aria-hidden="true">{t('app.title')}</b>
-          </div>
-          <h1 id="auth-title">{t('auth.title')}</h1>
-          <p className="lead-text">{t('auth.lead')}</p>
-          <ul className="auth__points">
-            <li>
-              <Icon name="cube" />
-              {t('auth.point.model')}
-            </li>
-            <li>
-              <Icon name="chat" />
-              {t('auth.point.tutor')}
-            </li>
-            <li>
-              <Icon name="target" />
-              {t('auth.point.progress')}
-            </li>
-          </ul>
-        </section>
-        <section className="auth__card panel glass" aria-label={t('auth.tabs')}>
-          {me && (
-            <div className="soft-box">
-              <Icon name="check" />
-              <span>
-                {t('auth.already', { name: me.displayName })}{' '}
-                <Link to={`/${lang}`}>{t('auth.continue')}</Link>
-              </span>
-            </div>
-          )}
+    <AuthLayout
+      titleId="auth-title"
+      title={t('auth.title')}
+      lead={SHOW_STUDENT_LOGIN ? t('auth.leadWithStudents') : t('auth.lead')}
+      points={[
+        { icon: 'cube', text: t('auth.point.model') },
+        { icon: 'chat', text: t('auth.point.tutor') },
+        { icon: 'target', text: t('auth.point.progress') },
+      ]}
+      cardLabel={SHOW_STUDENT_LOGIN ? t('auth.tabs') : undefined}
+      cardLabelledBy={SHOW_STUDENT_LOGIN ? undefined : 'login-card-title'}
+    >
+      {me && (
+        <div className="flex items-center gap-2 rounded-md bg-soft px-3 py-2 text-sm text-ink">
+          <Icon name="check" className="sm" />
+          <span>
+            {t('auth.already', { name: me.displayName })}{' '}
+            <Link className="font-semibold text-accent" to={`/${lang}`}>
+              {t('auth.continue')}
+            </Link>
+          </span>
+        </div>
+      )}
+      {SHOW_STUDENT_LOGIN ? (
+        <>
           <div className="seg flat login-tabs" role="tablist" aria-label={t('auth.tabs')}>
             {(['student', 'adult'] as const).map((k) => (
               <button
@@ -104,9 +105,11 @@ export default function LoginPage(): JSX.Element {
           <div role="tabpanel" id={`login-panel-${tab}`} aria-labelledby={`login-tab-${tab}`}>
             {tab === 'student' ? <StudentLogin /> : <AdultLogin />}
           </div>
-        </section>
-      </div>
-    </div>
+        </>
+      ) : (
+        <AdultLogin titled />
+      )}
+    </AuthLayout>
   );
 }
 
@@ -290,77 +293,213 @@ function StudentLogin(): JSX.Element {
   );
 }
 
-function AdultLogin(): JSX.Element {
+type Mode = 'phone' | 'email';
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Teacher (WhatsApp number) or staff (e-mail) sign-in. */
+function AdultLogin({ titled }: { titled?: boolean }): JSX.Element {
   const next = useNextPath();
   const { t } = useTranslation();
   const lang = useLang();
   const navigate = useNavigate();
-  const errorText = useErrorText();
+  const loc = useLocation();
+  const prefill = digitsOfE164((loc.state as { phone?: string } | null)?.phone);
+  const [mode, setMode] = useState<Mode>('phone');
+  const [digits, setDigits] = useState(prefill);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [totp, setTotp] = useState('');
   const [needTotp, setNeedTotp] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{ id?: string; password?: string; totp?: string }>({});
+  const [problem, setProblem] = useState<AuthProblem | null>(null);
+  const [retryAt, setRetryAt] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const wait = useSecondsLeft(retryAt);
+  const idRef = useRef<HTMLInputElement>(null);
+  const pwRef = useRef<HTMLInputElement>(null);
+  const summary = useRef<HTMLDivElement>(null);
+  const switched = useRef(false);
+
+  // After «Sign in with e-mail» / «with the number», focus the new identifier field;
+  // coming back from registration with a number, focus the password.
+  useEffect(() => {
+    if (switched.current) idRef.current?.focus();
+    else if (prefill) pwRef.current?.focus();
+    switched.current = false;
+  }, [mode, prefill]);
+
+  const idError = (): string | undefined => {
+    if (mode === 'phone') {
+      if (!digits) return t('register.error.phoneRequired');
+      if (digits.length < 9) return t('register.error.phoneShort');
+      return toE164(digits) ? undefined : t('register.error.phoneInvalid');
+    }
+    if (!email.trim()) return t('auth.error.emailRequired');
+    return EMAIL_RE.test(email.trim()) ? undefined : t('auth.error.email');
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password) return setError(t('auth.error.required'));
+    if (busy || wait > 0) return;
+    setProblem(null);
+    const found = {
+      id: idError(),
+      password: password ? undefined : t('auth.error.passwordRequired'),
+      totp: needTotp && !/^\d{6}$/.test(totp) ? t('auth.error.totp') : undefined,
+    };
+    setErrors(found);
+    if (found.id || found.password || found.totp) return requestAnimationFrame(() => summary.current?.focus());
+    const id: LoginId = mode === 'phone' ? { phone: toE164(digits)! } : { email: email.trim().toLowerCase() };
     setBusy(true);
-    setError(null);
     try {
-      const res = await loginAdult(email.trim().toLowerCase(), password, needTotp ? totp : undefined);
+      const res = await signIn(id, password, needTotp ? totp : undefined);
       if (res === 'totp') {
         setNeedTotp(true);
+        setBusy(false);
         return;
       }
       navigate(next ?? (res.permissions.includes('class.manage') ? `/${lang}/teacher` : `/${lang}/cabinet`));
     } catch (err) {
-      setError(errorText(err));
-    } finally {
+      const p = classify(err, 'login');
+      if (p.kind === 'rateLimited') setRetryAt(deadlineIn(p.retryAfter));
+      if (p.kind === 'credentials') {
+        // The server does not say which one is wrong: mark both, explain under the password (next to «Forgot password?»).
+        const text = problemText(p, t, { byPhone: mode === 'phone' });
+        setErrors({ id: ' ', password: text });
+      } else setProblem(p);
       setBusy(false);
+      requestAnimationFrame(() => summary.current?.focus());
     }
   };
 
+  const switchMode = () => {
+    switched.current = true;
+    setErrors({});
+    setProblem(null);
+    setMode((m) => (m === 'phone' ? 'email' : 'phone'));
+  };
+
+  const idFieldId = mode === 'phone' ? 'login-phone' : 'login-email';
+  const items = [
+    ...(errors.id?.trim() ? [{ text: errors.id, fieldId: idFieldId }] : []),
+    ...(errors.password ? [{ text: errors.password, fieldId: 'login-password' }] : []),
+    ...(errors.totp ? [{ text: errors.totp, fieldId: 'login-totp' }] : []),
+    ...(problem ? [{ text: problemText(problem, t, { byPhone: mode === 'phone' }) }] : []),
+  ];
+  const e164 = toE164(digits);
+
   return (
-    <form className="stack" onSubmit={submit} noValidate>
-      <label className="field">
-        <span>{t('auth.adult.email')}</span>
-        <input className="input" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} aria-describedby="adult-error" />
-      </label>
-      <label className="field">
-        <span>{t('auth.adult.password')}</span>
-        <input className="input" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} aria-describedby="adult-error" />
-      </label>
-      {needTotp && (
-        <div className="field">
-          <label htmlFor="adult-totp">{t('auth.adult.totp')}</label>
+    <form className="grid gap-4" onSubmit={submit} noValidate aria-labelledby={titled ? 'login-card-title' : undefined}>
+      {titled && (
+        <div className="grid gap-1">
+          <h2 id="login-card-title" className={h2Cls}>
+            {mode === 'phone' ? t('auth.adult.titlePhone') : t('auth.adult.titleEmail')}
+          </h2>
+          <p className={helpCls}>{mode === 'phone' ? t('auth.adult.leadPhone') : t('auth.adult.leadEmail')}</p>
+        </div>
+      )}
+      <ErrorSummary id="login-summary" summaryRef={summary} title={t('auth.error.summary')} items={items} />
+      {mode === 'phone' ? (
+        <PhoneField
+          ref={idRef}
+          id="login-phone"
+          label={t('auth.adult.phone')}
+          value={digits}
+          error={errors.id}
+          onChange={(d) => {
+            setDigits(d);
+            if (errors.id && toE164(d)) setErrors((x) => ({ ...x, id: undefined }));
+          }}
+          onBlur={() => digits && setErrors((x) => ({ ...x, id: idError() }))}
+        />
+      ) : (
+        <div className={fieldCls}>
+          <label htmlFor="login-email" className={labelCls}>
+            {t('auth.adult.email')}
+          </label>
           <input
-            id="adult-totp"
-            className="input"
+            ref={idRef}
+            id="login-email"
+            className={inputCls}
+            type="email"
+            inputMode="email"
+            autoComplete="username"
+            spellCheck={false}
+            maxLength={254}
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (errors.id) setErrors((x) => ({ ...x, id: undefined }));
+            }}
+            onBlur={() => email && setErrors((x) => ({ ...x, id: idError() }))}
+            aria-invalid={errors.id ? true : undefined}
+            aria-describedby="login-email-error"
+          />
+          <p id="login-email-error" className={fieldErrorCls} aria-live="polite">
+            {errors.id?.trim() ?? ''}
+          </p>
+        </div>
+      )}
+      <PasswordField
+        ref={pwRef}
+        id="login-password"
+        label={t('auth.adult.password')}
+        autoComplete="current-password"
+        value={password}
+        error={errors.password}
+        onChange={(v) => {
+          setPassword(v);
+          if (errors.password) setErrors((x) => ({ ...x, password: undefined }));
+        }}
+        labelAside={
+          mode === 'phone' ? (
+            <Link className={cx(linkBtn, '-mr-2')} to={`/${lang}/reset`} state={e164 ? { phone: e164 } : undefined}>
+              {t('auth.adult.forgot')}
+            </Link>
+          ) : undefined
+        }
+      />
+      {needTotp && (
+        <div className={fieldCls}>
+          <label htmlFor="login-totp" className={labelCls}>
+            {t('auth.adult.totp')}
+          </label>
+          <input
+            id="login-totp"
+            className={cx(inputCls, 'tracking-[0.3em] tabular-nums')}
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
             value={totp}
             onChange={(e) => setTotp(e.target.value.replace(/\D/g, ''))}
             autoFocus
-            aria-describedby="totp-hint"
+            aria-invalid={errors.totp ? true : undefined}
+            aria-describedby="login-totp-hint login-totp-error"
           />
-          <span id="totp-hint" className="muted small">
+          <p id="login-totp-hint" className={helpCls}>
             {t('auth.adult.totpHint')}
-          </span>
+          </p>
+          <p id="login-totp-error" className={fieldErrorCls} aria-live="polite">
+            {errors.totp ?? ''}
+          </p>
         </div>
       )}
-      <ErrorLine id="adult-error" text={error} />
-      <button type="submit" className="btn btn--primary" disabled={busy}>
+      <button type="submit" className={primaryBtn} disabled={busy || wait > 0}>
         {busy ? t('auth.busy') : t('auth.adult.signIn')}
       </button>
-      <p className="auth__alt">
-        <span className="muted small">{t('auth.adult.noAccount')}</span>
-        <Link className="btn2 btn--sm" to={`/${lang}/register`}>
+      {retryAt !== null && <RetryLine secondsLeft={wait} waiting={(time) => t('register.error.retryIn', { time })} ready={t('register.error.retryNow')} />}
+      <div className="grid gap-2 border-t border-line pt-4">
+        <p className="m-0 text-center text-sm text-muted">{t('auth.adult.noAccount')}</p>
+        <Link className={secondaryBtn} to={`/${lang}/register`}>
           <Icon name="grad" className="sm" />
           {t('auth.adult.register')}
         </Link>
+      </div>
+      <p className="m-0 text-center">
+        <button type="button" className={quietLinkBtn} onClick={switchMode}>
+          <Icon name={mode === 'phone' ? 'mail' : 'chat'} className="sm" />
+          {mode === 'phone' ? t('auth.adult.useEmail') : t('auth.adult.usePhone')}
+        </button>
       </p>
     </form>
   );

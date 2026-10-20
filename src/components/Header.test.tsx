@@ -97,9 +97,11 @@ describe('Header: one line — logo, subject, language, theme, profile', () => {
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /^Profile:/ }));
     const menu = screen.getByRole('menu', { name: 'Profile' });
+    // A teacher has one cabinet: the teacher cabinet (it holds the profile too).
     expect(
-      within(menu).getByRole('menuitem', { name: 'My dashboard' }),
+      within(menu).getByRole('menuitem', { name: 'Teacher dashboard' }),
     ).toHaveFocus();
+    expect(within(menu).queryByRole('menuitem', { name: 'My dashboard' })).not.toBeInTheDocument();
     expect(within(menu).queryByRole('menuitemradio')).not.toBeInTheDocument();
   });
 

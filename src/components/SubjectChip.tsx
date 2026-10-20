@@ -5,12 +5,12 @@ import { useLang } from '../lib/hooks';
 import { useUi } from '../state/ui';
 import { Icon } from './Icon';
 
-export function SubjectChip({ subject }: { subject: Subject }): JSX.Element {
+export function SubjectChip({ subject, className }: { subject: Subject; className?: string }): JSX.Element {
   const lang = useLang();
   const theme = useUi((s) => s.theme);
   const sw = subjectSwatch(subject.hue, theme);
   return (
-    <span className="pill subj-chip" style={{ background: sw.bg, color: sw.fg }}>
+    <span className={className ? `pill subj-chip ${className}` : 'pill subj-chip'} style={{ background: sw.bg, color: sw.fg }}>
       <Icon name={subject.icon} className="sm" />
       {tr(subject.title, lang)}
     </span>

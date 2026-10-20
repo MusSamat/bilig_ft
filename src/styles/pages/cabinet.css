@@ -1,4 +1,4 @@
-/* Cabinets (student, adult, teacher): page header, panels, lists, tables, join code, print cards. */
+/* Cabinets (student, adult): page header, panels, lists; printing the teacher's sign-in cards. The teacher cabinet itself is Tailwind. */
 @layer pages {
   .page-h {
     display: flex;
@@ -24,8 +24,7 @@
     gap: var(--gap);
     align-items: start;
   }
-  .assignment-list,
-  .class-list {
+  .assignment-list {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -50,111 +49,19 @@
   .assignment__head b {
     font: 700 var(--fs-md) / 1.25 var(--serif);
   }
-  .class-list button {
-    width: 100%;
-    justify-content: space-between;
-    border-radius: var(--r-md);
-    min-height: 52px;
-  }
-  .class-list button[aria-current='true'] {
-    border-color: var(--accent);
-    background: var(--soft);
-  }
-  .teacher-layout {
-    display: grid;
-    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
-    gap: var(--gap);
-    align-items: start;
-  }
-  .join-code {
-    font: 800 clamp(2rem, 8vw, 3.4rem) var(--mono);
-    letter-spacing: 0.2em;
-    color: var(--accent);
-  }
-  .checks {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-2) var(--sp-4);
-    border: 0;
-    padding: 0;
-    margin: 0;
-  }
-  .checks label {
-    display: inline-flex;
-    gap: var(--sp-2);
-    align-items: center;
-    min-height: var(--tap);
-  }
-  .checks input {
-    width: 20px;
-    height: 20px;
-  }
-  .download-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--line);
-  }
-  .download-row:last-child {
-    border-bottom: 0;
-  }
-  .print-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
-    gap: 10px;
-  }
-  .login-card {
-    border: 2px dashed var(--line);
-    border-radius: var(--r-md);
-    padding: var(--sp-3);
-    display: grid;
-    gap: 4px;
-    break-inside: avoid;
-  }
-  .login-card dl {
-    margin: 0;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 2px 10px;
-  }
-  .login-card dt {
-    color: var(--muted);
-  }
-  .login-card dd {
-    margin: 0;
-    font-weight: 700;
-  }
   .kv {
     display: grid;
     gap: var(--sp-3);
     margin: 0;
   }
   .kv dt {
-    font-size: var(--fs-xs);
+    font-size: var(--fs-sm);
     font-weight: 600;
     color: var(--muted);
   }
   .kv dd {
     margin: 0;
     font-weight: 600;
-  }
-  .ptabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-2);
-  }
-  .tabpanel {
-    padding-top: var(--sp-3);
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--sp-3);
-  }
-  @media (max-width: 960px) {
-    .teacher-layout {
-      grid-template-columns: minmax(0, 1fr);
-    }
   }
   @media print {
     body * {
@@ -170,12 +77,6 @@
       width: 100%;
       color: #000;
     }
-    .login-card {
-      border-color: #000;
-    }
-    .login-card dt {
-      color: #333;
-    }
   }
 }
 @layer pages {
@@ -190,86 +91,5 @@
   }
   .card h3 {
     font: 700 var(--fs-md) var(--serif);
-  }
-
-  /* ---- v0.6.0: welcome after registration, «My subjects», class subject ---- */
-  .welcome {
-    border: 1px solid var(--accent);
-  }
-  .welcome__h {
-    display: flex;
-    gap: var(--sp-3);
-    align-items: flex-start;
-  }
-  .welcome__h > div {
-    flex: 1;
-    min-width: 0;
-  }
-  .welcome__h h2 {
-    font: 700 var(--fs-xl) / 1.2 var(--serif);
-  }
-  .welcome__steps {
-    margin: 0;
-    padding-inline-start: 1.4em;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-    gap: var(--sp-4);
-  }
-  .welcome__steps li {
-    display: grid;
-    gap: var(--sp-1);
-    justify-items: start;
-    align-content: start;
-  }
-  .my-subjects__h {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--sp-2);
-  }
-  .my-subjects__teach {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: var(--sp-2) var(--sp-4);
-    align-items: center;
-    margin: 0;
-  }
-  .my-subjects__teach dt {
-    color: var(--muted);
-    font-size: var(--fs-sm);
-  }
-  .my-subjects__teach dd {
-    margin: 0;
-  }
-  .lic-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: var(--sp-2);
-  }
-  .lic {
-    display: grid;
-    gap: var(--sp-2);
-    padding: 12px 14px;
-    border-radius: var(--r-lg);
-    border: 1px solid var(--line);
-    background: var(--chip);
-  }
-  .lic__h {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--sp-2);
-  }
-  .class-list .subj-chip {
-    margin-inline-start: auto;
-    margin-inline-end: var(--sp-2);
-  }
-  @media (max-width: 480px) {
-    .my-subjects__teach {
-      grid-template-columns: minmax(0, 1fr);
-    }
   }
 }

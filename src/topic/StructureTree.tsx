@@ -13,7 +13,12 @@ import { useLang } from '../lib/hooks';
 import { useViewer } from '../state/viewer';
 import { useTopic } from './context';
 
-export function StructureTree(): JSX.Element {
+/**
+ * `overlay` (the live stage): a row over the top edge of the model that never
+ * grows taller than two lines — on phones one line that scrolls sideways.
+ * Without it (the WebGL fallback) the chips flow in the page.
+ */
+export function StructureTree({ overlay = false, className = '' }: { overlay?: boolean; className?: string }): JSX.Element {
   const { t } = useTranslation();
   const lang = useLang();
   const { concepts } = useTopic();
@@ -41,16 +46,20 @@ export function StructureTree(): JSX.Element {
   };
 
   return (
-    <div className="chips-wrap">
+    <div className={overlay ? `pointer-events-none absolute inset-x-3 top-3 z-(--z-toolbar) grid justify-items-start gap-2 ${className}` : `grid gap-2 p-4 ${className}`}>
       <h3 id="tree-title" className="visually-hidden">
         {t('scene.structures')}
       </h3>
       {finding && (
-        <p className="pill find-pill" role="status">
+        <p className="pill pointer-events-auto" role="status">
           {t('quiz.findHint')}
         </p>
       )}
-      <ul role="tree" aria-labelledby="tree-title" className="chips stage-chips">
+      <ul
+        role="tree"
+        aria-labelledby="tree-title"
+        className="m-0 flex max-w-full list-none flex-wrap gap-2 p-0 max-md:flex-nowrap max-md:overflow-x-auto max-md:pb-1 max-md:pointer-events-auto max-md:[scrollbar-width:none]"
+      >
         {order.map((c, i) => (
           <li
             key={c.key}
@@ -58,7 +67,7 @@ export function StructureTree(): JSX.Element {
             aria-selected={selected === c.key}
             aria-level={1}
             tabIndex={i === active ? 0 : -1}
-            className="chip"
+            className="chip pointer-events-auto min-h-10 shrink-0 cursor-pointer select-none"
             ref={(el) => {
               if (el) refs.current.set(c.key, el);
             }}

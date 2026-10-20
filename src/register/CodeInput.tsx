@@ -1,11 +1,12 @@
 /**
- * Six one-digit boxes for an e-mail code: typing moves forward, Backspace moves
+ * Six one-digit boxes for a one-time code (WhatsApp, e-mail): typing moves forward, Backspace moves
  * back, arrows move, a paste (or SMS/e-mail autofill into any box) spreads the
  * digits. `onComplete` fires once when all six are filled. Numeric keyboard on
  * phones (`inputMode="numeric"`), `autocomplete="one-time-code"` on the first box.
  */
 import { forwardRef, useImperativeHandle, useRef, type ClipboardEvent, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { cx } from '../auth/ui';
 
 export const CODE_LENGTH = 6;
 
@@ -78,14 +79,18 @@ export const CodeInput = forwardRef<CodeInputHandle, Props>(function CodeInput({
   };
 
   return (
-    <div className="otp" role="group" aria-labelledby={labelledBy} aria-describedby={describedBy}>
+    <div className="grid grid-cols-[repeat(6,minmax(0,52px))] justify-center gap-[clamp(4px,1.6vw,10px)]" role="group" aria-labelledby={labelledBy} aria-describedby={describedBy}>
       {digits.map((d, i) => (
         <input
           key={i}
           ref={(el) => {
             boxes.current[i] = el;
           }}
-          className="input otp__box"
+          className={cx(
+            'block min-h-14 w-full min-w-0 rounded-md border bg-chip p-0 text-center font-mono text-[1.6rem] font-bold tabular-nums text-ink transition-[border-color,box-shadow]',
+            'focus-visible:border-accent focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_40%,transparent)] disabled:opacity-60',
+            invalid ? 'border-bad' : 'border-line',
+          )}
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"

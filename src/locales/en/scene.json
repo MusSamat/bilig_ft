@@ -41,5 +41,6 @@
   "preparing": "Preparing the 3D model…",
   "loadFailed": "Could not load the 3D model",
   "retry": "Retry",
-  "snapshotSaved": "Picture saved as a file"
+  "snapshotSaved": "Picture saved as a file",
+  "view": "View"
 }

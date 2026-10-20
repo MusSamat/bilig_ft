@@ -36,7 +36,7 @@ export default defineConfig({
   ],
   webServer: {
     command: `npx vite --port ${PORT} --strictPort`,
-    env: { VITE_MOCK: '1' },
+    env: { VITE_MOCK: '1', VITE_SHOW_STUDENT_LOGIN: '1' },
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

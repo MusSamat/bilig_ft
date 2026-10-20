@@ -5,32 +5,35 @@ import { expectNoA11yViolations, freshMocks, SCENE_TIMEOUT } from './helpers';
 test('teacher scenario', async ({ page }) => {
   await freshMocks(page);
 
-  // 1. Sign in with e-mail + password.
+  // 1. Sign in with the WhatsApp number + password (contract 0.7.0).
   await page.goto('/en/login');
-  await page.getByRole('tab', { name: 'Teacher or staff' }).click();
-  await page.getByLabel('E-mail').fill('teacher@bilig.kg');
-  await page.getByLabel('Password').fill('bilig-teacher-2026');
-  await page.getByRole('button', { name: 'Sign in' }).last().click();
+  const teacherTab = page.getByRole('tab', { name: 'Teacher or staff' }); // only when the student sign-in is shown
+  if (await teacherTab.count()) await teacherTab.click();
+  await page.getByLabel('WhatsApp number').fill('555 00 00 01');
+  await page.getByLabel('Password', { exact: true }).fill('bilig-teacher-2026');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page).toHaveURL(/\/en\/teacher$/);
-  await expect(page.getByRole('heading', { name: 'Teacher dashboard' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Hello, Гүлнара!' })).toBeVisible();
   await expectNoA11yViolations(page);
 
-  // 2. Class «7Б», students from CSV, login cards.
-  await page.getByLabel('Class name').fill('7Б');
-  await page.getByRole('button', { name: 'Create class' }).click();
-  await page.getByRole('button', { name: /Open class “7Б”/ }).click();
-  await page.getByRole('tab', { name: 'Students' }).click();
+  // 2. Class «7Б» (in a sheet), students from CSV, sign-in cards.
+  await page.getByRole('button', { name: 'Add a class' }).click();
+  await page.getByRole('dialog', { name: 'New class' }).getByLabel('Class name').fill('7Б');
+  await page.getByRole('button', { name: 'Add class' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: '7Б' })).toBeVisible();
+  await page.getByRole('button', { name: 'Add students' }).click();
   await page.getByLabel('Import a CSV file').setInputFiles({ name: 'class.csv', mimeType: 'text/csv', buffer: Buffer.from('name\nАсель Б.\nТимур К.\n') });
   await expect(page.getByText('2 students added')).toBeVisible();
-  await expect(page.getByText(/^\d{4}$/).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Print login cards' })).toBeEnabled();
+  await expect(page.getByTestId('card-pin').first()).toHaveText(/^\d{4}$/);
+  await expect(page.getByRole('button', { name: 'Print' })).toBeEnabled();
 
-  // 3. Assignment: topic + activities + due date.
+  // 3. Assignment: topic + activities + due date (in a sheet).
   await page.getByRole('tab', { name: 'Assignments' }).click();
+  await page.getByRole('button', { name: 'Give assignment' }).click();
   await page.getByLabel('Topic').selectOption({ index: 1 });
   await page.getByRole('checkbox', { name: 'Quiz' }).check();
-  await page.getByRole('button', { name: 'Give assignment' }).click();
-  await expect(page.getByText('Assignment created')).toBeVisible();
+  await page.getByRole('button', { name: 'Give', exact: true }).click();
+  await expect(page.getByText('Assignment given')).toBeVisible();
 
   // 4. Lesson mode on the projector (the default; old ?view=lesson links still work), stepping with arrows / remote.
   await page.goto('/en/bio/g7/animal-cell?view=lesson');
@@ -62,7 +65,7 @@ test('teacher scenario', async ({ page }) => {
 
   // 6. Results of the class.
   await page.goto('/en/teacher');
-  await page.getByRole('button', { name: /Open class “7А”/ }).click();
+  await page.getByRole('link', { name: /Open class “7А”/ }).click();
   await page.getByRole('tab', { name: 'Results' }).click();
   await expect(page.getByText(/of \d+ done/)).toBeVisible();
   await expectNoA11yViolations(page);

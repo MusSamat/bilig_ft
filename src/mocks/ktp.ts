@@ -130,7 +130,7 @@ export function buildKtpPlan(id: string, ownerId: string, sourceName: string, at
   const raw: MockKtpPlan['raw'] = {};
   const rows: KtpRow[] = (fixture.rows as unknown as FixtureRow[]).map(({ invalid, ...r }) => {
     if (invalid) {
-      raw[String(r.index)] = invalid;
+      raw[String(r.index)] = { ...invalid }; // a copy: PATCH deletes from it, the fixture must stay intact
       return {
         ...r,
         dates: Object.fromEntries(Object.entries(r.dates).map(([c, d]) => [c, invalid[c] ? null : d])),

@@ -1,5 +1,6 @@
 /**
- * Session (TZ §6): adult e-mail + password, student class code → name → PIN.
+ * Session (TZ §6): teachers sign in with the WhatsApp number + password (v0.7.0),
+ * staff with e-mail + password, students with class code → name → PIN.
  * The access token stays in memory; on start the app silently exchanges the
  * refresh cookie. Offline, the last known profile is trusted for 7 days so
  * downloaded topics and the student's queue keep working.
@@ -15,9 +16,14 @@ import {
   type ClassCodeResponse,
   type MePatchRequest,
   type MeResponse,
+  type OtpPurpose,
+  type OtpStartResponse,
+  type OtpVerifyResponse,
   type RegisterRequest,
   type RegisterResponse,
+  type TokenResponse,
 } from '@bilig/content-model/api';
+import type { Lang } from '@bilig/content-model';
 import { OFFLINE_SESSION_TTL_MS } from '../config';
 import { api, isApiError, rawCall } from './client';
 import { tokens } from './tokens';
@@ -137,19 +143,49 @@ export async function bootstrapSession(): Promise<void> {
   }
 }
 
-export async function loginAdult(email: string, password: string, totp?: string): Promise<MeResponse | 'totp'> {
-  const res = await api('login', { body: { email, password, ...(totp ? { totp } : {}) } });
-  if (res.totpRequired) return 'totp';
+/** Who signs in: a teacher by the WhatsApp number (E.164), staff and admins by e-mail (v0.7.0). */
+export type LoginId = { phone: string } | { email: string };
+
+/** Store a fresh access token and load the profile — the common end of every sign-in. */
+async function startSession(res: TokenResponse): Promise<MeResponse> {
   tokens.set(res.accessToken, res.expiresIn);
   const me = await loadMe();
   if (!me) throw new Error('session');
   return me;
 }
 
+export async function signIn(id: LoginId, password: string, totp?: string): Promise<MeResponse | 'totp'> {
+  const res = await api('login', { body: { ...id, password, ...(totp ? { totp } : {}) } });
+  if (res.totpRequired) return 'totp';
+  return startSession(res);
+}
+
+export function loginAdult(email: string, password: string, totp?: string): Promise<MeResponse | 'totp'> {
+  return signIn({ email }, password, totp);
+}
+
 /**
- * v0.6.0 teacher self-registration. Step 1 sends the e-mail code (the answer is the
- * same whether or not the address is taken); step 2 confirms it and signs in exactly
- * like `loginAdult` — the account cannot sign in before it is verified.
+ * v0.7.0 phone-first accounts. Step 1 sends a code to the number's WhatsApp (the answer is
+ * the same whether or not the number has an account); step 2 trades the code for a short-lived
+ * token (kept in memory by the caller only); step 3 sets the password and signs in.
+ */
+export function startOtp(phone: string, purpose: OtpPurpose, locale?: Lang): Promise<OtpStartResponse> {
+  return api('otpStart', { body: { phone, purpose, ...(locale ? { locale } : {}) } });
+}
+
+export function verifyOtp(phone: string, purpose: OtpPurpose, code: string): Promise<OtpVerifyResponse> {
+  return api('otpVerify', { body: { phone, purpose, code } });
+}
+
+/** Finish a registration (`register`) or set a new password (`reset`, other sessions are revoked); both sign in. */
+export async function completeWithPassword(purpose: OtpPurpose, token: string, password: string): Promise<MeResponse> {
+  const res = await api(purpose === 'register' ? 'registerComplete' : 'passwordSet', { body: { token, password } });
+  return startSession(res);
+}
+
+/**
+ * v0.6.0 e-mail self-registration (still in the API; the UI moved to the phone flow above).
+ * Kept for staff tooling and tests.
  */
 export function registerTeacher(body: RegisterRequest): Promise<RegisterResponse> {
   return api('register', { body });
@@ -160,11 +196,7 @@ export function resendRegistrationCode(email: string): Promise<RegisterResponse>
 }
 
 export async function verifyRegistration(email: string, code: string): Promise<MeResponse> {
-  const res = await api('registerVerify', { body: { email, code } });
-  tokens.set(res.accessToken, res.expiresIn);
-  const me = await loadMe();
-  if (!me) throw new Error('session');
-  return me;
+  return startSession(await api('registerVerify', { body: { email, code } }));
 }
 
 /** PATCH /me and keep the session's profile (and permissions) in sync with the answer. */
@@ -179,11 +211,7 @@ export function lookupClassCode(code: string): Promise<ClassCodeResponse> {
 }
 
 export async function loginStudent(classId: string, studentId: string, pin: string): Promise<MeResponse> {
-  const res = await api('studentLogin', { body: { classId, studentId, pin } });
-  tokens.set(res.accessToken, res.expiresIn);
-  const me = await loadMe();
-  if (!me) throw new Error('session');
-  return me;
+  return startSession(await api('studentLogin', { body: { classId, studentId, pin } }));
 }
 
 export async function logout(all = false): Promise<void> {

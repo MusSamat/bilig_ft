@@ -10,6 +10,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 const TopicPage = lazy(() => import('./topic/TopicPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./register/RegisterPage'));
+const ResetPage = lazy(() => import('./register/ResetPage'));
 const CabinetPage = lazy(() => import('./pages/CabinetPage'));
 const TeacherPage = lazy(() => import('./pages/TeacherPage'));
 const KtpPlanPage = lazy(() => import('./ktp/KtpPlanPage'));
@@ -50,6 +51,7 @@ export function App(): JSX.Element {
         <Route index element={<HomePage />} />
         <Route path="login" element={lazyPage(LoginPage)} />
         <Route path="register" element={lazyPage(RegisterPage)} />
+        <Route path="reset" element={lazyPage(ResetPage)} />
         <Route path="cabinet" element={lazyPage(CabinetPage)} />
         <Route path="teacher" element={lazyPage(TeacherPage)} />
         <Route path="teacher/ktp/:id" element={lazyPage(KtpPlanPage)} />

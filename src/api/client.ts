@@ -92,7 +92,13 @@ export async function problemFrom(res: Response): Promise<ApiError> {
     /* not JSON */
   }
   const p = ProblemSchema.safeParse(body);
-  if (p.success) return new ApiError(res.status, p.data.code, p.data.i18nKey, p.data);
+  if (p.success) {
+    // Keep extension members the schema does not list (RFC 9457 §3.2, e.g. `attemptsLeft`).
+    const extra = typeof body === 'object' && body ? (body as Record<string, unknown>) : {};
+    const retryHeader = Number(res.headers.get('Retry-After'));
+    const retryAfter = p.data.retryAfter ?? (Number.isFinite(retryHeader) && retryHeader > 0 ? Math.ceil(retryHeader) : undefined);
+    return new ApiError(res.status, p.data.code, p.data.i18nKey, { ...extra, ...p.data, ...(retryAfter !== undefined ? { retryAfter } : {}) });
+  }
   const code = res.status === 503 ? 'tutor_unavailable' : res.status === 401 ? 'unauthorized' : res.status === 404 ? 'not_found' : 'internal';
   return new ApiError(res.status, code, `errors.${code}`);
 }

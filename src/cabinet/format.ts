@@ -1,8 +1,9 @@
 /** Formatting helpers for cabinets (Intl in the UI language, TZ §10) and error → i18n key. */
+import { fmtDate } from '../lib/format';
 import { isApiError } from '../api/client';
 
-export const formatDate = (lang: string, iso: string, withTime = false): string =>
-  new Intl.DateTimeFormat(lang, withTime ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' }).format(new Date(iso));
+/** A date in the UI language (Intl, with the Kyrgyz fallback of `lib/format`). */
+export const formatDate = (lang: string, iso: string, withTime = false): string => fmtDate(iso, lang, { time: withTime });
 
 export const formatPercent = (lang: string, v: number): string =>
   new Intl.NumberFormat(lang, { style: 'percent', maximumFractionDigits: 0 }).format(v);

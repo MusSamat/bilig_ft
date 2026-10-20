@@ -151,18 +151,4 @@
     color: var(--muted);
     font-size: 13px;
   }
-  .tb-places {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: var(--sp-2);
-  }
-  .tb-place {
-    text-decoration: none;
-    white-space: normal;
-  }
-  .tb-place:hover {
-    background: var(--accent);
-    color: var(--on);
-  }
 }

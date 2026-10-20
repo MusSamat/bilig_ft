@@ -3,15 +3,6 @@
   "objectives": "Curriculum objectives",
   "notFound": "Topic not found",
   "loadError": "Could not load the topic",
-  "status": "Topic status",
-  "tile": {
-    "model": "Model",
-    "focus": "Focus",
-    "process": "Process",
-    "progress": "Progress",
-    "noFocus": "Nothing selected",
-    "noProcess": "Not started"
-  },
   "learned": "{{n}} of {{m}} learned",
   "progressSaved": {
     "server": "Saved to your account",

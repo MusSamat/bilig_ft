@@ -3,13 +3,18 @@
  * above the page (a bottom sheet on phones) or a large ~90% dialog. The panel
  * stays mounted while minimised, so the conversation survives; the state is
  * remembered per device. It sits above the 3D focus view, so a pupil can ask
- * about the model without leaving it.
+ * about the model without leaving it — but not over a presentation: in
+ * fullscreen and in the lesson focus view it hides (audit L-2). The button is a
+ * compact 56px circle; on wide screens (≥ 1440px) the open panel docks to the
+ * right below the header and the page makes room for it (audit Q-3).
  */
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePermission } from '../api/session';
 import { Icon } from '../components/Icon';
 import { useFocusTrap } from '../lib/hooks';
+import { useStageView } from './stageView';
+import { useTopic } from './context';
 import { AssistantPanel } from './AssistantPanel';
 import { setChatMode, useAssistantBus, type ChatMode } from './assistantBus';
 
@@ -20,6 +25,8 @@ export function ChatDock(): JSX.Element | null {
   const dockRef = useRef<HTMLDivElement>(null);
   const fabRef = useRef<HTMLButtonElement>(null);
   const prev = useRef<ChatMode>(mode);
+  const { lesson } = useTopic();
+  const presenting = useStageView((s) => s.fullscreen || (s.expanded && lesson));
 
   useFocusTrap(dockRef, mode === 'expanded');
 
@@ -67,17 +74,23 @@ export function ChatDock(): JSX.Element | null {
 
   return (
     <>
-      {mode === 'closed' && (
-        <button ref={fabRef} type="button" className="chat-fab" onClick={() => setChatMode('panel')} aria-label={t('assistant.open')} title={t('assistant.open')}>
+      {mode === 'closed' && !presenting && (
+        <button
+          ref={fabRef}
+          type="button"
+          className="chat-fab fixed bottom-[calc(16px+env(safe-area-inset-bottom,0px))] right-[calc(16px+env(safe-area-inset-right,0px))] z-[calc(var(--z-dialog)+5)] grid size-14 place-items-center rounded-full border-0 bg-accent text-on shadow-panel hover:brightness-110"
+          onClick={() => setChatMode('panel')}
+          aria-label={t('assistant.open')}
+          title={t('assistant.open')}
+        >
           <Icon name="chat" />
-          <span className="chat-fab__label">{t('assistant.title')}</span>
         </button>
       )}
       {expanded && <div className="chat-backdrop" aria-hidden="true" onClick={() => setChatMode('panel')} />}
       <div
         ref={dockRef}
-        className={`chat-dock glass chat-dock--${mode}`}
-        hidden={mode === 'closed'}
+        className={`chat-dock glass chat-dock--${mode}${mode === 'panel' ? ' 2xl:top-[calc(var(--hdr-h,72px)+8px)] 2xl:h-auto' : ''}`}
+        hidden={mode === 'closed' || presenting}
         role={expanded ? 'dialog' : undefined}
         aria-modal={expanded || undefined}
         aria-labelledby={expanded ? 'assistant-title' : undefined}

@@ -14,7 +14,6 @@
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  formatPropValue,
   propertyType,
   t as tr,
   type ConceptProp,
@@ -23,7 +22,9 @@ import {
 } from '@bilig/content-model';
 import { conceptColor } from '@bilig/scene-core';
 import { usePermission } from '../api/session';
+import { Disclosure } from '../components/Disclosure';
 import { Icon } from '../components/Icon';
+import { formatProp } from '../lib/format';
 import { Formula } from '../lib/formula';
 import { useLang } from '../lib/hooks';
 import { useViewer } from '../state/viewer';
@@ -49,7 +50,7 @@ function PropsTable({ props, extra }: { props: ConceptProp[]; extra: readonly Pr
                   {tr(def?.label, lang) || p.type}
                 </span>
               </th>
-              <td>{p.kind === 'formula' ? <Formula tex={p.value} /> : formatPropValue(p, lang, extra)}</td>
+              <td>{p.kind === 'formula' ? <Formula tex={p.value} /> : formatProp(p, lang, extra)}</td>
             </tr>
           );
         })}
@@ -124,14 +125,18 @@ export function ExamplesSection({ examples, idPrefix, conceptKey }: { examples: 
   const { t } = useTranslation();
   const lang = useLang();
   if (!examples.simple.length && !examples.stem.length) return null;
-  const askAttrs = { 'data-ask': 'example', ...(conceptKey ? { 'data-concept': conceptKey } : {}) };
+  const askAttrs: Record<string, string> = { 'data-ask': 'example', ...(conceptKey ? { 'data-concept': conceptKey } : {}) };
   return (
     <div className="examples">
       <section className="ex ex--simple" aria-labelledby={`${idPrefix}-simple`} {...askAttrs}>
-        <h3 id={`${idPrefix}-simple`} className="ins-h">
-          <Icon name="bulb" className="sm" />
-          {t('card.simpleTitle')}
-        </h3>
+      <Disclosure
+        summary={
+          <h3 id={`${idPrefix}-simple`} className="ins-h m-0">
+            <Icon name="bulb" className="sm" />
+            {t('card.simpleTitle')}
+          </h3>
+        }
+      >
         <ul>
           {examples.simple.map((ex, i) => (
             <li key={i}>
@@ -141,24 +146,30 @@ export function ExamplesSection({ examples, idPrefix, conceptKey }: { examples: 
           ))}
         </ul>
         <GeneratedExamples kind="simple" conceptKey={conceptKey} />
+      </Disclosure>
       </section>
       <section className="ex ex--stem" aria-labelledby={`${idPrefix}-stem`} {...askAttrs}>
-        <h3 id={`${idPrefix}-stem`} className="ins-h">
-          <Icon name="spark" className="sm" />
-          {t('card.stemTitle')}
-        </h3>
+      <Disclosure
+        summary={
+          <h3 id={`${idPrefix}-stem`} className="ins-h m-0">
+            <Icon name="spark" className="sm" />
+            {t('card.stemTitle')}
+          </h3>
+        }
+      >
         <ul>
           {examples.stem.map((ex, i) => (
             <ExampleRow key={i} title={tr(ex.title, lang)} text={tr(ex.text, lang)} field={ex.field} />
           ))}
         </ul>
         <GeneratedExamples kind="stem" conceptKey={conceptKey} />
+      </Disclosure>
       </section>
     </div>
   );
 }
 
-export function ConceptCard({ ready = true }: { ready?: boolean }): JSX.Element {
+export function ConceptCard(): JSX.Element {
   const { t } = useTranslation();
   const lang = useLang();
   const { pkg, concepts, lesson } = useTopic();
@@ -184,13 +195,13 @@ export function ConceptCard({ ready = true }: { ready?: boolean }): JSX.Element 
             {(specimen?.classification ?? pkg.topic.classification) && <p className="sub">{tr(specimen?.classification ?? pkg.topic.classification, lang)}</p>}
           </div>
         </div>
-        <p className="lead">{t('card.emptyHint')}</p>
+        {lesson && <LessonPanel />}
+        {!lesson && <p className="lead">{t('card.emptyHint')}</p>}
         <ExamplesSection examples={pkg.topic.examples} idPrefix="topic-ex" />
         {sample && (
-          <>
-            <h3 className="ins-h">{t('card.sampleProps')}</h3>
+          <Disclosure summary={<h3 className="ins-h m-0">{t('card.sampleProps')}</h3>}>
             <PropsTable props={sample.props} extra={extra} />
-          </>
+          </Disclosure>
         )}
         <div className="relrow">
           <span className="relrow__label">
@@ -204,7 +215,6 @@ export function ConceptCard({ ready = true }: { ready?: boolean }): JSX.Element 
             </button>
           ))}
         </div>
-        {lesson && <LessonPanel ready={ready} />}
       </section>
     );
   }
@@ -222,6 +232,7 @@ export function ConceptCard({ ready = true }: { ready?: boolean }): JSX.Element 
           <Icon name="x" />
         </button>
       </div>
+      {lesson && <LessonPanel />}
       <p className="lead">{tr(concept.description, lang)}</p>
       {concept.props.length > 0 && (
         <>
@@ -279,7 +290,6 @@ export function ConceptCard({ ready = true }: { ready?: boolean }): JSX.Element 
           )}
         </div>
       )}
-      {lesson && <LessonPanel ready={ready} />}
     </section>
   );
 }

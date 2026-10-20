@@ -11,7 +11,9 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { t as tr, type Process } from '@bilig/content-model';
 import { SPEEDS, conceptColor, player, readoutFraction, registry, type Readout } from '@bilig/scene-core';
+import { Disclosure } from '../components/Disclosure';
 import { Icon } from '../components/Icon';
+import { withUnit } from '../lib/format';
 import { Formula } from '../lib/formula';
 import { useLang } from '../lib/hooks';
 import { useViewer } from '../state/viewer';
@@ -134,10 +136,21 @@ function ProcessBody({ process }: { process: Process }): JSX.Element {
               aria-valuetext={t('process.percent', { value: view.percent })}
             />
           </label>
-          <div className="segbar" aria-hidden="true">
+          {/* Step timeline: mouse shortcuts to the step cards below (which carry the keyboard focus), each named, 24px tall. */}
+          <div className="flex gap-1" role="group" aria-label={t('process.steps')}>
             {segments.map((sg) => (
-              <button key={sg.index} type="button" tabIndex={-1} onClick={() => dispatch({ type: 'seekStep', index: sg.index })}>
-                <i style={{ width: `${sg.fill * 100}%` }} />
+              <button
+                key={sg.index}
+                type="button"
+                tabIndex={-1}
+                className="flex min-h-6 flex-1 cursor-pointer items-center border-0 bg-transparent p-0"
+                aria-label={t('process.stepOf', { n: sg.index + 1, total: segments.length, title: tr(process.steps[sg.index]?.title, lang) })}
+                title={tr(process.steps[sg.index]?.title, lang)}
+                onClick={() => dispatch({ type: 'seekStep', index: sg.index })}
+              >
+                <span className="block h-2 w-full overflow-hidden rounded-pill bg-line">
+                  <i className="block h-full bg-accent" style={{ width: `${sg.fill * 100}%` }} />
+                </span>
               </button>
             ))}
           </div>
@@ -147,8 +160,7 @@ function ProcessBody({ process }: { process: Process }): JSX.Element {
                 <div key={r.key} className="met" data-testid={`readout-${r.key}`}>
                   <small>{tr(r.label, lang)}</small>
                   <b>
-                    {nf(r)}
-                    {r.unit ? ` ${r.unit}` : ''}
+                    {withUnit(String(nf(r)), r.unit, lang)}
                   </b>
                   <div className="bar" role="meter" aria-valuemin={r.min ?? 0} aria-valuemax={r.max ?? 1} aria-valuenow={typeof r.value === 'number' ? r.value : 0} aria-label={tr(r.label, lang)}>
                     <i style={{ width: `${readoutFraction(r) * 100}%` }} />
@@ -195,7 +207,7 @@ function ProcessBody({ process }: { process: Process }): JSX.Element {
         </div>
       </div>
 
-      <h3 className="visually-hidden">{t('process.steps')}</h3>
+      <Disclosure className="mt-4" summary={<h3 className="m-0 text-base font-semibold">{t('process.steps')} ({process.steps.length})</h3>}>
       <ol className="steps">
         {process.steps.map((s, i) => {
           const c = s.conceptKey ? concepts.find((x) => x.key === s.conceptKey) ?? pkg.concepts.find((x) => x.key === s.conceptKey) : undefined;
@@ -230,6 +242,7 @@ function ProcessBody({ process }: { process: Process }): JSX.Element {
           );
         })}
       </ol>
+      </Disclosure>
     </>
   );
 }

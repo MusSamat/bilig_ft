@@ -21,6 +21,7 @@ import { api } from '../api/client';
 import { usePermission } from '../api/session';
 import { Icon } from '../components/Icon';
 import { uuid } from '../lib/db';
+import { unitLabel } from '../lib/format';
 import { useLang } from '../lib/hooks';
 import { toast } from '../state/ui';
 import { useViewer } from '../state/viewer';
@@ -295,7 +296,7 @@ function ItemInput(props: { item: Item; response: ItemResponse | undefined; onCh
             onChange={(e) => onChange({ type: 'numeric', value: parseNumber(e.target.value) })}
             style={{ maxWidth: 200 }}
           />
-          {item.unit && <span className="muted small">{t('quiz.unit', { unit: item.unit })}</span>}
+          {item.unit && <span className="muted small">{t('quiz.unit', { unit: unitLabel(item.unit, lang) })}</span>}
         </label>
       );
   }

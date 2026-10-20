@@ -1,159 +1,102 @@
 /**
- * Teacher dashboard → «Сабак пландары / Планы уроков» (contract 0.5.0,
- * `lesson.plan`): upload a КТП (.docx) and the list of the teacher's plans.
- * Lazy chunk of the teacher page.
+ * Teacher cabinet → «Сабак пландары (КТП)» (contract 0.5.0, `lesson.plan`):
+ * the teacher's plans with one problem count each, and «Add a КТП» as a
+ * guided flow (choose → checking → summary → done). With no plan yet, the
+ * flow is the whole section. Lazy chunk of the teacher page.
  */
-import { useRef, useState, type DragEvent } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { TeachingPlanSummary } from '@bilig/content-model/api';
+import type { KtpIssue, TeachingPlan, TeachingPlanSummary } from '@bilig/content-model/api';
 import { Icon } from '../components/Icon';
 import { errorKey, formatDate } from '../cabinet/format';
+import { Card, CardTitle, ErrorState, Loading, btn, cx, iconBtn } from '../cabinet/teacher/ui';
 import { useLang } from '../lib/hooks';
 import { toast } from '../state/ui';
-import { KtpFileError, useKtpDelete, useKtpList, useKtpUpload } from './api';
-import { KTP_MAX_BYTES, checkKtpFile } from './model';
-
-const MB = Math.round(KTP_MAX_BYTES / (1024 * 1024));
+import { useKtpDelete, useKtpList } from './api';
+import { capitalize, fixTarget } from './model';
+import { ProblemCount } from './Problems';
+import { UploadFlow } from './UploadFlow';
 
 export default function KtpTab(): JSX.Element {
   const { t } = useTranslation();
+  const lang = useLang();
+  const navigate = useNavigate();
   const list = useKtpList();
   const items = list.data?.pages.flatMap((p) => p.items) ?? [];
+  const [adding, setAdding] = useState(false);
+  const empty = list.isSuccess && items.length === 0;
+
+  const open = (plan: TeachingPlan, search?: Record<string, string> | null) => navigate({ pathname: `/${lang}/teacher/ktp/${plan.id}`, search: search ? `?${new URLSearchParams(search)}` : '' });
+  const flow = (
+    <UploadFlow
+      onStart={() => setAdding(true)}
+      onDone={(p) => open(p)}
+      onFix={(p, i: KtpIssue) => open(p, fixTarget(i))}
+      onCancel={empty ? undefined : () => setAdding(false)}
+    />
+  );
+
   return (
-    <div className="stack ktp">
-      <UploadCard />
-      <section className="card stack" aria-labelledby="ktp-list-title" aria-busy={list.isLoading}>
-        <h2 id="ktp-list-title" className="panel-title">
-          <Icon name="cal" />
-          {t('ktp.list.title')}
-        </h2>
-        {list.isLoading && (
-          <div className="stack" aria-label={t('common.loading')}>
-            <span className="skel" style={{ height: 76 }} />
-            <span className="skel" style={{ height: 76 }} />
+    <div className="grid gap-6">
+      {(adding || empty) && (
+        <Card labelledBy="ktp-add-title" className="grid gap-5">
+          <div className="grid gap-2">
+            <CardTitle id="ktp-add-title" icon="upload">
+              {t('ktp.upload.title')}
+            </CardTitle>
+            <p className="m-0 max-w-[64ch] text-base text-muted">{t('ktp.intro')}</p>
           </div>
-        )}
-        {list.isError && (
-          <div className="state state--error" role="alert">
-            <Icon name="warn" />
-            <b>{t('ktp.list.loadError')}</b>
-            <button type="button" className="btn2" onClick={() => void list.refetch()}>
-              <Icon name="reset" className="sm" />
-              {t('common.retry')}
-            </button>
+          {empty && <Steps />}
+          {flow}
+        </Card>
+      )}
+      {!empty && (
+        <Card labelledBy="ktp-list-title" className="grid gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <CardTitle id="ktp-list-title" icon="cal">
+              {t('ktp.list.title')}
+            </CardTitle>
+            {!adding && list.isSuccess && (
+              <button type="button" className={btn('primary')} onClick={() => setAdding(true)}>
+                <Icon name="plus" className="sm" />
+                {t('ktp.add')}
+              </button>
+            )}
           </div>
-        )}
-        {list.isSuccess && items.length === 0 && (
-          <div className="state">
-            <Icon name="file" />
-            <span>{t('ktp.list.empty')}</span>
-          </div>
-        )}
-        {items.length > 0 && (
-          <ul className="ktp-list">
-            {items.map((p) => (
-              <PlanItem key={p.id} plan={p} />
-            ))}
-          </ul>
-        )}
-        {list.hasNextPage && (
-          <div>
-            <button type="button" className="btn btn--sm" onClick={() => void list.fetchNextPage()}>
+          {list.isLoading && <Loading rows={2} />}
+          {list.isError && <ErrorState text={t('ktp.list.loadError')} onRetry={() => void list.refetch()} />}
+          {items.length > 0 && (
+            <ul className="m-0 grid list-none gap-3 p-0">
+              {items.map((p) => (
+                <PlanItem key={p.id} plan={p} />
+              ))}
+            </ul>
+          )}
+          {list.hasNextPage && (
+            <button type="button" className={btn('secondary', 'justify-self-start')} onClick={() => void list.fetchNextPage()}>
               {t('teacher.loadMore')}
             </button>
-          </div>
-        )}
-      </section>
+          )}
+        </Card>
+      )}
     </div>
   );
 }
 
-function UploadCard(): JSX.Element {
+function Steps(): JSX.Element {
   const { t } = useTranslation();
-  const lang = useLang();
-  const navigate = useNavigate();
-  const upload = useKtpUpload();
-  const input = useRef<HTMLInputElement>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [over, setOver] = useState(false);
-
-  const start = (file: File | undefined) => {
-    if (!file || upload.isPending) return;
-    const bad = checkKtpFile(file);
-    setError(bad ? t(bad, { mb: MB }) : null);
-    if (bad) return;
-    upload.mutate(
-      { file },
-      {
-        onSuccess: (plan) => {
-          toast({
-            key: 'ktp.upload.done',
-            params: { title: plan.title || plan.sourceName },
-            kind: 'success',
-          });
-          navigate(`/${lang}/teacher/ktp/${plan.id}`);
-        },
-        onError: (e) => setError(e instanceof KtpFileError ? t(e.i18nKey, { mb: MB }) : t(errorKey(e))),
-      },
-    );
-    if (input.current) input.current.value = '';
-  };
-
-  const onDrop = (e: DragEvent) => {
-    e.preventDefault();
-    setOver(false);
-    start(e.dataTransfer.files?.[0]);
-  };
-
   return (
-    <section className="card stack ktp-upload" aria-labelledby="ktp-upload-title">
-      <div>
-        <h2 id="ktp-upload-title" className="h2">
-          {t('ktp.promise')}
-        </h2>
-        <p className="muted">{t('ktp.intro')}</p>
-      </div>
-      <div
-        className="ktp-drop"
-        data-over={over || undefined}
-        aria-busy={upload.isPending}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setOver(true);
-        }}
-        onDragLeave={() => setOver(false)}
-        onDrop={onDrop}
-      >
-        <Icon name="upload" className="lg" />
-        {upload.isPending ? (
-          <p role="status" className="ktp-drop__busy">
-            <span className="ktp-spin" aria-hidden="true" />
-            {t('ktp.upload.sending')}
-          </p>
-        ) : (
-          <>
-            <label className="btn btn--primary">
-              <Icon name="file" className="sm" />
-              {t('ktp.upload.button')}
-              <input
-                ref={input}
-                className="visually-hidden"
-                type="file"
-                accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                aria-label={t('ktp.upload.inputLabel')}
-                onChange={(e) => start(e.target.files?.[0])}
-              />
-            </label>
-            <span className="muted small">{t('ktp.upload.drop')}</span>
-          </>
-        )}
-        <span className="muted small">{t('ktp.upload.hint', { mb: MB })}</span>
-      </div>
-      <p className="error-text" role="alert">
-        {error ?? ''}
-      </p>
-    </section>
+    <ol className="m-0 grid list-none gap-3 p-0 md:grid-cols-3" aria-label={t('ktp.steps.label')}>
+      {(['one', 'two', 'three'] as const).map((k, i) => (
+        <li key={k} className="flex items-center gap-3 rounded-lg bg-soft p-3 text-base text-ink">
+          <span className="inline-flex size-8 flex-none items-center justify-center rounded-pill bg-accent font-bold text-on" aria-hidden="true">
+            {i + 1}
+          </span>
+          {t(`ktp.steps.${k}`)}
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -162,71 +105,64 @@ function PlanItem({ plan }: { plan: TeachingPlanSummary }): JSX.Element {
   const lang = useLang();
   const del = useKtpDelete();
   const [confirm, setConfirm] = useState(false);
-  const title = plan.title || plan.subjectName;
+  const heading = [capitalize(plan.subjectName || plan.title, lang), plan.grade ? t('teacher.gradeN', { n: plan.grade }) : null].filter(Boolean).join(' · ');
+  const title = plan.title || heading;
+  const to = `/${lang}/teacher/ktp/${plan.id}`;
   return (
-    <li className="ktp-item">
-      <div className="ktp-item__main">
-        <Link className="ktp-item__title" to={`/${lang}/teacher/ktp/${plan.id}`} aria-label={t('ktp.list.open', { title })}>
-          {title}
-        </Link>
-        <span className="muted small">
-          {[plan.subjectName, plan.grade ? t('teacher.gradeN', { n: plan.grade }) : null, t('ktp.list.classes', { list: plan.classes.join(', ') }), t('ktp.list.lessons', { count: plan.lessons })]
-            .filter(Boolean)
-            .join(' · ')}
-        </span>
-        <span className="chips">
-          {plan.errors > 0 && (
-            <span className="pill pill--bad">
-              <Icon name="warn" className="sm" />
-              {t('ktp.issues.errors', { count: plan.errors })}
-            </span>
-          )}
-          {plan.warnings > 0 && (
-            <span className="pill ktp-pill--warn">
-              <Icon name="info" className="sm" />
-              {t('ktp.issues.warnings', { count: plan.warnings })}
-            </span>
-          )}
-          {plan.errors === 0 && plan.warnings === 0 && (
-            <span className="badge badge--ok">
-              <Icon name="check" className="sm" />
-              {t('ktp.issues.none')}
-            </span>
-          )}
-          <span className="muted small">{t('ktp.list.updated', { date: formatDate(lang, plan.updatedAt) })}</span>
-        </span>
+    <li className="grid gap-3 rounded-lg border border-line bg-chip p-4" data-testid="ktp-plan-item">
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="grid min-w-0 flex-1 basis-60 gap-1">
+          <h3 className="m-0 text-lg font-semibold text-ink">
+            <Link to={to} className="text-ink no-underline hover:underline">
+              {heading}
+            </Link>
+          </h3>
+          <p className="m-0 text-base text-muted">{[t('ktp.plan.lessons', { count: plan.lessons }), plan.classes.join(', '), t('ktp.list.updated', { date: formatDate(lang, plan.updatedAt) })].join(' · ')}</p>
+          <p className="m-0 line-clamp-1 text-sm text-muted" title={plan.title}>
+            {plan.title}
+          </p>
+        </div>
+        <ProblemCount errors={plan.errors} warnings={plan.warnings} />
       </div>
       {confirm ? (
-        <div className="ktp-item__confirm" role="group" aria-label={t('ktp.list.confirmDelete', { title })}>
-          <span className="small">{t('ktp.list.confirmDelete', { title })}</span>
-          <button
-            type="button"
-            className="btn btn--sm ktp-danger"
-            disabled={del.isPending}
-            onClick={() =>
-              del.mutate(
-                { id: plan.id, version: plan.version },
-                {
-                  onSuccess: () => toast({ key: 'ktp.list.deleted', kind: 'success' }),
-                  onError: (e) => {
-                    setConfirm(false);
-                    toast({ key: errorKey(e), kind: 'error' });
+        <div className="grid gap-3 rounded-lg border border-bad p-3" role="group" aria-label={t('ktp.list.delete', { title })}>
+          <p className="m-0 text-base text-ink">{t('ktp.list.confirmDelete', { title: heading })}</p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              className={btn('danger')}
+              disabled={del.isPending}
+              onClick={() =>
+                del.mutate(
+                  { id: plan.id, version: plan.version },
+                  {
+                    onSuccess: () => toast({ key: 'ktp.list.deleted', kind: 'success' }),
+                    onError: (e) => {
+                      setConfirm(false);
+                      toast({ key: errorKey(e), kind: 'error' });
+                    },
                   },
-                },
-              )
-            }
-          >
-            <Icon name="trash" className="sm" />
-            {t('common.delete')}
-          </button>
-          <button type="button" className="btn btn--sm" onClick={() => setConfirm(false)} autoFocus>
-            {t('common.cancel')}
-          </button>
+                )
+              }
+            >
+              <Icon name="trash" className="sm" />
+              {t('common.delete')}
+            </button>
+            <button type="button" className={btn('secondary')} onClick={() => setConfirm(false)} autoFocus>
+              {t('common.cancel')}
+            </button>
+          </div>
         </div>
       ) : (
-        <button type="button" className="icon-btn" aria-label={t('ktp.list.delete', { title })} onClick={() => setConfirm(true)}>
-          <Icon name="trash" />
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link className={btn('primary')} to={to} aria-label={t('ktp.list.openLabel', { title: heading })}>
+            {t('ktp.list.open')}
+            <Icon name="arrow-right" className="sm" />
+          </Link>
+          <button type="button" className={cx(iconBtn(), 'ms-auto')} aria-label={t('ktp.list.delete', { title: heading })} title={t('ktp.list.delete', { title: heading })} onClick={() => setConfirm(true)}>
+            <Icon name="trash" />
+          </button>
+        </div>
       )}
     </li>
   );

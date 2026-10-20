@@ -1,8 +1,9 @@
 /**
- * Topic page (TZ W-10…W-55), Workbench layout: the hero panel (crumbs, title,
- * goal, status tiles, specimen strip), the work area (3D stage with overlaid
- * structure chips, «Вид модели» card and toolbar | inspector + tutor), the
- * processes section, the comparison + quiz row and «Вопросы для класса».
+ * Topic page (TZ W-10…W-55), Workbench layout: the compact hero (crumbs and
+ * toolbar, title and specimens, the goal folded), the work area (3D stage with
+ * the structure chips, one toolbar and, in lesson mode, the step bar | the
+ * inspector card), the processes section, the comparison + quiz row and the
+ * practice questions. The stage fits the first screen (audit P-1).
  * Lesson mode (W-50, the default; `?view=study` explores freely) switches to projector typography and hides the
  * self-check quiz; the assistant (closed by default), the selection toolbar
  * and the class questions stay, since the teacher explains on the screen.
@@ -17,7 +18,7 @@ import { t as tr, topicConcepts } from '@bilig/content-model';
 import { registry } from '@bilig/scene-core';
 import { useCatalog, useTopicPackage } from '../api/content';
 import { isApiError, type ApiError } from '../api/client';
-import { useSession } from '../api/session';
+import { usePermission, useSession } from '../api/session';
 import { Icon } from '../components/Icon';
 import { db, nowIso } from '../lib/db';
 import { useLang } from '../lib/hooks';
@@ -28,6 +29,7 @@ import { ensurePlugins, usePluginsReady } from '../scene/registry';
 import { probeWebGL } from '../scene/webgl';
 import { useUi } from '../state/ui';
 import { useViewer } from '../state/viewer';
+import { useAssistantBus } from './assistantBus';
 import { ChatDock } from './ChatDock';
 import { ComparisonTable } from './ComparisonTable';
 import { ConceptCard } from './ConceptCard';
@@ -56,6 +58,10 @@ export default function TopicPage(): JSX.Element {
   const viewerTopic = useViewer((s) => s.topicKey);
   const selected = useViewer((s) => s.selected);
   const expanded = useStageView((s) => s.expanded);
+  // On wide screens the open assistant docks right and the page makes room for it.
+  const chatOpen = useAssistantBus((s) => s.mode === 'panel');
+  const canAsk = usePermission('assistant.ask.online');
+  const chatDocked = chatOpen && canAsk;
 
   const pkg = data?.pkg;
   const concepts = useMemo(() => (pkg ? topicConcepts(pkg) : []), [pkg]);
@@ -163,11 +169,11 @@ export default function TopicPage(): JSX.Element {
 
   return (
     <TopicContext.Provider value={ctx}>
-      <div className={`wrap topic${lesson ? ' is-lesson' : ''}`}>
+      <div className={`wrap topic${lesson ? ' is-lesson' : ''}${chatDocked ? ' 2xl:pr-[432px]' : ''}`}>
         <TopicHero catalog={catalog} />
         <div className="work">
           <Stage ready={ready} />
-          <div className="side">{!expanded && <ConceptCard ready={ready} />}</div>
+          <div className="side lg:pb-16">{!expanded && <ConceptCard />}</div>
         </div>
         {a.processKeys.length > 0 && <ProcessPanel ready={ready} />}
         {(showCompare || showQuiz) && (
@@ -234,22 +240,13 @@ function TopicSkeleton(): JSX.Element {
   const { t } = useTranslation();
   return (
     <div className="wrap topic" aria-busy="true" aria-label={t('common.loading')}>
-      <section className="hero panel glass">
-        <div className="stack">
-          <span className="skel line" style={{ width: 220 }} />
-          <span className="skel h1" />
-          <span className="skel line" style={{ width: 180 }} />
-          <span className="skel line" style={{ width: '90%' }} />
-          <span className="skel" style={{ height: 64 }} />
-        </div>
-        <div className="tiles">
-          {[0, 1, 2, 3].map((i) => (
-            <span key={i} className="skel" style={{ height: 76, borderRadius: 'var(--r-lg)' }} />
-          ))}
-        </div>
+      <section className="panel glass grid gap-3 px-4 py-3 md:px-6 md:py-4">
+        <span className="skel line" style={{ width: 260 }} />
+        <span className="skel h-9 w-[min(420px,80%)]" />
+        <span className="skel h-11" />
       </section>
       <div className="work">
-        <div className="stage stage--skel">
+        <div className="stage stage--skel h-[clamp(360px,calc(100dvh-var(--hdr-h,72px)-var(--hero-h,200px)-48px),880px)]">
           <span className="skel" />
         </div>
         <div className="side">

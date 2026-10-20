@@ -6,7 +6,7 @@ import { registry, type ModeDef, type ScenePlugin } from '@bilig/scene-core';
 import { renderTopic, topicPkg } from '../test/utils';
 import { setWebGLAvailable } from '../scene/webgl';
 import { useViewer } from '../state/viewer';
-import { LessonPanel } from './LessonPanel';
+import { LessonBar } from './LessonPanel';
 import { SampleStrip } from './SampleStrip';
 import { Stage } from './Stage';
 import { defaultSampleKey, showStageSample, stageScene } from './stageSample';
@@ -159,7 +159,7 @@ describe('stage samples (v0.5.0)', () => {
     const user = userEvent.setup();
     const pkg = fixture();
     const steps = pkg.topic.activities.tour!.steps;
-    renderTopic(<LessonPanel ready />, { pkg, lesson: true });
+    renderTopic(<LessonBar ready />, { pkg, lesson: true });
     init(pkg);
     act(() => useViewer.getState().setLessonStep(0));
     expect(useViewer.getState().sample).toBeNull();

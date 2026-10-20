@@ -4,7 +4,7 @@
  * on all devices» (TZ §6). Guests are asked to sign in.
  */
 import { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
@@ -22,6 +22,9 @@ export default function CabinetPage(): JSX.Element {
   const lang = useLang();
   const me = useSession((s) => s.me);
   const status = useSession((s) => s.status);
+  const canManage = usePermission('class.manage');
+  const canPlan = usePermission('lesson.plan');
+  const isTeacher = canManage || canPlan;
   const setContext = useUi((s) => s.setContext);
   useEffect(() => setContext(null), [setContext]);
 
@@ -55,6 +58,8 @@ export default function CabinetPage(): JSX.Element {
       </div>
     );
   }
+  // One place for a teacher: the teacher cabinet has the profile and the sessions too.
+  if (me.kind === 'adult' && isTeacher) return <Navigate to={`/${lang}/teacher?tab=profile`} replace />;
   return (
     <div className="page">
       <header className="page-h panel glass">
