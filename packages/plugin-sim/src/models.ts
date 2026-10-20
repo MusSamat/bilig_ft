@@ -23,11 +23,20 @@ import { reactionVessel } from './models/reactionVessel.js';
 import { energyProfileModel } from './models/energyProfile.js';
 import { foodWeb } from './models/foodWeb.js';
 import { nutritionPlate } from './models/nutritionPlate.js';
+import { circular } from './models/circular.js';
+import { spring } from './models/spring.js';
+import { momentum } from './models/momentum.js';
+import { pulley } from './models/pulley.js';
+import { pressure } from './models/pressure.js';
+import { buoyancy } from './models/buoyancy.js';
+import { waves } from './models/waves.js';
 
 export const SIM_MODELS = [
   'pendulum', 'inclined-plane', 'dc-circuit', 'orbits', 'moon-phases', 'seasons',
   // contract 0.5.0 §4
   'kinematics', 'forces', 'lever', 'particles', 'separation', 'reaction-vessel', 'energy-profile', 'food-web', 'nutrition-plate',
+  // Physics 7 (Мамбетакунов): motion in a circle, springs, momentum, pulleys, pressure, buoyancy, waves
+  'circular', 'spring', 'momentum', 'pulley', 'pressure', 'buoyancy', 'waves',
 ] as const;
 export type SimModelId = (typeof SIM_MODELS)[number];
 
@@ -183,10 +192,13 @@ const incline: SimModel = {
       { name: 'Ramp_Back', parent: 'Ramp', shape: { kind: 'polygon', points: tri(-z) }, color: '#d9c2a3', ...wood },
       { name: 'Ramp_Wall', parent: 'Ramp', shape: { kind: 'polygon', points: [[corner[0], 0, z], [f.top[0], f.top[1], z], [f.top[0], f.top[1], -z], [corner[0], 0, -z]] }, color: '#cfb595', ...wood },
       { name: 'Ramp_Base', parent: 'Ramp', shape: { kind: 'polygon', points: [[corner[0], 0, z], [corner[0], 0, -z], [f.bottom[0], 0, -z], [f.bottom[0], 0, z]] }, color: '#cfb595', ...wood },
+      // A lab board under the wedge: grounds it and gives the default framing some room around the slope.
+      { name: 'Ramp_Board', parent: 'Ramp', shape: { kind: 'box', size: [Math.abs(f.bottom[0] - f.top[0]) + 0.7, 0.03, depth + 0.3], bevel: 0.01 }, position: [(f.bottom[0] + f.top[0]) / 2, -0.016, 0], color: '#b08a5a', ...wood },
       // Angle marker at the foot of the slope (decoration).
       { name: 'Ramp_Angle', shape: { kind: 'torus', radius: Math.min(0.45, p.length * 0.18), tube: 0.014, arc: f.th, segments: 32 }, position: [f.bottom[0], 0.004, z + 0.006], rotation: [0, 0, Math.PI - f.th], color: '#ffd166', noPick: true },
       {
         name: 'Block', shape: { kind: 'box', size: [BLOCK, BLOCK, BLOCK], bevel: BLOCK * 0.08 }, rotation: [0, 0, -f.th], color: '#118ab2', material: 'plastic',
+        position: blockCenter(p, inclineState(p, 0).distance),
         motion: (t) => ({ position: blockCenter(p, inclineState(p, t).distance) }),
       },
     ];
@@ -613,6 +625,13 @@ export const MODELS: Record<SimModelId, SimModel> = {
   'energy-profile': energyProfileModel,
   'food-web': foodWeb,
   'nutrition-plate': nutritionPlate,
+  circular,
+  spring,
+  momentum,
+  pulley,
+  pressure,
+  buoyancy,
+  waves,
 };
 
 /** Model for scene params (`model`), pendulum by default. */

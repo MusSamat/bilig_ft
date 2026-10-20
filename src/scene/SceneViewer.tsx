@@ -52,6 +52,8 @@ type Anchors = Map<string, AnchorInfo>;
 interface Bounds {
   center: THREE.Vector3;
   radius: number;
+  /** Full extents of the box (the home view fits width and height separately). */
+  size: THREE.Vector3;
 }
 
 /**
@@ -342,6 +344,9 @@ function AnchorIndex({ anchors, bounds, concepts }: { anchors: MutableRefObject<
   const m = useMemo(() => new THREE.Matrix4(), []);
   useFrame(() => {
     if (frame.current++ % 30 !== 0) return;
+    // Meshes created this frame still have identity world matrices until the first render: the first
+    // pass would measure every part at the origin and the home view would frame the wrong box.
+    scene.updateMatrixWorld();
     const found: Anchors = new Map();
     all.makeEmpty();
     scene.traverse((obj) => {
@@ -357,9 +362,10 @@ function AnchorIndex({ anchors, bounds, concepts }: { anchors: MutableRefObject<
         box.applyMatrix4(m);
       }
       box.applyMatrix4(obj.matrixWorld);
-      if (inst.isInstancedMesh && inst.boundingSphere) {
-        const s = inst.boundingSphere.clone().applyMatrix4(obj.matrixWorld);
-        all.expandByPoint(s.center.clone().addScalar(s.radius)).expandByPoint(s.center.clone().subScalar(s.radius));
+      if (inst.isInstancedMesh && inst.count > 0) {
+        // All instances, as a box (a bounding sphere would turn a long row of particles into a tall cube).
+        if (!inst.boundingBox) inst.computeBoundingBox();
+        all.union(inst.boundingBox!.clone().applyMatrix4(obj.matrixWorld));
       } else all.union(box);
       if (found.has(key)) return;
       const sphere = box.getBoundingSphere(new THREE.Sphere());
@@ -381,7 +387,7 @@ function AnchorIndex({ anchors, bounds, concepts }: { anchors: MutableRefObject<
       // Framing radius from the box half-extents (a sphere around the box overestimates by up to √3).
       const size = all.getSize(new THREE.Vector3());
       const radius = Math.max(size.x, size.y, size.z) / 2;
-      bounds.current = { center: all.getCenter(new THREE.Vector3()), radius: Math.max(0.3, radius) };
+      bounds.current = { center: all.getCenter(new THREE.Vector3()), radius: Math.max(0.3, radius), size };
     }
   });
   return null;
@@ -434,13 +440,20 @@ function CameraRig(props: {
   const shown = useRef<string | null>(null);
   const homeFor = useRef<string | null>(null);
   const stepFor = useRef<Camera | null>(null);
+  /** The bounds the home view was framed on, when, and whether the user has moved the camera since. */
+  const homeFrom = useRef<{ bounds: Bounds; at: number } | null>(null);
+  const grabbed = useRef(false);
 
   const flyTo = (pos: THREE.Vector3, target: THREE.Vector3, now = instant) => {
     if (!controls) return;
     flight.current = { fromP: camera.position.clone(), fromT: controls.target.clone(), toP: pos, toT: target, t: now ? 1 : 0 };
   };
 
-  /** Camera pose that fits the model bounds in the viewport (both axes), from the topic camera direction. */
+  /**
+   * Camera pose that fits the model bounds in the viewport, from the topic camera direction. Width and
+   * height are fitted separately (the box projected on the view's right / up axes), so a wide scene —
+   * a road, a track, a wave — fills the wide stage instead of a third of it.
+   */
   const homePose = (): { pos: THREE.Vector3; target: THREE.Vector3 } | null => {
     if (home) return { pos: new THREE.Vector3(...home.position), target: new THREE.Vector3(...home.target) };
     const b = bounds.current;
@@ -450,11 +463,18 @@ function CameraRig(props: {
     dir.normalize();
     const vfov = THREE.MathUtils.degToRad(camera.fov);
     const aspect = size.width / Math.max(1, size.height);
-    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
-    const fit = Math.min(vfov, hfov);
-    // Leave room for the overlaid chips, «Вид модели» card and toolbar.
-    const dist = (b.radius / Math.tan(fit / 2)) * 1.4;
-    return { pos: b.center.clone().add(dir.multiplyScalar(dist)), target: b.center.clone() };
+    const tanV = Math.tan(vfov / 2);
+    const tanH = tanV * aspect;
+    const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), dir);
+    if (right.lengthSq() < 1e-6) right.set(1, 0, 0);
+    right.normalize();
+    const up = new THREE.Vector3().crossVectors(dir, right).normalize();
+    // Half extents of the box seen from `dir`, and its half depth (nearer corners need more room).
+    const h = b.size.clone().multiplyScalar(0.5);
+    const proj = (axis: THREE.Vector3) => h.x * Math.abs(axis.x) + h.y * Math.abs(axis.y) + h.z * Math.abs(axis.z);
+    // Margins: the concept chips (top) and the toolbar (bottom) cover more of the height than the width.
+    const dist = Math.max((proj(right) * 1.15) / tanH, (proj(up) * 1.65) / tanV) + proj(dir);
+    return { pos: b.center.clone().add(dir.multiplyScalar(Math.max(dist, b.radius * 1.2))), target: b.center.clone() };
   };
 
   // Cancel the flight when the user grabs the model.
@@ -462,6 +482,7 @@ function CameraRig(props: {
     if (!controls) return;
     const stop = () => {
       flight.current = null;
+      grabbed.current = true;
     };
     controls.addEventListener('start', stop);
     return () => controls.removeEventListener('start', stop);
@@ -496,7 +517,20 @@ function CameraRig(props: {
         const firstView = shown.current === null;
         shown.current = 'home';
         homeFor.current = resetKey;
+        if (bounds.current) homeFrom.current = { bounds: bounds.current, at: performance.now() };
         flyTo(pose.pos, pose.target, firstView || instant);
+      }
+    } else if (shown.current === 'home' && !home && !grabbed.current && homeFrom.current && bounds.current && bounds.current !== homeFrom.current.bounds) {
+      // The scene is still settling (assets, the first frames of a sim): while the user hasn't touched the
+      // camera, frame the new bounds if they changed noticeably during the first seconds.
+      const a = homeFrom.current.bounds;
+      const b = bounds.current;
+      const moved = a.center.distanceTo(b.center) > 0.05 * a.radius || Math.abs(a.size.length() - b.size.length()) > 0.08 * a.size.length();
+      if (performance.now() - homeFrom.current.at > 2500) homeFrom.current = null;
+      else if (moved) {
+        homeFrom.current = { bounds: b, at: homeFrom.current.at };
+        const pose = homePose();
+        if (pose) flyTo(pose.pos, pose.target, true);
       }
     } else if (selected && wantHome && shown.current === selected) {
       // «Reset» with a selection kept by the store: frame the whole model again.
