@@ -754,7 +754,9 @@
     "visibility": "Видимость",
     "objectiveKey": "Цель обучения",
     "message": "Комментарий",
-    "createdAt": "Создано"
+    "createdAt": "Создано",
+    "assistantGuide": "Инструкция ИИ-помощнику по предмету",
+    "starters": "Стартовые вопросы помощнику"
   },
   "enum": {
     "active": "Активен",
