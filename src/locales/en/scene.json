@@ -14,7 +14,6 @@
   "loading": "Loading model…",
   "structures": "Structures in the model",
   "findMode": "Pick on the model to answer",
-  "snapshotAdded": "Snapshot added to the presentation",
   "snapshotFailed": "Could not take a snapshot",
   "openDeck": "Open presentation",
   "coach": {
@@ -41,5 +40,6 @@
   "loadingProgress": "Loading model… {{percent}}%",
   "preparing": "Preparing the 3D model…",
   "loadFailed": "Could not load the 3D model",
-  "retry": "Retry"
+  "retry": "Retry",
+  "snapshotSaved": "Picture saved as a file"
 }

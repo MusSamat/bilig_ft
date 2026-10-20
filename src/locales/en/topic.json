@@ -30,5 +30,6 @@
     "signIn": "Sign in",
     "demo": "Open the demo: {{title}}"
   },
-  "openSampleTopic": "Open the topic «{{title}}»"
+  "openSampleTopic": "Open the topic «{{title}}»",
+  "toolbar": "Topic tools"
 }

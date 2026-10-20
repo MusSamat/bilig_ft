@@ -12,7 +12,6 @@
  * `data-ask` region for the selection toolbar.
  */
 import type { CSSProperties } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   formatPropValue,
@@ -28,7 +27,6 @@ import { Icon } from '../components/Icon';
 import { Formula } from '../lib/formula';
 import { useLang } from '../lib/hooks';
 import { useViewer } from '../state/viewer';
-import { addConceptToDeck } from './actions';
 import { askAssistant } from './assistantBus';
 import { useTopic } from './context';
 import { loadMore, useGenerated } from './generated';
@@ -163,7 +161,6 @@ export function ExamplesSection({ examples, idPrefix, conceptKey }: { examples: 
 export function ConceptCard({ ready = true }: { ready?: boolean }): JSX.Element {
   const { t } = useTranslation();
   const lang = useLang();
-  const navigate = useNavigate();
   const { pkg, concepts, lesson } = useTopic();
   const selected = useViewer((s) => s.selected);
   const pick = useViewer((s) => s.pick);
@@ -195,8 +192,8 @@ export function ConceptCard({ ready = true }: { ready?: boolean }): JSX.Element 
             <PropsTable props={sample.props} extra={extra} />
           </>
         )}
-        <div className="rel">
-          <span className="rel__label">
+        <div className="relrow">
+          <span className="relrow__label">
             <Icon name="cube" className="sm" />
             {t('card.inModel')}:
           </span>
@@ -259,8 +256,8 @@ export function ConceptCard({ ready = true }: { ready?: boolean }): JSX.Element 
       ))}
       <ExamplesSection examples={concept.examples} idPrefix={`ex-${concept.key}`} conceptKey={concept.key} />
       {related.length > 0 && (
-        <div className="rel">
-          <span className="rel__label">
+        <div className="relrow">
+          <span className="relrow__label">
             <Icon name="link" className="sm" />
             {t('card.related')}:
           </span>
@@ -280,10 +277,6 @@ export function ConceptCard({ ready = true }: { ready?: boolean }): JSX.Element 
               {t('card.ask')}
             </button>
           )}
-          <button type="button" className="btn2" onClick={() => addConceptToDeck(pkg, concept, lang, navigate)}>
-            <Icon name="deck" className="sm" />
-            {t('card.toPresentation')}
-          </button>
         </div>
       )}
       {lesson && <LessonPanel ready={ready} />}

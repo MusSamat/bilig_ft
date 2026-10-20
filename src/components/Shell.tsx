@@ -4,7 +4,7 @@
  * of truth), applies hue tokens (W-03), hotkeys for the catalog (W-02), and
  * hosts the catalog sheet, the slides dialog and the toasts.
  */
-import { Suspense, lazy, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_LANG } from '@bilig/content-model';
@@ -13,13 +13,11 @@ import { applyTheme } from '../lib/theme';
 import { useKeydown } from '../lib/hooks';
 import { switchLangPath } from '../lib/urls';
 import { useUi } from '../state/ui';
-import { useDeck } from '../state/deck';
 import { CatalogModal } from './CatalogModal';
 import { Header } from './Header';
 import { IconSprite } from './Icon';
 import { Toasts } from './Toasts';
 
-const SlidesDialog = lazy(() => import('../presentation/SlidesDialog'));
 
 export function Shell(): JSX.Element {
   const { lang } = useParams();
@@ -29,8 +27,6 @@ export function Shell(): JSX.Element {
   const theme = useUi((s) => s.theme);
   const openCatalog = useUi((s) => s.openCatalog);
   const catalogOpen = useUi((s) => s.catalogOpen);
-  const slidesOpen = useUi((s) => s.slidesOpen);
-  const loadDeck = useDeck((s) => s.load);
   const valid = isUiLang(lang);
 
   useEffect(() => {
@@ -58,11 +54,10 @@ export function Shell(): JSX.Element {
     ro.observe(top);
     return () => ro.disconnect();
   }, [valid]);
-  useEffect(() => void loadDeck(), [loadDeck]);
 
   // W-02 hotkeys: `/` and Ctrl/⌘+K open the catalog.
   useKeydown((e) => {
-    if (catalogOpen || slidesOpen) return;
+    if (catalogOpen) return;
     if (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
       e.preventDefault();
       openCatalog();
@@ -79,11 +74,6 @@ export function Shell(): JSX.Element {
       </a>
       <Header />
       <CatalogModal />
-      {slidesOpen && (
-        <Suspense fallback={null}>
-          <SlidesDialog />
-        </Suspense>
-      )}
       <main id="main" tabIndex={-1}>
         <Outlet />
       </main>

@@ -32,7 +32,8 @@
     display: flex;
     align-items: center;
     gap: var(--sp-3);
-    flex-wrap: wrap;
+    /* one line at every width: only the subject pill shrinks (it ellipsizes) */
+    flex-wrap: nowrap;
     padding: var(--sp-3) var(--sp-6);
     margin-bottom: var(--sp-2);
     background: color-mix(in srgb, var(--g3) 78%, transparent);
@@ -102,13 +103,40 @@
   .subjbtn > .ic:last-child {
     color: var(--muted);
   }
-  .top__slides .count-badge {
-    margin-inline-start: 2px;
+  .top > * {
+    flex: none;
   }
-  .top__lang {
+  /* menu anchors are flex boxes so the button inside sits on the bar's centre line (no inline baseline gap) */
+  .top > .rel,
+  .ttools > .rel {
+    display: flex;
+    align-items: center;
+  }
+  .top > .subjbtn {
+    flex: 0 1 auto;
+  }
+  .top > .spacer {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  /* every round/pill control of the bar has the same height, so they share one baseline */
+  .top .ibtn,
+  .top .langbtn,
+  .top .top__login {
+    height: var(--ctl-lg);
+    min-height: var(--ctl-lg);
+  }
+
+  /* Compact language menu («🌐 KY ▾») — header and topic toolbar */
+  .langbtn {
     gap: 6px;
     padding-inline: 12px;
     font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .langbtn__chev {
+    color: var(--muted);
+    margin-inline-start: -2px;
   }
 
   /* ---------- Page wrap ---------- */
@@ -253,21 +281,21 @@
       padding: 10px var(--sp-3);
       gap: var(--sp-2);
     }
-    .top .cta {
-      padding: 0 14px;
-    }
-    .top .seg > * {
-      padding: 6px 10px;
-    }
-    .top__lang {
+    .langbtn {
       padding-inline: 10px;
+    }
+    .langbtn__chev {
+      display: none;
     }
     .subjbtn small,
     .top__label {
       display: none;
     }
-    .subjbtn {
-      flex: 1 1 150px;
+    .top > .subjbtn {
+      flex: 1 1 auto;
+    }
+    .brand {
+      margin-inline-end: 0;
     }
     .brand b {
       display: none;

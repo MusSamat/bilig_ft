@@ -32,15 +32,12 @@ interface UiState {
   catalogOpen: boolean;
   /** Subject to show when the catalog opens (its course tree), or null for the overview. */
   catalogSubject: string | null;
-  slidesOpen: boolean;
   toasts: Toast[];
   setTheme(theme: Theme): void;
   toggleTheme(): void;
   setHue(hue: number): void;
   openCatalog(subjectKey?: string): void;
   closeCatalog(): void;
-  openSlides(): void;
-  closeSlides(): void;
   toast(t: Omit<Toast, 'id'>): void;
   dismiss(id: number): void;
 }
@@ -68,7 +65,6 @@ export const useUi = create<UiState>((set, get) => ({
   hue: NEUTRAL_HUE,
   catalogOpen: false,
   catalogSubject: null,
-  slidesOpen: false,
   toasts: [],
   setTheme(theme) {
     try {
@@ -84,8 +80,6 @@ export const useUi = create<UiState>((set, get) => ({
   setHue: (hue) => set({ hue }),
   openCatalog: (subjectKey) => set({ catalogOpen: true, catalogSubject: typeof subjectKey === 'string' ? subjectKey : null }),
   closeCatalog: () => set({ catalogOpen: false }),
-  openSlides: () => set({ slidesOpen: true, catalogOpen: false }),
-  closeSlides: () => set({ slidesOpen: false }),
   toast(t) {
     const id = nextId++;
     set((s) => ({ toasts: [...s.toasts.slice(-3), { ...t, id }] }));

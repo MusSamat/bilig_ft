@@ -30,5 +30,6 @@
     "signIn": "Войти",
     "demo": "Открыть демо: {{title}}"
   },
-  "openSampleTopic": "Открыть тему «{{title}}»"
+  "openSampleTopic": "Открыть тему «{{title}}»",
+  "toolbar": "Действия с темой"
 }

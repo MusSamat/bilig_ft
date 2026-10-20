@@ -6,7 +6,7 @@
  * teacher note, alt text); without a tour the structures are stepped through.
  */
 import { useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { L, t as tr, type Tour } from '@bilig/content-model';
 import { stepper } from '@bilig/scene-core';
@@ -22,7 +22,6 @@ import { toggleStage, useStageView } from './stageView';
 export function LessonPanel({ ready }: { ready: boolean }): JSX.Element | null {
   const { t } = useTranslation();
   const lang = useLang();
-  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const { pkg, concepts } = useTopic();
   const index = useViewer((s) => s.lessonStep);
@@ -105,7 +104,7 @@ export function LessonPanel({ ready }: { ready: boolean }): JSX.Element | null {
           <Icon name={expanded ? 'shrink' : 'expand'} className="sm" />
           {expanded ? t('scene.collapse') : t('lesson.present')}
         </button>
-        <button type="button" className="btn2 btn--sm" onClick={() => void takeSnapshot(pkg, lang, true, navigate)}>
+        <button type="button" className="btn2 btn--sm" onClick={() => void takeSnapshot(pkg, lang)}>
           <Icon name="camera" className="sm" />
           {t('scene.snapshot')}
         </button>

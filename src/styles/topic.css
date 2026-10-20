@@ -16,6 +16,68 @@
   .hero__main {
     min-width: 0;
   }
+  /* Top row of the topic panel: where you are (crumbs) and what you can do with this topic */
+  .hero__bar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2) var(--sp-4);
+    flex-wrap: wrap;
+    margin-bottom: calc(-1 * var(--sp-2));
+  }
+  .hero__bar .crumbs {
+    margin-bottom: 0;
+    min-width: 0;
+    /* natural width: when crumbs and tools do not fit side by side, the tools move to the next row */
+    flex: 1 0 auto;
+    max-width: 100%;
+  }
+  .ttools {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+    margin-inline-start: auto;
+  }
+  .ttools .seg,
+  .ttools .langbtn,
+  .ttools .cta {
+    height: var(--ctl);
+    min-height: var(--ctl);
+  }
+  .ttools .seg {
+    padding: 3px;
+  }
+  .ttools .seg > * {
+    padding: 0 14px;
+    font-size: var(--fs-sm);
+    min-height: 0;
+    height: 100%;
+  }
+  @media (max-width: 720px) {
+    .ttools {
+      width: 100%;
+    }
+    .ttools .seg {
+      flex: 1 1 100%;
+    }
+    .ttools .seg > * {
+      flex: 1;
+      justify-content: center;
+    }
+    .ttools > .rel:last-child {
+      flex: 1;
+    }
+    .ttools__deck {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+  .ttools__deck {
+    gap: 8px;
+    padding-inline: 16px;
+  }
   .crumbs {
     display: flex;
     align-items: center;
@@ -818,7 +880,8 @@
   .fact--warn > .ic {
     color: var(--bad);
   }
-  .rel {
+  /* «Related» row of the concept card (not the menu anchor `.rel`) */
+  .relrow {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
@@ -827,7 +890,7 @@
     font-size: var(--fs-sm);
     color: var(--muted);
   }
-  .rel__label {
+  .relrow__label {
     display: inline-flex;
     align-items: center;
     gap: 6px;

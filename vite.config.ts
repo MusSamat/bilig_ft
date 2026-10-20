@@ -94,7 +94,7 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
-    // three / r3f / drei, the plugins, pptxgenjs and jsPDF are lazy chunks (§10: initial JS ≤ 250 KB gzip).
+    // three / r3f / drei and the plugins are lazy chunks (§10: initial JS ≤ 250 KB gzip).
     chunkSizeWarningLimit: 1200,
   },
   plugins: [

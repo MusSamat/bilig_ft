@@ -30,5 +30,6 @@
     "signIn": "Кирүү",
     "demo": "Демону ачуу: {{title}}"
   },
-  "openSampleTopic": "«{{title}}» темасын ачуу"
+  "openSampleTopic": "«{{title}}» темасын ачуу",
+  "toolbar": "Теманын куралдары"
 }

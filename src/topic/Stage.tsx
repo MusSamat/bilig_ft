@@ -8,7 +8,6 @@
  * controls. WebGL-unavailable fallback shows the specimen picture.
  */
 import { Component, Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { t as tr } from '@bilig/content-model';
 import { conceptColor, player, registry, type ViewerState } from '@bilig/scene-core';
@@ -214,7 +213,6 @@ function Tool(p: ToolProps): JSX.Element {
 export function Stage({ ready }: { ready: boolean }): JSX.Element {
   const { t } = useTranslation();
   const lang = useLang();
-  const navigate = useNavigate();
   const { pkg, concepts, filesBaseUrl, lesson } = useTopic();
   const reducedMotion = useReducedMotion();
   const touch = useCoarsePointer();
@@ -416,7 +414,7 @@ export function Stage({ ready }: { ready: boolean }): JSX.Element {
         <Tool id="isolate" icon="focus" label={t('scene.isolate')} pressed={v.toolbar === 'isolate'} disabled={needsFocus} {...focusReason} onClick={v.isolate} />
         <Tool id="hide" icon="eyeoff" label={t('scene.hideOthers')} pressed={v.toolbar === 'hide'} disabled={needsFocus} {...focusReason} onClick={v.hideOthers} />
         <Tool id="reset" icon="reset" label={t('scene.reset')} onClick={v.resetView} />
-        <Tool id="shot" icon="camera" label={t('scene.snapshot')} disabled={!plugin} reasonId="tb-loading" reason={t('scene.loading')} onClick={() => void takeSnapshot(pkg, lang, lesson, navigate)} />
+        <Tool id="shot" icon="camera" label={t('scene.snapshot')} disabled={!plugin} reasonId="tb-loading" reason={t('scene.loading')} onClick={() => void takeSnapshot(pkg, lang)} />
         <span className="toolbar__sep" aria-hidden="true" />
         <Tool id="expand" icon={expanded ? 'shrink' : 'expand'} label={expanded ? t('scene.collapse') : t('scene.expand')} pressed={expanded} onClick={toggleStage} />
         {canFullscreen && <Tool id="fullscreen" icon={fullscreen ? 'fullscreenExit' : 'fullscreen'} label={fullscreen ? t('scene.fullscreenExit') : t('scene.fullscreen')} pressed={fullscreen} onClick={() => void toggleFullscreen()} />}

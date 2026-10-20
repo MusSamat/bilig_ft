@@ -1,5 +1,6 @@
 /**
- * Topic hero (W-10/W-11/W-12) — one glass panel: crumbs, serif title with the
+ * Topic hero (W-10/W-11/W-12) — one glass panel: a top row with the crumbs and
+ * the topic toolbar (lesson / explore, language, presentation), then the serif title with the
  * formula, italic classification, description and the lesson goal (program
  * codes and duration as quiet meta) on the left; the 2×2 status tiles on the
  * right; the specimen strip across the bottom.
@@ -14,6 +15,7 @@ import { useTopic } from './context';
 import { SampleStrip } from './SampleStrip';
 import { StatusTiles } from './StatusTiles';
 import { TextbookPlaces } from './TextbookPlaces';
+import { TopicToolbar } from './TopicToolbar';
 
 export function TopicHero({ catalog }: { catalog: Catalog | undefined }): JSX.Element {
   const { t } = useTranslation();
@@ -29,8 +31,11 @@ export function TopicHero({ catalog }: { catalog: Catalog | undefined }): JSX.El
   ];
   return (
     <section className="hero panel glass" aria-labelledby="topic-title">
-      <div className="hero__main">
+      <div className="hero__bar">
         <Breadcrumbs catalog={catalog} topicKey={topic.key} fallback={fallback} icon={pkg.subject.icon} />
+        <TopicToolbar topicKey={topic.key} />
+      </div>
+      <div className="hero__main">
         <TextbookPlaces catalog={catalog} topicKey={topic.key} />
         <h1 id="topic-title">
           {tr(topic.title, lang)}
