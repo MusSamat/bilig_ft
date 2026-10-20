@@ -106,12 +106,14 @@ export const lever: SimModel = {
       parts.push({ name: `Beam_Tick_${i}`, parent: 'Beam', shape: { kind: 'box', size: [0.008, i % 5 === 0 ? 0.05 : 0.03, 0.004] }, position: [-BEAM / 2 + (BEAM * i) / 10, 0.01, 0.152], color: '#4a3b2a', noPick: true });
     }
     const fMax = Math.max(1e-9, ...s.loads.map((l) => l.force));
+    const mMax = Math.max(1e-9, ...p.loads.map((l) => l.mass));
     p.loads.forEach((l, i) => {
       const st = s.loads[i];
       const color = LOAD_COLORS[i % LOAD_COLORS.length];
       const lx = bx(l.position);
       // Slotted mass: a short cylinder (size by mass) with a knob, standing on the beam.
-      const rr = clamp(0.11 * Math.cbrt(Math.max(l.mass, 0.05)), 0.05, 0.28);
+      // Sized relative to the heaviest load on the beam (so lab masses of a few hundred grams still read).
+      const rr = clamp(0.2 * Math.cbrt(Math.max(l.mass, 1e-6) / mMax), 0.07, 0.2);
       const hh = rr * 1.1;
       parts.push({ name: `Load_${l.id}`, parent: 'BeamTilt', shape: { kind: 'cylinder', radiusTop: rr, radiusBottom: rr, height: hh, segments: 40 }, position: [lx, 0.08 + hh / 2, 0], color, material: 'copper' });
       parts.push({ name: `Load_${l.id}_Knob`, parent: `Load_${l.id}`, shape: { kind: 'cylinder', radiusTop: rr * 0.25, radiusBottom: rr * 0.3, height: rr * 0.35, segments: 20 }, position: [0, hh / 2 + rr * 0.17, 0], color, material: 'copper' });

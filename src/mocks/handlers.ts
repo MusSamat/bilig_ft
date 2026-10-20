@@ -588,6 +588,21 @@ export const handlers: HttpHandler[] = [
     return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } });
   }),
 
+  // v0.9.1: what the (one) mock user already got for a card.
+  route('tutorGeneratedSeen', ({ url }) => {
+    const q = Object.fromEntries(url.searchParams) as Record<string, string>;
+    const seen = (mockDb.generatedSeen ??= []);
+    const pool = (mockDb.generated ??= []).filter((g) => g.topicKey === q.topicKey && (g.conceptKey ?? null) === (q.conceptKey ?? null) && g.kind === q.kind && g.lang === q.lang && servable(g));
+    const mine = seen.map((id) => pool.find((g) => g.id === id)).filter((g): g is AdminGenerated => !!g);
+    return {
+      kind: q.kind as 'simple' | 'stem' | 'quiz',
+      lang: q.lang as 'ky' | 'ru' | 'en',
+      examples: q.kind === 'quiz' ? [] : mine.map((g) => g.example!),
+      quiz: q.kind === 'quiz' ? mine.map((g) => g.quiz!) : [],
+      unseen: pool.filter((g) => !seen.includes(g.id)).length,
+    };
+  }),
+
   // v0.4.0: generated examples / questions — pool first, then the grounded generator.
   route('tutorGenerate', ({ body }) => {
     if (mockDb.flags.tutorDown) return fail('tutor_unavailable');
@@ -595,7 +610,9 @@ export const handlers: HttpHandler[] = [
     const pkg = packageByKey(b.topicKey);
     if (!pkg) return fail('not_found');
     const pool = (mockDb.generated ??= []).filter((g) => g.topicKey === b.topicKey && (g.conceptKey ?? null) === (b.conceptKey ?? null) && g.kind === b.kind && g.lang === b.lang);
-    const picked = pool.filter((g) => servable(g) && !b.exclude.includes(g.id)).slice(0, b.count);
+    // v0.9.1: the mock has one user — what it already got is not served again.
+    const seen = (mockDb.generatedSeen ??= []);
+    const picked = pool.filter((g) => servable(g) && !b.exclude.includes(g.id) && !seen.includes(g.id)).slice(0, b.count);
     const need = b.count - picked.length;
     const fresh: AdminGenerated[] = [];
     if (need > 0) {
@@ -614,6 +631,7 @@ export const handlers: HttpHandler[] = [
     }
     const out = [...picked, ...fresh];
     for (const g of out) g.served++;
+    seen.push(...out.map((g) => g.id).filter((id) => !seen.includes(id)));
     const reviewed = (g: AdminGenerated) => (g.status === 'approved' ? { reviewed: true } : {});
     return {
       kind: b.kind,

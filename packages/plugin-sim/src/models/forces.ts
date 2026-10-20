@@ -9,6 +9,7 @@ import {
   COLORS, LABELS, MODE, arrowLook, boolOr, clamp, idOr, listOf, numOr, obj, on, qty, text, uniqueBy, L, tr,
   type SimModel,
 } from './common.js';
+import { sampleTimes, timedTexts } from './mechCommon.js';
 
 export interface AppliedForce {
   id: string;
@@ -25,8 +26,10 @@ export interface ForcesParams {
   friction: number;
   dynamometer: boolean;
   g: number;
+  /** Physics 7: starting speed along x, m/s (signed; 0 = the block starts at rest). Inertia: it coasts, friction stops it. */
+  v0: number;
 }
-export const DEFAULT_FORCES: ForcesParams = { mass: 1, forces: [], gravity: true, friction: 0, dynamometer: false, g: 9.81 };
+export const DEFAULT_FORCES: ForcesParams = { mass: 1, forces: [], gravity: true, friction: 0, dynamometer: false, g: 9.81, v0: 0 };
 
 export function parseForcesParams(raw: unknown): ForcesParams {
   const p = obj(raw);
@@ -47,6 +50,7 @@ export function parseForcesParams(raw: unknown): ForcesParams {
     friction: numOr(p.friction, 0, 10, DEFAULT_FORCES.friction),
     dynamometer: boolOr(p.dynamometer, DEFAULT_FORCES.dynamometer),
     g: numOr(p.g, 0.01, 1000, DEFAULT_FORCES.g),
+    v0: numOr(p.v0, -50, 50, DEFAULT_FORCES.v0),
   };
 }
 
@@ -68,6 +72,8 @@ export interface ForcesState {
   lifted: boolean;
   resultant: V2;
   acceleration: V2;
+  /** Starting speed along x (m/s). */
+  v0: number;
 }
 
 /**
@@ -83,12 +89,14 @@ export function forcesState(p: ForcesParams): ForcesState {
   const lifted = fy > weight + EPS;
   const normal = lifted ? 0 : Math.max(0, weight - fy);
   const limit = p.friction * normal;
-  const held = Math.abs(fx) <= limit + EPS;
-  const friction = held ? -fx : -Math.sign(fx) * limit;
+  // A sliding block (v0 ≠ 0 on the table): kinetic friction opposes the motion until it stops.
+  const sliding = Math.abs(p.v0) > EPS && !lifted;
+  const held = !sliding && Math.abs(fx) <= limit + EPS;
+  const friction = sliding ? -Math.sign(p.v0) * limit : held ? -fx : -Math.sign(fx) * limit;
   const rx = fx + friction;
   const ry = fy - weight + normal;
   const resultant: V2 = [Math.abs(rx) < EPS ? 0 : rx, Math.abs(ry) < EPS ? 0 : ry];
-  return { applied, weight, normal, friction: Math.abs(friction) < EPS ? 0 : friction, held, lifted, resultant, acceleration: [resultant[0] / p.mass, resultant[1] / p.mass] };
+  return { applied, weight, normal, friction: Math.abs(friction) < EPS ? 0 : friction, held, lifted, resultant, acceleration: [resultant[0] / p.mass, resultant[1] / p.mass], v0: lifted ? 0 : p.v0 };
 }
 
 /** Half-width of the table travel and the lift height, m (1 scene unit = 1 m). */
@@ -96,11 +104,12 @@ const TRAVEL_X = 1.25;
 const TRAVEL_Y = 1.1;
 
 /** Displacement from rest under constant acceleration, stopped at the table edge; `arrival` = time to stop. */
-export function forcesMotion(s: ForcesState): { arrival: number; at: (t: number) => V2; start: V2 } {
+export function forcesMotion(s: ForcesState): { arrival: number; at: (t: number) => V2; start: V2; speed: (t: number) => number } {
+  if (Math.abs(s.v0) > EPS) return slideMotion(s);
   const [ax, ay] = s.acceleration;
   const a = Math.hypot(ax, ay);
   const start: V2 = [ax > EPS ? -TRAVEL_X : ax < -EPS ? TRAVEL_X : 0, 0];
-  if (a < EPS) return { arrival: Infinity, at: () => start, start };
+  if (a < EPS) return { arrival: Infinity, at: () => start, start, speed: () => 0 };
   // Distance along a until x hits the far edge or y the lift height.
   const dx = Math.abs(ax) > EPS ? (2 * TRAVEL_X) / (Math.abs(ax) / a) : Infinity;
   const dy = ay > EPS ? TRAVEL_Y / (ay / a) : Infinity;
@@ -111,7 +120,27 @@ export function forcesMotion(s: ForcesState): { arrival: number; at: (t: number)
     const d = 0.5 * a * tt * tt;
     return [start[0] + (ax / a) * d, start[1] + (ay / a) * d];
   };
-  return { arrival, at, start };
+  return { arrival, at, start, speed: (t) => a * clamp(t, 0, arrival) };
+}
+
+/**
+ * A block launched along x at v0 (inertia): x = v0·t + a·t²/2 from the near edge, until it reaches the far
+ * edge or — when a opposes v0 (friction) — stops at t = |v0/a| and stays (it does not slide back).
+ */
+function slideMotion(s: ForcesState): { arrival: number; at: (t: number) => V2; start: V2; speed: (t: number) => number } {
+  const dir = Math.sign(s.v0);
+  const v = Math.abs(s.v0);
+  const a = s.acceleration[0] * dir; // along the motion
+  const start: V2 = [-dir * TRAVEL_X, 0];
+  const D = 2 * TRAVEL_X;
+  const stop = a < -EPS ? v / -a : Infinity;
+  const reach = Math.abs(a) < EPS ? D / v : a > 0 ? (-v + Math.sqrt(v * v + 2 * a * D)) / a : v * v / (-2 * a) >= D ? (v - Math.sqrt(v * v + 2 * a * D)) / -a : Infinity;
+  const arrival = Math.min(stop, reach);
+  const at = (t: number): V2 => {
+    const tt = clamp(t, 0, arrival);
+    return [start[0] + dir * (v * tt + 0.5 * a * tt * tt), 0];
+  };
+  return { arrival, at, start, speed: (t) => Math.max(0, v + a * clamp(t, 0, arrival)) };
 }
 
 const SYMBOL = {
@@ -155,6 +184,18 @@ export const forces: SimModel = {
     parts.push({ name: 'BlockAt', shape: { kind: 'group' }, position: pos(0), noPick: true, motion: (t) => ({ position: pos(t) }) });
     parts.push({ name: 'Block', parent: 'BlockAt', shape: { kind: 'box', size: [b, b, b], bevel: b * 0.06 }, color: '#118ab2', material: 'plastic' });
     if (labels) parts.push(text('Block_Label', qty(p.mass, 'kg', lang, 2), [0, 0, b / 2 + 0.01], b * 0.28, { parent: 'BlockAt', billboard: false, plate: false }));
+    // Newton's second law on screen: a = R/m (and the current speed when the block was launched).
+    if (labels) {
+      const a = Math.hypot(...s.acceleration);
+      const aText = `a = R/m = ${qty(a, 'm/s²', lang, 2)}`;
+      if (Math.abs(s.v0) > EPS) {
+        // The speed changes: one text per time window (≤ 30), the last one stays when the block stops.
+        const T = Number.isFinite(motion.arrival) ? motion.arrival : 0;
+        const times = [...sampleTimes(T, 0.25), T];
+        parts.push({ name: 'Readout', shape: { kind: 'group' }, position: [0, 1.75, 0], noPick: true });
+        parts.push(...timedTexts('Readout_V', times, (i) => `${aText}   v = ${qty(motion.speed(times[i]), 'm/s', lang, 2)}`, [0, 0, 0], 0.15, { parent: 'Readout', color: COLORS.resultant }));
+      } else parts.push(text('Readout', aText, [0, 1.75, 0], 0.15, { color: COLORS.resultant }));
+    }
 
     // Arrows in the block's front plane, so they read over the block and the table.
     const all = [...s.applied.map((f) => f.magnitude), s.weight, s.normal, Math.abs(s.friction), Math.hypot(...s.resultant)];

@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import {
   subjectModelCount,
   t as tr,
+  textbookSubjects,
   topicsOfSubject,
   type Catalog,
   type Localized,
@@ -22,6 +23,7 @@ import { useCatalog, useServerSearch } from '../api/content';
 import { useSession } from '../api/session';
 import { Formula } from '../lib/formula';
 import { useDebounced, useFocusTrap, useKeydown, useLang } from '../lib/hooks';
+import { textbookPath, textbookShortTitle } from '../lib/textbook';
 import { topicPath } from '../lib/urls';
 import { useUi } from '../state/ui';
 import { Icon } from './Icon';
@@ -92,6 +94,8 @@ function CatalogDialog(): JSX.Element {
   };
 
   const tree = subjectKey && catalog ? subjectTree(catalog, subjectKey) : null;
+  // The subject's textbooks (every teacher of the subject finds them here, not only on the home page).
+  const books = tree ? (catalog?.textbooks ?? []).filter((tb) => textbookSubjects(tb).includes(tree.subject.key)).sort((a, b) => a.grade - b.grade || a.order - b.order) : [];
   const conceptHits = (server.data?.items ?? []).filter((h) => h.kind === 'concept' && h.topicKey);
   const currentSubject = useUi((s) => s.context?.subject.key);
 
@@ -146,6 +150,35 @@ function CatalogDialog(): JSX.Element {
 
         {tree ? (
           <div className="stack">
+            {books.length > 0 && (
+              <section aria-labelledby="cat-textbooks">
+                <h3 id="cat-textbooks" className="grp">
+                  {t('catalog.textbooks')}
+                </h3>
+                <ul className="m-0 grid list-none gap-2 p-0 sm:grid-cols-2">
+                  {books.map((tb) => (
+                    <li key={tb.key}>
+                      <button
+                        type="button"
+                        className="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-line bg-transparent p-3 text-left text-ink hover:bg-soft"
+                        onClick={() => {
+                          navigate(textbookPath(lang, tb.key));
+                          close();
+                        }}
+                      >
+                        <Icon name="book" className="lg" />
+                        <span className="grid gap-0.5">
+                          <b className="text-base">{textbookShortTitle(tb, lang, t)}</b>
+                          <small className="text-sm text-muted">
+                            {[t('textbook.grade', { grade: tb.grade }), t('catalog.bookLang', { lang: t(`catalog.lang.${tb.lang}`) }), tb.authors?.join(', ')].filter(Boolean).join(' · ')}
+                          </small>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             {tree.courses.map((c) => (
               <section key={c.course.key} aria-label={tr(c.course.title, lang)}>
                 <h3 className="grp">{tr(c.course.title, lang)}</h3>

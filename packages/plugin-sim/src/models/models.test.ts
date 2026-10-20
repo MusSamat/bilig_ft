@@ -14,6 +14,8 @@ import { energyShare, iconFor, parseFoodWebParams, pollutantLevels, reactedCount
 import { DEFAULT_FOODS, foodKcal, nutritionSummary, parseNutritionParams, testResult } from './nutritionPlate.js';
 
 const NEW = ['kinematics', 'forces', 'lever', 'particles', 'separation', 'reaction-vessel', 'energy-profile', 'food-web', 'nutrition-plate'] as const;
+/** Physics 7 models (no dev mock package each): registration and robustness only. */
+const PHYS7 = ['circular', 'spring', 'momentum', 'pulley', 'pressure', 'buoyancy', 'waves'] as const;
 
 /** Build with every mode of the model on. */
 function build(model: string, params: Record<string, unknown>, modes: Record<string, boolean> = {}, extra: Record<string, unknown> = {}): Part[] {
@@ -29,7 +31,7 @@ function expectParts(parts: Part[], expected: string[]) {
 
 describe('registration and robustness', () => {
   it('every new model is registered and its modes resolve', () => {
-    for (const id of NEW) {
+    for (const id of [...NEW, ...PHYS7]) {
       expect(SIM_MODELS).toContain(id);
       expect(modelFor({ model: id }).id).toBe(id);
       const ids = simPlugin.modes({ plugin: 'sim', params: { model: id }, modes: [] } as never).map((d) => d.id);
@@ -38,7 +40,7 @@ describe('registration and robustness', () => {
   });
   it('garbage params never throw; parts are uniquely named and motions run', () => {
     const junk: unknown[] = [{}, { segments: 'x', forces: [null, 3], loads: {}, species: [{ id: '' }], method: 42, metal: 'Xx', kind: 7, organisms: [{ id: 'a' }], foods: [{}] }, { foo: NaN }];
-    for (const id of NEW) {
+    for (const id of [...NEW, ...PHYS7]) {
       for (const j of junk) {
         for (const allOn of [true, false]) {
           const m = MODELS[id];

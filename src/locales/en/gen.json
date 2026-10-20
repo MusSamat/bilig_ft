@@ -12,10 +12,12 @@
     "inappropriate": "Inappropriate",
     "off_topic": "Off topic"
   },
-  "moreSimple": "More examples",
-  "moreStem": "More STEM examples",
+  "moreSimple": "One more example",
+  "moreStem": "One more STEM example",
   "loading": "Preparing…",
   "exhausted": "No more examples",
   "failed": "Could not get examples. Please try again.",
-  "listLabel": "Examples from AI"
+  "listLabel": "Examples from AI",
+  "grades": "Gr. {{grades}}",
+  "gradesHint": "Grades it suits. Every topic of these grades on the same concept shows it."
 }

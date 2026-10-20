@@ -10,6 +10,8 @@ import {
   type GeneratedFeedbackRequest,
   type TutorAskRequest,
   type TutorGenerateRequest,
+  type TutorGeneratedSeenQuery,
+  type TutorGeneratedSeenResponse,
   type TutorGenerateResponse,
   type TutorStreamEvent,
 } from '@bilig/content-model/api';
@@ -42,6 +44,8 @@ export async function askTutor(req: TutorAskRequest, onEvent: (ev: TutorStreamEv
 
 /** «Ещё примеры» / «Ещё вопросы» (v0.4.0): pool first, topped up by the model. */
 export const generateMore = (body: TutorGenerateRequest): Promise<TutorGenerateResponse> => api('tutorGenerate', { body });
+/** v0.9.1: what this user already got for a card (no model call). */
+export const loadGeneratedSeen = (query: TutorGeneratedSeenQuery): Promise<TutorGeneratedSeenResponse> => api('tutorGeneratedSeen', { query });
 
 /** A teacher's verdict on a generated item («Хороший пример» / a report). */
 export const sendGeneratedFeedback = (id: string, body: GeneratedFeedbackRequest): Promise<unknown> => api('tutorGeneratedFeedback', { params: { id }, body });

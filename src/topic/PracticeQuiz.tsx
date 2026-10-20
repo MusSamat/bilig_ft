@@ -10,13 +10,13 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { t as tr } from '@bilig/content-model';
 import type { GeneratedQuizItem } from '@bilig/content-model/api';
-import { usePermission } from '../api/session';
+import { usePermission, useSession } from '../api/session';
 import { Icon } from '../components/Icon';
 import { useLang } from '../lib/hooks';
 import { useViewer } from '../state/viewer';
 import { useTopic } from './context';
-import { loadMore, useGenerated } from './generated';
-import { AiBadge, FeedbackButtons, MoreButton } from './GeneratedBits';
+import { loadMore, loadSeen, useGenerated } from './generated';
+import { AiBadge, GradesBadge, FeedbackButtons, MoreButton } from './GeneratedBits';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
@@ -29,6 +29,10 @@ export function PracticeQuiz(): JSX.Element | null {
   const focus = concepts.find((c) => c.key === selected && !c.isContainer);
   const conceptKey = focus?.key;
   const bucket = useGenerated(pkg.topic.key, conceptKey, 'quiz', lang);
+  const authed = useSession((s) => s.status === 'authed');
+  useEffect(() => {
+    if (canAsk && authed) void loadSeen(pkg.topic.key, conceptKey, 'quiz', lang);
+  }, [canAsk, authed, pkg.topic.key, conceptKey, lang]);
   const items = bucket.items as GeneratedQuizItem[];
   const [index, setIndex] = useState(0);
   const [chosen, setChosen] = useState<string | null>(null);
@@ -71,6 +75,7 @@ export function PracticeQuiz(): JSX.Element | null {
           <p className="practice__n">
             {t('practice.counter', { n: index + 1, total: items.length })}
             {q.reviewed && <AiBadge reviewed />}
+            <GradesBadge grades={q.grades} />
           </p>
           <p className="practice__prompt">{q.prompt}</p>
           <ul className="practice__opts">

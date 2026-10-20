@@ -21,6 +21,18 @@ export function AiBadge({ reviewed }: { reviewed?: boolean }): JSX.Element {
   );
 }
 
+/** v0.9.1: the grades a generated item suits («6–8 кл.»): the pool shares it between those grades. */
+export function GradesBadge({ grades }: { grades?: { from: number; to: number } }): JSX.Element | null {
+  const { t } = useTranslation();
+  if (!grades) return null;
+  const label = grades.from === grades.to ? String(grades.from) : `${grades.from}–${grades.to}`;
+  return (
+    <span className="rounded-pill border border-line px-2 text-sm text-muted" title={t('gen.gradesHint')}>
+      {t('gen.grades', { grades: label })}
+    </span>
+  );
+}
+
 export function FeedbackButtons({ id }: { id: string }): JSX.Element {
   const { t } = useTranslation();
   const current = useGeneratedStore((s) => s.votes[id]);

@@ -116,6 +116,8 @@ export interface MockState {
   flags: { offline: boolean; tutorDown: boolean; latencyMs: number };
   /** v0.4.0: generated examples / questions (pool + review state). */
   generated: AdminGenerated[];
+  /** v0.9.1: ids the (one) mock user already got. */
+  generatedSeen?: string[];
   /** v0.5.0: teachers' КТП (owner-only). */
   ktp: MockKtpPlan[];
   /** v0.6.0: licences per school; pending registrations by e-mail. */
