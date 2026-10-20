@@ -209,6 +209,18 @@ describe('Home «My classes» (§6.2)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(sent.some((r) => r.method === 'POST' && r.path.endsWith('/classes'))).toBe(false);
   });
+  it('?add=6&subject=geo (from a locked topic) opens the sheet with the grade and subject already chosen', async () => {
+    await signIn({ phone: READY_PHONE });
+    const user = userEvent.setup();
+    open('/en/teacher?add=6&subject=geo');
+    const sheet = await screen.findByRole('dialog', { name: 'New class' });
+    expect(within(sheet).getByLabelText('Grade')).toHaveValue('6');
+    expect(await within(sheet).findByRole('button', { name: 'Geography', pressed: true })).toBeInTheDocument();
+    await user.type(within(sheet).getByLabelText('Class name'), '6А');
+    await user.click(within(sheet).getByRole('button', { name: 'Add class' }));
+    expect(await screen.findByRole('heading', { level: 1, name: '6А' })).toBeInTheDocument();
+    expect(sent.find((r) => r.method === 'POST' && r.path.endsWith('/classes'))?.body).toEqual({ name: '6А', grade: 6, subjectKeys: ['geo'] });
+  });
 });
 
 describe('A class → its subjects (§6.3)', () => {

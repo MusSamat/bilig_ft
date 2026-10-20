@@ -19,7 +19,13 @@
     "noLicenceTitle": "No licence for this topic",
     "noLicence": "Your school has no licence for this subject. Please contact your school administrator.",
     "signIn": "Sign in",
-    "demo": "Open the demo: {{title}}"
+    "demo": "Open the demo: {{title}}",
+    "about": "This topic is {{subject}}, grade {{grade}}.",
+    "yourAccess": "Your access in {{subject}}: grade {{grades}}.",
+    "noSubject": "You don't have access to {{subject}} yet.",
+    "howTrial": "To open it, add a grade {{grade}} class with {{subject}} in your cabinet.",
+    "howSchool": "Grade {{grade}} {{subject}} comes with your school's licence. Please contact your school administrator.",
+    "addClass": "Add a grade {{grade}} class"
   },
   "openSampleTopic": "Open the topic «{{title}}»",
   "toolbar": "Topic tools"

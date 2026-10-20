@@ -210,12 +210,12 @@ export function useCreateClass(onCreated: (c: SchoolClass) => void | Promise<voi
 export const NEW_CLASS: Values = { name: '', grade: '', subjectKeys: [] };
 
 /** «Класс кошуу» in a sheet. */
-export function NewClassSheet({ onClose, onCreated }: { onClose: () => void; onCreated: (c: SchoolClass) => void }): JSX.Element {
+export function NewClassSheet({ onClose, onCreated, initial = NEW_CLASS }: { onClose: () => void; onCreated: (c: SchoolClass) => void; initial?: Values }): JSX.Element {
   const { t } = useTranslation();
   const { busy, error, create } = useCreateClass(onCreated);
   return (
     <Sheet title={t('teacher.classForm.newTitle')} onClose={onClose}>
-      <ClassFields idBase="new-class" initial={NEW_CLASS} withSubjects busy={busy} error={error} submitLabel={t('teacher.classForm.create')} onSubmit={(v) => void create(v)} onCancel={onClose} />
+      <ClassFields idBase="new-class" initial={initial} withSubjects busy={busy} error={error} submitLabel={t('teacher.classForm.create')} onSubmit={(v) => void create(v)} onCancel={onClose} />
     </Sheet>
   );
 }
