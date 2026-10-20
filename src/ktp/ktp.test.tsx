@@ -138,13 +138,15 @@ describe('КТП: list and the «Add a KTP» flow', () => {
     expect(within(summary).getByText('138 lessons · 8б, 8в · 2026–2027')).toBeInTheDocument();
     expect(within(summary).getByTestId('ktp-count')).toHaveTextContent('1 error · 5 warnings');
     // Errors first; warnings wait behind a button; info notes are never listed.
-    const items = within(summary).getAllByRole('listitem');
+    // (the class links of v0.8.0 are a list of their own)
+    const problemItems = () => within(summary).getAllByRole('listitem').filter((li) => !li.closest('[data-testid="ktp-class-links"]'));
+    const items = problemItems();
     expect(items).toHaveLength(1);
     expect(items[0]).toHaveTextContent('Error');
     expect(items[0]).toHaveTextContent('Lesson 109 · 8в');
     expect(items[0]).toHaveTextContent('The KTP says “31.04.27”, but that date does not exist.');
     await user.click(within(summary).getByRole('button', { name: 'Show 5 more warnings' }));
-    expect(within(summary).getAllByRole('listitem')).toHaveLength(6);
+    expect(problemItems()).toHaveLength(6);
 
     // «Fix» opens the new plan with that lesson's sheet, on the 8в date.
     await user.click(within(items[0]).getByRole('button', { name: /^Fix: Lesson 109 · 8в/ }));

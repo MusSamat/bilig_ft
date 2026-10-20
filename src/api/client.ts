@@ -18,6 +18,7 @@ import {
 import { API_ORIGIN } from '../config';
 import i18n from '../i18n';
 import { tokens } from './tokens';
+import { supportAuth } from '../support/token';
 
 export class ApiError extends Error {
   constructor(
@@ -73,7 +74,8 @@ export function requestHeaders(name: EndpointName, opts: CallOptions): Headers {
   const def = ENDPOINTS[name] as (typeof ENDPOINTS)[EndpointName] & { idempotent?: boolean; ifMatch?: boolean };
   const h = new Headers({ Accept: 'application/json', [HEADERS.acceptLanguage]: i18n.language || 'ky' });
   if (opts.body !== undefined) h.set('Content-Type', 'application/json');
-  const token = tokens.get();
+  // v0.8.0: inside a support session the teacher-cabinet token (memory only) wins.
+  const token = supportAuth.get() ?? tokens.get();
   if (token) h.set(HEADERS.authorization, `Bearer ${token}`);
   if (def.idempotent) {
     if (!opts.idempotencyKey) throw new Error(`${name} requires an Idempotency-Key`);
@@ -119,11 +121,15 @@ export async function rawCall(name: EndpointName, opts: CallOptions = {}): Promi
     if ((e as Error)?.name === 'AbortError') throw e;
     throw new ApiError(0, 'offline', 'errors.offline');
   }
-  if (res.status === 401 && !opts.noRefresh && tokens.get() && name !== 'refresh') {
+  if (res.status === 401 && !opts.noRefresh && tokens.get() && !supportAuth.get() && name !== 'refresh') {
     const refreshed = await tokens.refresh();
     if (refreshed) return rawCall(name, { ...opts, noRefresh: true });
   }
-  if (!res.ok) throw await problemFrom(res);
+  if (!res.ok) {
+    const err = await problemFrom(res);
+    supportAuth.report(err.status, err.code, err.problem?.detail);
+    throw err;
+  }
   return res;
 }
 
@@ -143,7 +149,7 @@ export async function fetchJson<T>(url: string, schema: z.ZodType<T>, signal?: A
   // token to API paths only — never to a static CDN path (/cdn/…), which must work without auth.
   const ours = new URL(abs).pathname.startsWith(`${API_PREFIX}/`);
   const headers = new Headers();
-  const token = ours ? tokens.get() : null;
+  const token = ours ? (supportAuth.get() ?? tokens.get()) : null;
   if (token) headers.set(HEADERS.authorization, `Bearer ${token}`);
   let res: Response;
   try {

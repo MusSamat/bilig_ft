@@ -26,7 +26,6 @@ import {
   ENDPOINTS,
   HEADERS,
   TopicDeckQuerySchema,
-  formatKgPhone,
   encodeSseEvent,
   problem,
   type AdminGenerated,
@@ -42,6 +41,8 @@ import { PACKAGES, TEXTBOOKS, buildCatalog, packageByKey } from './data';
 import { cabinetHandlers } from './handlers.cabinet';
 import { ktpHandlers } from './handlers.ktp';
 import { registerHandlers } from './handlers.register';
+import { staffHandlers } from './handlers.staff';
+import { admitSubjects, profileOf, teacherHandlers } from './handlers.teacher';
 import {
   CLASS_ID,
   mockDb,
@@ -124,8 +125,8 @@ const meOf = (u: MockUser): EndpointResponse<'me'> => ({
   ...(u.teaching ? { teaching: u.teaching } : {}),
   ...(u.kind === 'adult' && schoolIdsOf(u).length ? { licenses: licensesOf(u) } : {}),
   ...(u.phone ? { phone: u.phone } : {}),
-  // v0.7.0: what a self-registered teacher has filled in the cabinet so far.
-  ...(u.selfRegistered ? { setup: { name: !!u.phone && u.displayName !== formatKgPhone(u.phone), school: !!u.schoolNamed, teaching: !!u.teaching } } : {}),
+  // v0.7.0 / v0.8.0: what a teacher has filled in and the profile status computed from it.
+  ...profileOf(u),
 });
 
 const tokenFor = (u: MockUser): EndpointResponse<'login'> => ({ accessToken: issueToken(u.id), tokenType: 'Bearer', expiresIn: 900 });
@@ -211,10 +212,9 @@ function thumbSvg(path: string): string {
 
 // ------------------------------------------------------------------------------
 
-const licensedSubject = (schoolId: string, subjectKey: string) =>
-  mockDb.licenses.some((l) => l.schoolId === schoolId && l.subjects.includes(subjectKey) && Date.parse(l.endsAt) > Date.now());
-
 export const handlers: HttpHandler[] = [
+  // v0.8.0 first: the support-session guard and the staff sign-in fall through when they do not apply.
+  ...staffHandlers({ route, fail, meOf, tokenFor }),
   ...cabinetHandlers,
   ...registerHandlers({ route, fail, tokenFor }),
   route('health', () => ({ status: 'ok', version: 'mock', contract: '0.2.0' })),
@@ -463,17 +463,22 @@ export const handlers: HttpHandler[] = [
   route('classCreate', ({ body, user }) => {
     const b = body as EndpointBody<'classCreate'>;
     const schoolId = b.schoolId ?? schoolIdsOf(user)[0] ?? mockDb.classes[0]?.schoolId ?? newId();
-    if (b.subjectKey && !licensedSubject(schoolId, b.subjectKey)) return fail('validation_failed', { issues: [{ path: ['subjectKey'], message: 'not licensed' }] });
+    // v0.8.0: subjectKeys win over subjectKey; the trial follows the class.
+    const keys = b.subjectKeys ?? (b.subjectKey ? [b.subjectKey] : []);
+    const bad = admitSubjects(user, schoolId, b.grade, keys);
+    if (bad) return fail('validation_failed', { issues: [{ path: ['subjectKeys'], message: 'not licensed' }] });
     const code = Math.random().toString(36).slice(2, 8).toUpperCase().padEnd(6, 'X').replace(/[^A-Z0-9]/g, 'X');
-    const c = { id: newId(), schoolId, name: b.name, grade: b.grade, joinCode: code, joinCodeEnabled: true, ...(b.subjectKey ? { subjectKey: b.subjectKey } : {}) };
+    const c = { id: newId(), schoolId, name: b.name, grade: b.grade, joinCode: code, joinCodeEnabled: true, ...(keys.length ? { subjectKey: keys[0], subjectKeys: keys } : {}) };
     mockDb.classes.push(c);
     return classWithCount(c);
   }),
-  route('classPatch', ({ params, body }) => {
+  route('classPatch', ({ params, body, user }) => {
     const c = mockDb.classes.find((x) => x.id === params.id);
     if (!c) return fail('not_found');
-    const b = body as EndpointBody<'classPatch'>;
-    if (b.subjectKey && !licensedSubject(c.schoolId, b.subjectKey)) return fail('validation_failed', { issues: [{ path: ['subjectKey'], message: 'not licensed' }] });
+    const b = { ...(body as EndpointBody<'classPatch'>) };
+    if (b.subjectKeys) b.subjectKey = b.subjectKeys[0] ?? null;
+    else if (b.subjectKey !== undefined) b.subjectKeys = b.subjectKey ? [b.subjectKey] : [];
+    if (b.subjectKeys && admitSubjects(user, c.schoolId, b.grade ?? c.grade, b.subjectKeys)) return fail('validation_failed', { issues: [{ path: ['subjectKeys'], message: 'not licensed' }] });
     Object.assign(c, b);
     return classWithCount(c);
   }),
@@ -716,6 +721,8 @@ export const handlers: HttpHandler[] = [
 
   // v0.5.0 КТП → сабак планы
   ...ktpHandlers({ route, fail }),
+  // v0.8.0 the teacher's home: a class's subjects
+  ...teacherHandlers({ route, fail }),
 
   // CDN stand-in for package files (thumbnails) ---------------------------------------
   http.get(`${FILES_BASE}/*`, ({ request }) => {

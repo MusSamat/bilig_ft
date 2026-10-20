@@ -89,7 +89,8 @@ describe('Registration — 3 steps (contract 0.7.0)', () => {
     expect(useSession.getState().status).toBe('authed');
     expect(me.phone).toBe(NEW_PHONE);
     expect(me.permissions).toContain('class.manage');
-    expect(me.setup).toEqual({ name: false, school: false, teaching: false });
+    expect(me.setup).toEqual({ name: false, school: false, teaching: false, teachingLang: false, classWithSubject: false });
+    expect(me.profileStatus).toBe('incomplete'); // v0.8.0: the cabinet opens on the setup screen
 
     expect(seen['/auth/otp/start']).toEqual([{ phone: NEW_PHONE, purpose: 'register', locale: 'en' }]);
     expect(seen['/auth/otp/verify']).toEqual([{ phone: NEW_PHONE, purpose: 'register', code: REGISTER_CODE }]);

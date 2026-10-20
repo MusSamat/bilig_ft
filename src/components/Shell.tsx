@@ -13,6 +13,8 @@ import { applyTheme } from '../lib/theme';
 import { useKeydown } from '../lib/hooks';
 import { switchLangPath } from '../lib/urls';
 import { useUi } from '../state/ui';
+import { SupportBanner } from '../support/SupportBanner';
+import { useSupport } from '../support/store';
 import { CatalogModal } from './CatalogModal';
 import { Header } from './Header';
 import { IconSprite } from './Icon';
@@ -28,6 +30,8 @@ export function Shell(): JSX.Element {
   const openCatalog = useUi((s) => s.openCatalog);
   const catalogOpen = useUi((s) => s.catalogOpen);
   const valid = isUiLang(lang);
+  // v0.8.0: a staff member in a teacher's cabinet — the support banner sticks above the header.
+  const inSupport = useSupport((s) => !!s.active);
 
   useEffect(() => {
     if (!valid) return;
@@ -72,7 +76,14 @@ export function Shell(): JSX.Element {
       <a className="skip-link" href="#main">
         {t('a11y.skip')}
       </a>
-      <Header />
+      {inSupport ? (
+        <div className="sticky top-0 z-15">
+          <SupportBanner />
+          <Header />
+        </div>
+      ) : (
+        <Header />
+      )}
       <CatalogModal />
       <main id="main" tabIndex={-1}>
         <Outlet />

@@ -18,9 +18,14 @@ test('teacher scenario', async ({ page }) => {
 
   // 2. Class «7Б» (in a sheet), students from CSV, sign-in cards.
   await page.getByRole('button', { name: 'Add a class' }).click();
-  await page.getByRole('dialog', { name: 'New class' }).getByLabel('Class name').fill('7Б');
+  const sheet = page.getByRole('dialog', { name: 'New class' });
+  await sheet.getByLabel('Class name').fill('7Б');
+  await sheet.getByLabel('Grade').selectOption('7');
+  await sheet.getByRole('button', { name: 'Biology' }).click(); // v0.8.0: one or more subjects
   await page.getByRole('button', { name: 'Add class' }).click();
   await expect(page.getByRole('heading', { level: 1, name: '7Б' })).toBeVisible();
+  await expect(page.getByTestId('subject-card')).toHaveCount(1); // the class opens on its subjects
+  await page.getByRole('tab', { name: 'Students' }).click();
   await page.getByRole('button', { name: 'Add students' }).click();
   await page.getByLabel('Import a CSV file').setInputFiles({ name: 'class.csv', mimeType: 'text/csv', buffer: Buffer.from('name\nАсель Б.\nТимур К.\n') });
   await expect(page.getByText('2 students added')).toBeVisible();

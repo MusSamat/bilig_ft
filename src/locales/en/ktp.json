@@ -23,7 +23,8 @@
     "tooLarge": "The file is larger than {{mb}} MB.",
     "failed": "We could not read this file",
     "tryAgain": "Choose another file",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "forClass": "KTP: {{name}}, {{subject}}"
   },
   "summary": {
     "title": "Your KTP is ready",
@@ -213,5 +214,16 @@
     "4": "Thursday",
     "5": "Friday",
     "6": "Saturday"
+  },
+  "links": {
+    "title": "Classes",
+    "hint": "Tell us which of your classes each KTP column is — then the class shows its next lesson.",
+    "column": "In the KTP: {{class}}",
+    "none": "not linked",
+    "control": "Link to a class",
+    "controlFor": "Link to a class: {{class}}",
+    "noneOption": "Not linked",
+    "unknown": "Another class",
+    "saved": "Link saved"
   }
 }

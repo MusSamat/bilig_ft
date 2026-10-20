@@ -3,16 +3,21 @@
  * a summary («138 lessons · 8б, 8в · 2026–2027») with the problems that need
  * attention, each with a «Fix» action → «Done». With `replaces`, the new file
  * replaces an existing plan (the old one is deleted once the new one is read).
+ * The summary shows which class each КТП column is linked to (v0.8.0); with
+ * `preset` (upload from a class's subject card) that class is linked to a free
+ * column and an unknown subject is set before the summary shows.
  */
 import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import type { KtpIssue, TeachingPlan } from '@bilig/content-model/api';
+import type { KtpIssue, KtpPatchRequest, TeachingPlan } from '@bilig/content-model/api';
+import { api } from '../api/client';
 import { Icon } from '../components/Icon';
 import { errorKey } from '../cabinet/format';
 import { btn, cx } from '../cabinet/teacher/ui';
 import { toast } from '../state/ui';
-import { KtpFileError, ktpKeys, useKtpDelete, useKtpUpload } from './api';
+import { KtpFileError, ktpKeys, useKtpDelete, useKtpPlan, useKtpUpload } from './api';
+import { ClassLinks } from './ClassLinks';
 import { KTP_MAX_BYTES, capitalize, checkKtpFile, problemCounts } from './model';
 import { ProblemCount, ProblemList } from './Problems';
 import { useLang } from '../lib/hooks';
@@ -21,14 +26,35 @@ const MB = Math.round(KTP_MAX_BYTES / (1024 * 1024));
 
 type Step = { k: 'pick'; error: string | null } | { k: 'checking'; name: string } | { k: 'done'; plan: TeachingPlan };
 
+/** What an upload from a class's subject card already knows. */
+export interface UploadPreset {
+  classId: string;
+  subjectKey: string;
+}
+
+/** The PATCH that links `preset.classId` to a free column and sets an unknown subject (null when nothing to do). */
+export function presetPatch(plan: TeachingPlan, preset: UploadPreset): Omit<KtpPatchRequest, 'version'> | null {
+  const links = plan.classLinks ?? {};
+  const out: Omit<KtpPatchRequest, 'version'> = {};
+  if (!Object.values(links).includes(preset.classId)) {
+    const free = plan.classes.find((c) => !links[c]);
+    if (free) out.classLinks = { ...Object.fromEntries(plan.classes.map((c) => [c, links[c] ?? null])), [free]: preset.classId };
+  }
+  if (!plan.subjectKey) out.subjectKey = preset.subjectKey;
+  return Object.keys(out).length ? out : null;
+}
+
 export function UploadFlow({
   replaces,
+  preset,
   onStart,
   onDone,
   onFix,
   onCancel,
 }: {
   replaces?: TeachingPlan;
+  /** v0.8.0: uploaded for this class and subject. */
+  preset?: UploadPreset;
   /** The file passed the client checks and is being sent. */
   onStart?: () => void;
   onDone: (plan: TeachingPlan) => void;
@@ -54,6 +80,16 @@ export function UploadFlow({
           if (replaces) {
             const version = qc.getQueryData<TeachingPlan>(ktpKeys.plan(replaces.id))?.version ?? replaces.version;
             await del.mutateAsync({ id: replaces.id, version }).catch((e: unknown) => toast({ key: errorKey(e), kind: 'error' }));
+          }
+          const fix = preset && presetPatch(plan, preset);
+          if (fix) {
+            try {
+              const linked = await api('ktpPatch', { params: { id: plan.id }, body: { version: plan.version, ...fix }, ifMatch: plan.version });
+              qc.setQueryData(ktpKeys.plan(plan.id), linked);
+              plan = linked;
+            } catch (e) {
+              toast({ key: errorKey(e), kind: 'error' });
+            }
           }
           setStep({ k: 'done', plan });
         },
@@ -141,9 +177,11 @@ function Checking({ name }: { name: string }): JSX.Element {
   );
 }
 
-function Summary({ plan, onDone, onFix, onAnother }: { plan: TeachingPlan; onDone: () => void; onFix: (i: KtpIssue) => void; onAnother: () => void }): JSX.Element {
+function Summary({ plan: uploaded, onDone, onFix, onAnother }: { plan: TeachingPlan; onDone: () => void; onFix: (i: KtpIssue) => void; onAnother: () => void }): JSX.Element {
   const { t } = useTranslation();
   const lang = useLang();
+  // The cached plan follows the class-link edits made right here.
+  const plan = useKtpPlan(uploaded.id).data ?? uploaded;
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => heading.current?.focus(), []);
   const counts = problemCounts(plan.issues);
@@ -166,6 +204,7 @@ function Summary({ plan, onDone, onFix, onAnother }: { plan: TeachingPlan; onDon
         </div>
       </div>
       <ProblemCount errors={counts.errors} warnings={counts.warnings} className="justify-self-start" />
+      <ClassLinks plan={plan} />
       {problems > 0 ? (
         <div className="grid gap-3">
           <p className="m-0 text-base font-semibold text-ink">{t('ktp.summary.attention')}</p>

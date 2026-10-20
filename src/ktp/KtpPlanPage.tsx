@@ -5,6 +5,8 @@
  * problems the checker found have one count (errors + warnings, whole plan)
  * and each opens its lesson. A lesson is edited in one sheet
  * (`?lesson=<index>&at=<class>`). The file can be replaced or deleted.
+ * Which of the teacher's classes each КТП column is (v0.8.0 classLinks) is
+ * shown under the title and editable there.
  * Lazy route.
  */
 import { useEffect, useState } from 'react';
@@ -22,6 +24,7 @@ import { useLang } from '../lib/hooks';
 import { toast, useUi } from '../state/ui';
 import { fetchLessonPlan, useDownloads, useKtpDelete, useKtpPatch, useKtpPlan } from './api';
 import { AllLessons } from './AllLessons';
+import { ClassLinks } from './ClassLinks';
 import { LessonSheet } from './LessonSheet';
 import { capitalize, fixTarget, lastClass, problemCounts, rememberClass, todayIso, weekOf } from './model';
 import { ProblemCount, ProblemList } from './Problems';
@@ -149,6 +152,8 @@ function PlanView({ plan }: { plan: TeachingPlan }): JSX.Element {
           {plan.title}
         </p>
       </header>
+
+      <ClassLinks plan={plan} className="rounded-lg border border-line p-4" />
 
       <section className={cx('grid gap-4 rounded-lg border p-4', counts.errors ? 'border-bad' : problems ? 'border-gold' : 'border-ok')} aria-labelledby="ktp-problems-title">
         <div className="flex flex-wrap items-center gap-3">

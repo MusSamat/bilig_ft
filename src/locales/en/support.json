@@ -1,0 +1,11 @@
+{
+  "region": "Support mode",
+  "inCabinet": "You are in the cabinet of {{teacher}}.",
+  "mode": "Support mode: {{mode}}",
+  "modeView": "view",
+  "modeEdit": "edit",
+  "left": "left",
+  "exit": "Back to the admin",
+  "readOnly": "View mode: changes are not saved. Edit mode is needed.",
+  "forbidden": "Not available in support mode (password, phone, e-mail, 2FA, deletion, payment)."
+}

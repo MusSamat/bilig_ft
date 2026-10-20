@@ -151,6 +151,8 @@ export function buildKtpPlan(id: string, ownerId: string, sourceName: string, at
     schoolName: m.schoolName,
     year: m.year,
     classes: m.classes,
+    // v0.8.0: no column is linked to a class until the upload matches names (or the teacher links it).
+    classLinks: Object.fromEntries(m.classes.map((c) => [c, null])) as Record<string, string | null>,
     declaredHours: m.declaredHours,
     totalHours: rows.reduce((n, r) => n + r.hours, 0),
     rows,
@@ -162,6 +164,9 @@ export function buildKtpPlan(id: string, ownerId: string, sourceName: string, at
   };
   return { ...base, issues: computeIssues(base) };
 }
+
+/** v0.8.0: a КТП column matches a class by name, case and spaces ignored («8б» = «8 Б»). */
+export const sameClassName = (a: string, b: string): boolean => a.replace(/\s+/g, '').toLocaleLowerCase() === b.replace(/\s+/g, '').toLocaleLowerCase();
 
 /** Contract DTO (without the mock-only raw dates). */
 export const planDto = ({ raw: _raw, ...p }: MockKtpPlan): TeachingPlan => p;

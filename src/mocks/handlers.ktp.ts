@@ -6,8 +6,8 @@
  */
 import { HttpResponse } from 'msw';
 import { DOCX_MEDIA_TYPE, HEADERS, KTP_MAX_BYTES, KtpLessonPlanQuerySchema, KtpLessonPlansQuerySchema, type KtpPatchRequest } from '@bilig/content-model/api';
-import { mockDb, newId } from './db';
-import { buildKtpPlan, computeIssues, planDto, planSummary, type MockKtpPlan } from './ktp';
+import { mockDb, newId, schoolIdsOf } from './db';
+import { buildKtpPlan, computeIssues, planDto, planSummary, sameClassName, type MockKtpPlan } from './ktp';
 import type { route as routeFn, fail as failFn } from './handlers';
 
 type Deps = { route: typeof routeFn; fail: typeof failFn };
@@ -60,6 +60,9 @@ export function ktpHandlers({ route, fail }: Deps) {
         });
       if (base64Bytes(b.data) > KTP_MAX_BYTES) return fail('payload_too_large');
       const plan = buildKtpPlan(newId(), user!.id, b.fileName);
+      // v0.8.0: link each КТП column to the teacher's class of the same name.
+      const own = mockDb.classes.filter((c) => schoolIdsOf(user).includes(c.schoolId));
+      plan.classLinks = Object.fromEntries(plan.classes.map((col) => [col, own.find((c) => sameClassName(c.name, col))?.id ?? null]));
       mockDb.ktp.push(plan);
       return planDto(plan);
     }),
@@ -73,7 +76,13 @@ export function ktpHandlers({ route, fail }: Deps) {
       const b = body as KtpPatchRequest;
       const bad = stale(req, p, b.version);
       if (bad) return bad;
-      const { version: _v, rows, ...fields } = b;
+      const { version: _v, rows, classLinks, ...fields } = b;
+      if (classLinks) {
+        const own = new Set(mockDb.classes.filter((c) => schoolIdsOf(user).includes(c.schoolId)).map((c) => c.id));
+        const bad = Object.entries(classLinks).find(([col, id]) => !p.classes.includes(col) || (id !== null && !own.has(id)));
+        if (bad) return fail('validation_failed', { issues: [{ path: ['classLinks', bad[0]], message: 'Unknown column or class' }] });
+        p.classLinks = { ...p.classLinks, ...classLinks };
+      }
       Object.assign(p, fields);
       for (const rp of rows ?? []) {
         const r = p.rows.find((x) => x.index === rp.index);

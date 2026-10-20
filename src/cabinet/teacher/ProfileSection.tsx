@@ -17,11 +17,11 @@ import { HEADER_LANGS } from '../../config';
 import { useLang } from '../../lib/hooks';
 import { switchLangPath } from '../../lib/urls';
 import { formatDate } from '../format';
-import { NameForm, SchoolForm, TeachingForm, daysLeft, trialOf } from './profileForms';
+import { NameForm, SchoolForm, TeachingForm, TeachingLangForm, daysLeft, trialOf } from './profileForms';
 import { SubjectKeyChip, formatGrades } from './TeachingPicker';
 import { Card, CardTitle, Chip, ErrorState, Loading, btn, cx } from './ui';
 
-type Editing = 'name' | 'school' | 'teaching' | null;
+type Editing = 'name' | 'school' | 'teaching' | 'teachingLang' | null;
 
 export function ProfileSection(): JSX.Element | null {
   const { t } = useTranslation();
@@ -74,6 +74,15 @@ export function ProfileSection(): JSX.Element | null {
         <dl className="m-0 grid gap-0 divide-y divide-line">
           <Row label={t('teacher.profile.schoolName')} action={trial && editing !== 'school' && editBtn('school', t('teacher.profile.schoolName'))}>
             {editing === 'school' ? <SchoolForm idBase="profile" onDone={() => close('school')} onCancel={() => close('school')} /> : me.setup?.school === false || !school ? <Missing /> : school}
+          </Row>
+          <Row label={t('teacher.profile.teachingLang')} action={editing !== 'teachingLang' && editBtn('teachingLang', t('teacher.profile.teachingLang'))}>
+            {editing === 'teachingLang' ? (
+              <TeachingLangForm idBase="profile" onDone={() => close('teachingLang')} onCancel={() => close('teachingLang')} />
+            ) : me.teachingLang ? (
+              t(`teacher.teachingLang.${me.teachingLang}`)
+            ) : (
+              <Missing />
+            )}
           </Row>
           <Row label={t('teacher.profile.teaching')} action={trial && editing !== 'teaching' && editBtn('teaching', t('teacher.profile.teaching'))}>
             {editing === 'teaching' ? (

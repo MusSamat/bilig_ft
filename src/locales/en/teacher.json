@@ -19,7 +19,8 @@
     "assignments": "Assignments",
     "results": "Results",
     "joinCode": "Join code",
-    "settings": "Settings"
+    "settings": "Settings",
+    "subjects": "Subjects"
   },
   "gradeN": "Grade {{n}}",
   "gradesShort": "Grades: {{grades}}",
@@ -43,7 +44,7 @@
   "classForm": {
     "newTitle": "New class",
     "name": "Class name",
-    "nameHint": "For example, 7A",
+    "nameHint": "The way you write it: 8B, 8-V, 9 A",
     "nameRequired": "Enter the class name",
     "grade": "Grade",
     "subject": "Subject",
@@ -51,7 +52,12 @@
     "noSubject": "No subject",
     "create": "Add class",
     "saved": "Class saved",
-    "settingsTitle": "Class settings"
+    "settingsTitle": "Class settings",
+    "subjects": "Subjects",
+    "subjectsHint": "One or more subjects",
+    "subjectsRequired": "Choose at least one subject",
+    "gradeRequired": "Choose the grade",
+    "gradeChoose": "Choose…"
   },
   "joinCode": "Class join code",
   "joinCodeHint": "Students type this code on the sign-in page, then pick their name from the list.",
@@ -144,29 +150,34 @@
   "textbooksEmptyText": "A textbook for your subject and grade will appear here. Meanwhile, open topics from the catalog.",
   "openCatalog": "Topic catalog",
   "setup": {
-    "title": "Finish setting up your account",
-    "lead": "Three short steps, then add your classes and start teaching.",
+    "title": "Let’s set up your dashboard",
+    "lead": "Four short steps. Then your classes, KTP and lesson plans will be here.",
     "progressLabel": "{{done}} of {{total}} done",
     "done": "done",
     "todo": "to do",
     "fill": "Fill in",
     "change": "Change",
     "step": {
-      "name": "Your name",
-      "school": "Your school",
-      "teaching": "Subjects and grades"
+      "name": "Full name",
+      "school": "School",
+      "teaching": "Subjects and grades",
+      "teachingLang": "Teaching language",
+      "classWithSubject": "First class and subject"
     },
     "hint": {
       "name": "Students and colleagues will see you by this name.",
       "school": "School name and region.",
-      "teaching": "Which subjects you teach, in which grades."
+      "teaching": "Which subjects you teach, in which grades.",
+      "teachingLang": "The language you teach in — lesson plans are written in it.",
+      "classWithSubject": "Name the class the way you write it, then choose its subjects."
     },
     "saved": {
       "name": "Name saved",
       "school": "School saved",
-      "teaching": "Subjects and grades saved"
+      "teaching": "Subjects and grades saved",
+      "teachingLang": "Teaching language saved"
     },
-    "allDone": "Your account is ready!",
+    "allDone": "Your dashboard is ready!",
     "nameLabel": "Full name",
     "nameHint": "For example, Aigul Osmonova",
     "nameRequired": "Enter your name",
@@ -177,7 +188,15 @@
     "regionNone": "Not chosen",
     "teachingHint": "These subjects and grades open for your free trial.",
     "subjectsRequired": "Choose at least one subject",
-    "gradesRequired": "Choose at least one grade"
+    "gradesRequired": "Choose at least one grade",
+    "stepsTitle": "Steps",
+    "progress": "{{done}} / {{total}}",
+    "langLabel": "Which language do you teach in?",
+    "langHint": "The interface language is set separately, in your profile.",
+    "langRequired": "Choose the teaching language",
+    "classLead": "For example, “8B” — maths and physics. You can add the other classes later.",
+    "classDone": "Class added",
+    "later": "Uploading your KTP and confirming your phone can wait — they never block anything."
   },
   "region": {
     "bishkek": "Bishkek city",
@@ -212,6 +231,13 @@
     "signedIn": "Signed in {{date}}",
     "logoutAll": "Sign out everywhere",
     "logoutAllConfirm": "You’ll be signed out on every device, this one too. Continue?",
-    "logoutAllYes": "Yes, sign out"
+    "logoutAllYes": "Yes, sign out",
+    "teachingLang": "Teaching language"
+  },
+  "teachingLang": {
+    "ky": "Kyrgyz",
+    "ru": "Russian",
+    "uz": "Uzbek",
+    "en": "English"
   }
 }

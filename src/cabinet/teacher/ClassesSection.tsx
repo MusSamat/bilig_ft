@@ -1,19 +1,22 @@
 /**
- * «Менин класстарым»: class cards (name, grade, subject, students, join code
- * with copy), server pagination, and «Класс кошуу» in a sheet. Opening a card
- * goes to the class view (`?class=<id>`).
+ * Home «Менин класстарым» (contract 0.8.0 §6.2): a tile for each class the
+ * teacher added — the label exactly as typed, the grade, subject chips and the
+ * number of students — and a «+ Класс кошуу» tile that opens the class sheet.
+ * No empty grade tiles: only the teacher's own classes. Gentle hints (upload a
+ * КТП, confirm the phone) sit under the tiles and never block anything.
+ * A tile opens the class (`?class=<id>`): its subjects first.
  */
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import type { SchoolClass } from '@bilig/content-model/api';
 import { api } from '../../api/client';
-import { useSession } from '../../api/session';
+import { usePermission, useSession } from '../../api/session';
 import { Icon } from '../../components/Icon';
 import { NewClassSheet } from './ClassForm';
 import { SubjectKeyChip } from './TeachingPicker';
-import { CopyButton, EmptyState, ErrorState, Loading, btn, cardCls, cx } from './ui';
+import { ErrorState, Skeleton, btn, cx } from './ui';
 
 export const useClasses = () =>
   useInfiniteQuery({
@@ -23,8 +26,13 @@ export const useClasses = () =>
     getNextPageParam: (last) => last.nextCursor,
   });
 
+/** Every subject of a class: `subjectKeys` (0.8.0) or the single 0.6.0 `subjectKey`. */
+export const classSubjectKeys = (c: Pick<SchoolClass, 'subjectKey' | 'subjectKeys'>): string[] => c.subjectKeys ?? (c.subjectKey ? [c.subjectKey] : []);
+
 /** `?class=<id>` keeping the current language path. */
 export const classHref = (id: string, view?: string): string => `?class=${encodeURIComponent(id)}${view ? `&view=${view}` : ''}`;
+
+const TILE = 'relative grid min-h-40 content-start gap-3 rounded-xl border p-5 transition-colors';
 
 export function ClassesSection(): JSX.Element {
   const { t } = useTranslation();
@@ -32,31 +40,40 @@ export function ClassesSection(): JSX.Element {
   const classes = useClasses();
   const list = classes.data?.pages.flatMap((p) => p.items) ?? [];
   const [adding, setAdding] = useState(false);
-  // One primary action per view: while the account setup is open, that checklist leads.
-  const setupOpen = useSession((s) => !!s.me?.setup && !Object.values(s.me.setup).every(Boolean));
-  const add = (
-    <button type="button" className={btn(setupOpen ? 'secondary' : 'primary')} onClick={() => setAdding(true)}>
-      <Icon name="plus" className="sm" />
-      {t('teacher.addClass')}
-    </button>
-  );
 
   return (
     <div className="grid gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="grid gap-1">
         <h2 id="classes-title" className="font-serif text-xl font-bold text-ink">
           {t('teacher.section.classes')}
         </h2>
-        {list.length > 0 && add}
+        <p className="text-base text-muted">{t('teacherHome.lead')}</p>
       </div>
-      {classes.isLoading && <Loading rows={2} />}
+      {classes.isLoading && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label={t('common.loading')}>
+          <Skeleton className="h-40" />
+          <Skeleton className="h-40" />
+        </div>
+      )}
       {classes.isError && <ErrorState text={t('teacher.loadError')} onRetry={() => void classes.refetch()} />}
-      {classes.isSuccess && list.length === 0 && <EmptyState icon="users" title={t('teacher.classesEmpty')} text={t('teacher.classesEmptyText')} action={add} />}
-      {list.length > 0 && (
-        <ul className="m-0 grid list-none gap-4 p-0 md:grid-cols-2 lg:grid-cols-3" aria-labelledby="classes-title">
+      {classes.isSuccess && (
+        <ul className="m-0 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3" aria-labelledby="classes-title">
           {list.map((c) => (
-            <ClassCard key={c.id} cls={c} />
+            <ClassTile key={c.id} cls={c} />
           ))}
+          <li className="grid">
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className={cx(TILE, 'cursor-pointer place-content-center justify-items-center border-2 border-dashed border-accent bg-transparent text-center text-accent hover:bg-soft')}
+            >
+              <span className="inline-flex size-12 items-center justify-center rounded-pill bg-soft" aria-hidden="true">
+                <Icon name="plus" className="lg" />
+              </span>
+              <span className="text-md font-semibold">{t('teacherHome.addTile')}</span>
+              {list.length === 0 && <span className="text-sm text-muted">{t('teacher.classesEmptyText')}</span>}
+            </button>
+          </li>
         </ul>
       )}
       {classes.hasNextPage && (
@@ -66,39 +83,74 @@ export function ClassesSection(): JSX.Element {
           </button>
         </div>
       )}
+      <Hints />
       {adding && <NewClassSheet onClose={() => setAdding(false)} onCreated={(c) => setParams({ class: c.id }, { replace: false })} />}
     </div>
   );
 }
 
-function ClassCard({ cls }: { cls: SchoolClass }): JSX.Element {
+function ClassTile({ cls }: { cls: SchoolClass }): JSX.Element {
   const { t } = useTranslation();
+  const subjects = classSubjectKeys(cls);
   return (
-    <li className={cx(cardCls, 'relative grid content-start gap-3 p-5 transition-colors hover:border-accent md:p-5')}>
+    <li className={cx(TILE, 'border-edge bg-panel shadow-panel hover:border-accent')} data-testid="class-tile">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="m-0 font-serif text-xl font-bold">
-          {/* The whole card is clickable through the link's ::after; the copy button sits above it. */}
+        <h3 className="m-0 min-w-0 break-words font-serif text-2xl font-bold">
+          {/* The whole tile is clickable through the link's ::after. */}
           <Link to={classHref(cls.id)} className="text-ink no-underline after:absolute after:inset-0 after:rounded-xl after:content-['']" aria-label={t('teacher.openClass', { name: cls.name })}>
             {cls.name}
           </Link>
         </h3>
-        <Icon name="chevron-right" className="mt-1 text-muted" />
+        <Icon name="chevron-right" className="mt-2 flex-none text-muted" />
       </div>
       <p className="text-sm text-muted">
         {t('teacher.gradeN', { n: cls.grade })} · {t('teacher.students', { count: cls.studentCount })}
       </p>
-      {cls.subjectKey && (
-        <div>
-          <SubjectKeyChip subjectKey={cls.subjectKey} />
+      {subjects.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {subjects.map((k) => (
+            <SubjectKeyChip key={k} subjectKey={k} />
+          ))}
         </div>
+      ) : (
+        <p className="text-sm text-muted">{t('teacherHome.noSubjects')}</p>
       )}
-      <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
-        <span className="text-sm text-muted">
-          {t('teacher.codeShort')}{' '}
-          {cls.joinCodeEnabled ? <b className="font-mono text-md tracking-[0.2em] text-ink">{cls.joinCode}</b> : <span>{t('teacher.codeOff')}</span>}
-        </span>
-        {cls.joinCodeEnabled && <CopyButton value={cls.joinCode} label={t('teacher.copyCodeOf', { name: cls.name })} className="relative z-10" />}
-      </div>
     </li>
+  );
+}
+
+/** Gentle hints: never block, never shout. */
+function Hints(): JSX.Element | null {
+  const { t } = useTranslation();
+  const me = useSession((s) => s.me);
+  const canPlan = usePermission('lesson.plan');
+  const ktp = useQuery({ queryKey: ['ktp', 'list', 'peek'], queryFn: () => api('ktpList', { query: { limit: 1 } }), enabled: canPlan, retry: false });
+  const noKtp = canPlan && ktp.isSuccess && ktp.data.items.length === 0;
+  const noPhone = !!me && !me.phone;
+  if (!noKtp && !noPhone) return null;
+  return (
+    <section className="grid gap-2" aria-labelledby="hints-title">
+      <h3 id="hints-title" className="text-sm font-semibold text-muted">
+        {t('teacherHome.hints.title')}
+      </h3>
+      <ul className="m-0 grid list-none gap-2 p-0">
+        {noKtp && (
+          <li className="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-chip px-4 py-3">
+            <Icon name="cal" className="flex-none text-accent" />
+            <span className="min-w-0 flex-1 basis-60 text-base text-ink">{t('teacherHome.hints.ktp')}</span>
+            <Link to="?tab=ktp" className={btn('ghost')}>
+              {t('teacherHome.hints.ktpAction')}
+              <Icon name="arrow-right" className="sm" />
+            </Link>
+          </li>
+        )}
+        {noPhone && (
+          <li className="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-chip px-4 py-3">
+            <Icon name="shield" className="flex-none text-accent" />
+            <span className="min-w-0 flex-1 basis-60 text-base text-ink">{t('teacherHome.hints.phone')}</span>
+          </li>
+        )}
+      </ul>
+    </section>
   );
 }

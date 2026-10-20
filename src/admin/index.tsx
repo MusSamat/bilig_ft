@@ -5,8 +5,8 @@
  * `X-Bilig-Audience: admin`), session state, TOTP login, query cache, i18n
  * namespace `admin` and styles scoped under `.admin-root`.
  */
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, useState, type ReactNode } from 'react';
+import { QueryClient, QueryClientContext, QueryClientProvider } from '@tanstack/react-query';
+import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { I18nextProvider, useTranslation } from 'react-i18next';
 import type { i18n as I18n } from 'i18next';
 import { Navigate, Route, Routes } from 'react-router-dom';
@@ -21,7 +21,6 @@ import { Toaster } from './shell/toast';
 import { AdminIconSprite, Icon } from './lib/icons';
 import { Analytics } from './modules/Analytics';
 import { AssetReportPage, AssetsList } from './modules/Assets';
-import { Dashboard } from './modules/Dashboard';
 import {
   ConceptEdit,
   ConceptsList,
@@ -54,6 +53,14 @@ import { TopicCreate, TopicsList } from './modules/topics/TopicsList';
 import { TourEditor } from './modules/topics/TourEditor';
 import { Translations } from './modules/Translations';
 import { UserDetail, UsersPage } from './modules/Users';
+import { exitSupport, useSupport } from '../support/store';
+import { DeletionPage } from './staff/deletion';
+import { AdminHome, TeacherAtAdmin } from './staff/entry';
+import { JournalPage } from './staff/JournalPage';
+import { staffKind } from './staff/labels';
+import { StaffPage } from './staff/StaffPage';
+import { HostCacheContext } from './staff/support';
+import { TeacherDetail, TeachersPage } from './staff/TeachersPage';
 import './styles.css';
 
 export { registerAdminI18n, ADMIN_NS } from './i18n';
@@ -67,7 +74,12 @@ export function AdminRoutes() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Dashboard />} />
+        <Route index element={<AdminHome />} />
+        <Route path="teachers" element={<TeachersPage />} />
+        <Route path="teachers/:id" element={<TeacherDetail />} />
+        <Route path="journal" element={<JournalPage />} />
+        <Route path="deletions" element={<DeletionPage />} />
+        <Route path="staff" element={<StaffPage />} />
         <Route path="subjects" element={<SubjectsList />} />
         <Route path="subjects/:key" element={<SubjectEdit />} />
         <Route path="groups" element={<GroupsList />} />
@@ -163,7 +175,8 @@ function Gate({ children }: { children: ReactNode }) {
       </div>
     );
   if (status === 'anonymous' || !me) return <Login />;
-  if (!hasAdminAccess(me.permissions)) return <NoAccess />;
+  // v0.8.0: the role decides — staff work here; a teacher is pointed to the teacher sign-in.
+  if (!hasAdminAccess(me.permissions)) return staffKind(me.grants) === 'teacher' ? <TeacherAtAdmin /> : <NoAccess />;
   return <>{children}</>;
 }
 
@@ -183,8 +196,15 @@ export default function AdminApp({ basePath = '/admin', i18n, queryClient }: Adm
   // Register the `admin` namespace inside the lazy chunk, so the locale files never reach the host's initial bundle.
   const { i18n: hostI18n } = useTranslation();
   registerAdminI18n(i18n ?? hostI18n);
+  // v0.8.0: the host app's query cache, cleared when a support session starts / ends.
+  const hostCache = useContext(QueryClientContext);
+  // Back in the admin with a support session still open (e.g. the browser's Back button): end it.
+  useEffect(() => {
+    if (useSupport.getState().active) void exitSupport('user');
+  }, []);
   const tree = (
     <QueryClientProvider client={qc}>
+      <HostCacheContext.Provider value={hostCache}>
       <AdminBaseContext.Provider value={basePath}>
         <div className="admin-root" lang={lang} data-theme={theme} style={style}>
           <AdminIconSprite />
@@ -194,6 +214,7 @@ export default function AdminApp({ basePath = '/admin', i18n, queryClient }: Adm
           <Toaster />
         </div>
       </AdminBaseContext.Provider>
+      </HostCacheContext.Provider>
     </QueryClientProvider>
   );
   return i18n ? <I18nextProvider i18n={i18n}>{tree}</I18nextProvider> : tree;

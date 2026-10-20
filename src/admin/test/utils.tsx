@@ -51,7 +51,7 @@ export function mockApi(routes: Record<string, Handler>) {
     const url = new URL(String(input), 'http://localhost');
     const path = url.pathname.replace(/^\/api\/v1/, '');
     const headers: Record<string, string> = {};
-    for (const [k, v] of Object.entries((init.headers ?? {}) as Record<string, string>)) headers[k.toLowerCase()] = v;
+    new Headers(init.headers as HeadersInit | undefined).forEach((v, k) => (headers[k.toLowerCase()] = v));
     const call: Call = { method: init.method ?? 'GET', path, query: url.searchParams, headers, body: init.body ? JSON.parse(String(init.body)) : undefined };
     calls.push(call);
     for (const r of table) {

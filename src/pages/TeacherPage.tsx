@@ -1,10 +1,13 @@
 /**
- * Teacher cabinet (W-53; redesigned for contract 0.7.0). One calm page, max
- * 1100px: a greeting with the trial days, the «finish your account» checklist
- * while GET /me `setup` is incomplete, then four sections as tabs (`?tab=`):
- * my classes (`class.manage`), lesson plans / КТП (`lesson.plan`, lazy chunk),
- * my textbook, profile & school. A class opens in place (`?class=<id>&view=`)
- * with breadcrumbs back and its own sub-navigation.
+ * Teacher cabinet (W-53; contract 0.8.0 §6). Server-driven: while GET /me says
+ * `profileStatus: 'incomplete'` the teacher sees only the focused setup screen
+ * (name → school → teaching language → first class with subjects). Once
+ * complete: one calm page, max 1100px — a greeting with the trial days, then
+ * four sections as tabs (`?tab=`): home «Менин класстарым» (tiles of the
+ * teacher's own classes, `class.manage`), lesson plans / КТП (`lesson.plan`,
+ * lazy chunk), my textbook, profile & school. A class opens in place
+ * (`?class=<id>&view=`): its subjects first (КТП status, next lesson,
+ * progress), students, assignments, results, join code and settings after.
  */
 import { Suspense, lazy, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -15,11 +18,12 @@ import { api, isApiError } from '../api/client';
 import { usePermission, useSession } from '../api/session';
 import { AssignmentsTab } from '../cabinet/teacher/AssignmentsTab';
 import { ClassSettingsTab } from '../cabinet/teacher/ClassForm';
-import { ClassesSection } from '../cabinet/teacher/ClassesSection';
+import { ClassesSection, classSubjectKeys } from '../cabinet/teacher/ClassesSection';
 import { JoinCodeTab } from '../cabinet/teacher/JoinCodeTab';
 import { ProfileSection } from '../cabinet/teacher/ProfileSection';
 import { ResultsTab } from '../cabinet/teacher/ResultsTab';
-import { SetupChecklist } from '../cabinet/teacher/SetupChecklist';
+import { ClassSubjects } from '../cabinet/teacher/ClassSubjects';
+import { SetupScreen } from '../cabinet/teacher/SetupScreen';
 import { StudentsTab } from '../cabinet/teacher/StudentsTab';
 import { TextbooksSection } from '../cabinet/teacher/TextbooksSection';
 import { SubjectKeyChip } from '../cabinet/teacher/TeachingPicker';
@@ -39,6 +43,7 @@ export default function TeacherPage(): JSX.Element {
   const canManage = usePermission('class.manage');
   const canPlan = usePermission('lesson.plan');
   const status = useSession((s) => s.status);
+  const incomplete = useSession((s) => s.me?.profileStatus === 'incomplete');
   const [params] = useSearchParams();
   const setContext = useUi((s) => s.setContext);
   useEffect(() => setContext(null), [setContext]);
@@ -68,6 +73,13 @@ export default function TeacherPage(): JSX.Element {
             {t('teacher.signIn')}
           </Link>
         </Card>
+      </div>
+    );
+  }
+  if (incomplete && canManage) {
+    return (
+      <div className={PAGE}>
+        <SetupScreen />
       </div>
     );
   }
@@ -108,7 +120,6 @@ function Overview({ canManage, canPlan }: { canManage: boolean; canPlan: boolean
           </Chip>
         )}
       </header>
-      <SetupChecklist />
       <Tabs items={items} value={section} onChange={go} label={t('teacher.sectionsLabel')} idBase="teacher" className="justify-self-start max-w-full" />
       <div role="tabpanel" id="teacher-panel" aria-labelledby={`teacher-tab-${section}`} className="min-w-0">
         {section === 'classes' && (
@@ -132,9 +143,9 @@ function Overview({ canManage, canPlan }: { canManage: boolean; canPlan: boolean
   );
 }
 
-const VIEWS = ['students', 'assignments', 'results', 'joinCode', 'settings'] as const;
+const VIEWS = ['subjects', 'students', 'assignments', 'results', 'joinCode', 'settings'] as const;
 type View = (typeof VIEWS)[number];
-const VIEW_ICON: Record<View, string> = { students: 'users', assignments: 'target', results: 'chart', joinCode: 'key', settings: 'cog' };
+const VIEW_ICON: Record<View, string> = { subjects: 'book', students: 'users', assignments: 'target', results: 'chart', joinCode: 'key', settings: 'cog' };
 
 function ClassView({ id }: { id: string }): JSX.Element {
   const { t } = useTranslation();
@@ -144,8 +155,8 @@ function ClassView({ id }: { id: string }): JSX.Element {
   const q = useQuery({ queryKey: ['classes', 'one', id], queryFn: () => api('classGet', { params: { id } }), placeholderData: fromList, retry: false });
   const cls = q.data;
   const asked = params.get('view') as View | null;
-  const view: View = asked && VIEWS.includes(asked) ? asked : 'students';
-  const go = (v: View) => setParams(v === 'students' ? { class: id } : { class: id, view: v }, { replace: true });
+  const view: View = asked && VIEWS.includes(asked) ? asked : 'subjects';
+  const go = (v: View) => setParams(v === 'subjects' ? { class: id } : { class: id, view: v }, { replace: true });
   // Under ['classes'] so that every change to the class list refreshes it too.
   const onChange = (c: SchoolClass) => qc.setQueryData(['classes', 'one', id], c);
 
@@ -194,7 +205,9 @@ function ClassView({ id }: { id: string }): JSX.Element {
             <span>{t('teacher.gradeN', { n: cls.grade })}</span>
             <span aria-hidden="true">·</span>
             <span>{t('teacher.students', { count: cls.studentCount })}</span>
-            {cls.subjectKey && <SubjectKeyChip subjectKey={cls.subjectKey} />}
+            {classSubjectKeys(cls).map((k) => (
+              <SubjectKeyChip key={k} subjectKey={k} />
+            ))}
           </p>
         </div>
         {cls.joinCodeEnabled && (
@@ -206,7 +219,8 @@ function ClassView({ id }: { id: string }): JSX.Element {
         )}
       </header>
       <Tabs items={items} value={view} onChange={go} label={t('teacher.tabsLabel')} idBase="class" className="justify-self-start max-w-full" />
-      <div role="tabpanel" id="class-panel" aria-labelledby={`class-tab-${view}`} className={cx(cardCls, 'min-w-0')}>
+      <div role="tabpanel" id="class-panel" aria-labelledby={`class-tab-${view}`} className={cx(view !== 'subjects' && cardCls, 'min-w-0')}>
+        {view === 'subjects' && <ClassSubjects cls={cls} onChange={onChange} />}
         {view === 'students' && <StudentsTab cls={cls} />}
         {view === 'assignments' && <AssignmentsTab cls={cls} />}
         {view === 'results' && <ResultsTab cls={cls} />}

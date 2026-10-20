@@ -1,0 +1,45 @@
+{
+  "lead": "Your classes, named the way you wrote them. Open a class to see its subjects, KTP and next lesson.",
+  "addTile": "Add a class",
+  "noSubjects": "No subjects yet",
+  "hints": {
+    "title": "Tips",
+    "ktp": "Upload your KTP — each class will show its next lesson and lesson plans.",
+    "ktpAction": "Upload KTP",
+    "phone": "Confirm your WhatsApp number — if you forget your password, the code comes there."
+  },
+  "subjects": {
+    "title": "Subjects",
+    "add": "Add a subject",
+    "addTitle": "Add a subject",
+    "addSave": "Add",
+    "added": "Subject added",
+    "empty": "This class has no subjects yet. Add one.",
+    "removeLabel": "Remove {{subject}} from {{name}}",
+    "removeConfirm": "Remove {{subject}} from {{name}}? Your KTP and lesson plans stay.",
+    "removeYes": "Remove",
+    "removed": "{{subject}} removed from {{name}}"
+  },
+  "ktp": {
+    "none": "No KTP uploaded",
+    "ready": "KTP ready",
+    "noneHint": "Upload the KTP and the next lesson, lesson plans and progress show up here.",
+    "upload": "Upload KTP",
+    "uploadLabel": "Upload KTP: {{subject}}, {{name}}",
+    "open": "Open the KTP"
+  },
+  "next": {
+    "title": "Next lesson",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "none": "No more lessons in the KTP",
+    "plan": "Plan (.docx)",
+    "planLabel": "Plan (.docx): lesson {{n}}, {{title}}"
+  },
+  "progress": {
+    "title": "Done so far",
+    "value_one": "{{done}} / {{count}} lesson",
+    "value_other": "{{done}} / {{count}} lessons",
+    "label": "{{subject}}: lessons done"
+  }
+}

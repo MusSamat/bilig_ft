@@ -19,6 +19,7 @@ import { usePreviewBridge } from '../../lib/preview-bridge';
 import { useSuggestions } from '../../lib/suggest';
 import { DraftBanner, SaveBar, useVersionedEditor, type Versioned } from '../../lib/versioned';
 import { useAdminPath } from '../../shell/base';
+import { RequestDeletionButton } from '../../staff/deletion';
 import { ErrorBox, PageHeader, StatusBadge, Tabs, fmtDate } from '../../shell/ui';
 import { TopicPreview } from './Preview';
 import { fetchTopicState, saveTopicDoc, useInvalidateTopic, useTopicState } from './useTopic';
@@ -301,6 +302,7 @@ export function TopicEditor() {
           <Link className="adm-btn adm-btn--ghost" to={to(`publishing/${id}`)}>
             {t('nav.publishing')}
           </Link>
+          <RequestDeletionButton kind="topic" targetId={id} label={detail.key} />
         </PageHeader>
         <TopicMeta id={id} detail={detail} onChanged={() => invalidate(id)} />
         <DraftBanner editor={editor} />

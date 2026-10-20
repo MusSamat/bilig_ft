@@ -36,6 +36,8 @@ export interface MockUser {
   selfRegistered?: boolean;
   /** v0.7.0: the teacher has named their own school in the cabinet. */
   schoolNamed?: boolean;
+  /** v0.8.0: the language the teacher teaches in. */
+  teachingLang?: 'ky' | 'ru' | 'uz' | 'en';
 }
 
 /** v0.7.0: a one-time code sent to a number's WhatsApp (key `${purpose}:${phone}`). */
@@ -149,6 +151,19 @@ export const READY_TEACHER_ID = '0192a000-0000-7000-8000-0000000000a3';
 export const READY_PHONE = '+996700987654';
 export const READY_SCHOOL_ID = '0192a000-0000-7000-8000-000000000003';
 export const TRIAL_DAYS = 30;
+/**
+ * v0.8.0: READY's classes as typed («8Б», «8-В», «9 А») with their subjects, and
+ * READY's algebra КТП: column 8б is matched to «8Б» by name, 8в is not linked
+ * («8-В» differs by the hyphen), so 8-В's algebra shows «no КТП» until linked.
+ * HALF named themself and their school but has no teaching language or class yet.
+ */
+export const READY_8B_ID = '0192a000-0000-7000-8000-0000000000c2';
+export const READY_8V_ID = '0192a000-0000-7000-8000-0000000000c3';
+export const READY_9A_ID = '0192a000-0000-7000-8000-0000000000c4';
+export const READY_KTP_ID = '0192a000-0000-7000-8000-0000000000f2';
+export const HALF_TEACHER_ID = '0192a000-0000-7000-8000-0000000000a4';
+export const HALF_PHONE = '+996700111222';
+export const HALF_SCHOOL_ID = '0192a000-0000-7000-8000-000000000004';
 
 const studentId = (n: number) => `0192a000-0000-7000-8000-0000000005${String(n).padStart(2, '0')}`;
 const STUDENT_NAMES = ['Айбек Т.', 'Нургуль А.', 'Мирлан К.', 'Айпери С.', 'Бектур Ж.'];
@@ -163,6 +178,7 @@ function seed(): MockState {
     password: TEACHER_PASSWORD,
     locale: 'ky',
     grants: [{ role: 'teacher', scope: 'school', scopeId: SCHOOL_ID }],
+    teachingLang: 'ky',
   };
   const fresh: MockUser = {
     id: FRESH_TEACHER_ID,
@@ -182,7 +198,19 @@ function seed(): MockState {
     password: TEACHER_PASSWORD,
     locale: 'ky',
     grants: [{ role: 'teacher', scope: 'school', scopeId: READY_SCHOOL_ID }],
-    teaching: { subjects: ['bio', 'chem'], grades: [7, 8, 9] },
+    teaching: { subjects: ['math', 'phys', 'chem'], grades: [8, 9] },
+    selfRegistered: true,
+    schoolNamed: true,
+    teachingLang: 'ky',
+  };
+  const half: MockUser = {
+    id: HALF_TEACHER_ID,
+    kind: 'adult',
+    displayName: 'Бакыт Асанов',
+    phone: HALF_PHONE,
+    password: TEACHER_PASSWORD,
+    locale: 'ky',
+    grants: [{ role: 'teacher', scope: 'school', scopeId: HALF_SCHOOL_ID }],
     selfRegistered: true,
     schoolNamed: true,
   };
@@ -205,10 +233,30 @@ function seed(): MockState {
     classId: CLASS_ID,
     hasConsent: true,
   }));
+  const readyStudents: MockUser[] = ['Элнура К.', 'Тилек М.', 'Аруузат Ж.'].map((displayName, i) => ({
+    id: `0192a000-0000-7000-8000-0000000006${String(i + 1).padStart(2, '0')}`,
+    kind: 'student',
+    displayName,
+    pin: STUDENT_PIN,
+    locale: 'ky',
+    grants: [{ role: 'student', scope: 'class', scopeId: READY_8B_ID }],
+    classId: READY_8B_ID,
+    hasConsent: true,
+  }));
+  const readyKtp = buildKtpPlan(READY_KTP_ID, READY_TEACHER_ID, 'КТП алгебра 8-класс.docx', new Date(Date.now() - 5 * 86400_000).toISOString());
+  readyKtp.classLinks = { '8б': READY_8B_ID, '8в': null };
+  // A topic linked to the lesson of 20 October (the «next lesson» on the demo day).
+  const linked = readyKtp.rows.find((r) => r.index === 22);
+  if (linked) linked.topicKey = 'pythagorean-theorem';
   const due = new Date(Date.now() + 5 * 86400_000).toISOString();
   return {
-    users: [teacher, fresh, ready, ...students],
-    classes: [{ id: CLASS_ID, schoolId: SCHOOL_ID, name: '7А', grade: 7, joinCode: CLASS_CODE, joinCodeEnabled: true }],
+    users: [teacher, fresh, ready, half, ...students, ...readyStudents],
+    classes: [
+      { id: CLASS_ID, schoolId: SCHOOL_ID, name: '7А', grade: 7, joinCode: CLASS_CODE, joinCodeEnabled: true, subjectKey: 'bio', subjectKeys: ['bio'] },
+      { id: READY_8B_ID, schoolId: READY_SCHOOL_ID, name: '8Б', grade: 8, joinCode: 'BEE8B2', joinCodeEnabled: true, subjectKey: 'math', subjectKeys: ['math', 'phys'] },
+      { id: READY_8V_ID, schoolId: READY_SCHOOL_ID, name: '8-В', grade: 8, joinCode: 'VEE8V3', joinCodeEnabled: true, subjectKey: 'math', subjectKeys: ['math'] },
+      { id: READY_9A_ID, schoolId: READY_SCHOOL_ID, name: '9 А', grade: 9, joinCode: 'NINE9A', joinCodeEnabled: false, subjectKey: 'chem', subjectKeys: ['chem', 'phys'] },
+    ],
     assignments: [
       {
         id: '0192a000-0000-7000-8000-0000000000e1',
@@ -241,12 +289,13 @@ function seed(): MockState {
         trial: false,
       },
       trial(FRESH_SCHOOL_ID, 'Менин мектебим', [], [], 0),
-      trial(READY_SCHOOL_ID, 'Ош ш., №12 мектеп', ['bio', 'chem'], [7, 8, 9], 6),
+      trial(READY_SCHOOL_ID, 'Ош ш., №12 мектеп', ['math', 'phys', 'chem'], [8, 9], 6),
+      trial(HALF_SCHOOL_ID, 'Талас ш., №3 мектеп', [], [], 2),
     ],
     registrations: {},
     otps: {},
     otpTokens: {},
-    ktp: [buildKtpPlan(KTP_ID, TEACHER_ID, 'КТП 8-класс алгебра 2026-2027.docx', new Date(Date.now() - 2 * 86400_000).toISOString())],
+    ktp: [buildKtpPlan(KTP_ID, TEACHER_ID, 'КТП 8-класс алгебра 2026-2027.docx', new Date(Date.now() - 2 * 86400_000).toISOString()), readyKtp],
   };
 }
 
@@ -285,8 +334,12 @@ export function saveMockDb(): void {
   }
 }
 
+/** Extra mock state that resets together with this one (v0.8.0 staff fixtures). */
+export const resetHooks: (() => void)[] = [];
+
 export function resetMockDb(): void {
   mockDb = seed();
+  resetHooks.forEach((h) => h());
   saveMockDb();
 }
 

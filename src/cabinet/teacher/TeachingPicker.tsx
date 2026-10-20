@@ -1,6 +1,6 @@
 /**
  * What a teacher teaches (contract 0.6.0 `Teaching`): subject chips from the
- * catalog's live subjects (hue + icon) and grade chips 1–11. Shared by the
+ * catalog's live subjects (hue + icon) and grade chips 1–12 (contract 0.8.0 §7). Shared by the
  * registration form and the teacher cabinet (setup checklist, profile). Toggle buttons (`aria-pressed`)
  * inside a fieldset whose legend names the group; errors are linked by id.
  */
@@ -16,7 +16,7 @@ import { useLang } from '../../lib/hooks';
 import { useUi } from '../../state/ui';
 import { Field, described, inputCls } from './ui';
 
-export const ALL_GRADES = Array.from({ length: 11 }, (_, i) => i + 1);
+export const ALL_GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
 /** Grades shown first: Bilig's content starts in the 5th grade; 1–4 open on demand. */
 const MAIN_GRADES = ALL_GRADES.filter((g) => g >= 5);
 
@@ -146,6 +146,19 @@ export function useLicensedSubjects(): Subject[] {
   const { data } = useCatalog();
   const keys = new Set((me?.licenses ?? []).flatMap((l) => l.subjects));
   return [...(data?.subjects ?? [])].filter((s) => keys.has(s.key)).sort((a, b) => a.order - b.order);
+}
+
+/**
+ * Subjects a class can get (contract 0.8.0 §6): a self-registered teacher's trial
+ * follows their classes, so every live subject of the catalog; a school licence
+ * offers the subjects it covers.
+ */
+export function useClassSubjectOptions(): { subjects: Subject[]; isLoading: boolean; isError: boolean; refetch: () => void } {
+  const me = useSession((s) => s.me);
+  const live = useLiveSubjects();
+  const licensed = useLicensedSubjects();
+  const trial = (me?.licenses ?? []).some((l) => l.trial) || !(me?.licenses ?? []).length;
+  return trial || !licensed.length ? live : { ...live, subjects: licensed };
 }
 
 /** Subject chip by key (catalog hue + icon); a muted pill while the catalog is unknown. */

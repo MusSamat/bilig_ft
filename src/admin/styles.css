@@ -7,6 +7,12 @@
  * values below are only the fallback (brand hue 236, light) so the admin
  * still renders standalone.
  */
+/*
+ * v0.8.0: the whole sheet sits in the `pages` cascade layer (declared in
+ * src/styles/index.css), so Tailwind utilities (the `utilities` layer) win on
+ * the new staff screens while every existing rule keeps its effect.
+ */
+@layer pages {
 .admin-root {
   --font: 'Noto Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --serif: 'Noto Serif', Georgia, serif;
@@ -2526,3 +2532,5 @@
   color: var(--bad);
   font-weight: 700;
 }
+
+} /* @layer pages */

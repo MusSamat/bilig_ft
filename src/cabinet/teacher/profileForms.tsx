@@ -1,12 +1,13 @@
 /**
- * The three things a phone-registered teacher fills in (contract 0.7.0 §4):
- * their name, their school (name + region) and what they teach. Each form
- * sends PATCH /me with only its own fields; the session follows the answer.
- * Used by the setup checklist and by «Профиль жана мектеп».
+ * What a teacher fills in about themself: the name, the school (name + region),
+ * the teaching language (contract 0.8.0) and — legacy 0.7.0 — what they teach.
+ * Each form sends PATCH /me with only its own fields; the session follows the
+ * answer (and with it `setup` / `profileStatus`). Used by the setup screen and
+ * by «Профиль жана мектеп».
  */
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { MePatchRequest, MeResponse } from '@bilig/content-model/api';
+import { TEACHING_LANGS, type MePatchRequest, type MeResponse, type TeachingLang } from '@bilig/content-model/api';
 import { isApiError } from '../../api/client';
 import { patchMe, useSession } from '../../api/session';
 import { Icon } from '../../components/Icon';
@@ -14,7 +15,7 @@ import { toast } from '../../state/ui';
 import { errorKey } from '../format';
 import { REGIONS } from './regions';
 import { GradePicker, SubjectPicker } from './TeachingPicker';
-import { Field, btn, described, inputCls } from './ui';
+import { Field, btn, cx, described, inputCls } from './ui';
 
 const DAY = 86400_000;
 export const daysLeft = (iso: string, now = Date.now()): number => Math.max(0, Math.ceil((Date.parse(iso) - now) / DAY));
@@ -28,8 +29,16 @@ export function firstName(me: MeResponse | null | undefined): string {
   return me.displayName.trim().split(/\s+/)[0] ?? '';
 }
 
-export type SetupStep = 'name' | 'school' | 'teaching';
-export const SETUP_STEPS: SetupStep[] = ['name', 'school', 'teaching'];
+/** Contract 0.8.0 §6: the minimum profile, in the order the setup screen asks for it. */
+export type SetupStep = 'name' | 'school' | 'teachingLang' | 'classWithSubject';
+export const SETUP_STEPS: SetupStep[] = ['name', 'school', 'teachingLang', 'classWithSubject'];
+
+/** Is a setup step done? The server's `setup` decides; older answers fall back to the profile itself. */
+export function stepDone(me: MeResponse, s: SetupStep): boolean {
+  const v = me.setup?.[s];
+  if (v !== undefined) return v;
+  return s === 'teachingLang' ? !!me.teachingLang : s !== 'classWithSubject';
+}
 
 function useSave(okKey: string, onDone: () => void) {
   const { t } = useTranslation();
@@ -151,6 +160,50 @@ export function TeachingForm({ idBase, onDone, onCancel }: { idBase: string; onD
       <p className="text-sm font-semibold text-bad empty:hidden" role="alert">
         {error ?? ''}
       </p>
+      <Actions busy={busy} onCancel={onCancel} />
+    </form>
+  );
+}
+
+/** The language the teacher teaches in (PATCH /me { teachingLang }): four plain radio choices. */
+export function TeachingLangForm({ idBase, onDone, onCancel }: { idBase: string; onDone: () => void; onCancel?: () => void }): JSX.Element {
+  const { t } = useTranslation();
+  const me = useSession((s) => s.me);
+  const [value, setValue] = useState<TeachingLang | ''>(me?.teachingLang ?? '');
+  const { busy, error, setError, save } = useSave('teacher.setup.saved.teachingLang', onDone);
+  const id = `${idBase}-teaching-lang`;
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!value) {
+      setError(t('teacher.setup.langRequired'));
+      document.querySelector<HTMLInputElement>(`#${id} input`)?.focus();
+      return;
+    }
+    void save({ teachingLang: value });
+  };
+  return (
+    <form className="grid gap-4" onSubmit={submit} noValidate>
+      <fieldset id={id} className="m-0 grid gap-2 border-0 p-0" aria-describedby={`${id}-error`} aria-invalid={!!error || undefined}>
+        <legend className="mb-2 p-0 text-sm font-semibold text-ink">{t('teacher.setup.langLabel')}</legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {TEACHING_LANGS.map((l) => (
+            <label
+              key={l}
+              className={cx(
+                'flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-4 py-2 text-base text-ink transition-colors hover:border-accent',
+                value === l ? 'border-accent bg-soft font-semibold' : 'border-line bg-chip',
+              )}
+            >
+              <input type="radio" name={id} value={l} checked={value === l} disabled={busy} onChange={() => setValue(l)} className="size-5 flex-none accent-accent" />
+              {t(`teacher.teachingLang.${l}`)}
+            </label>
+          ))}
+        </div>
+        <span id={`${id}-error`} role="alert" className="text-sm font-semibold text-bad empty:hidden">
+          {error ?? ''}
+        </span>
+      </fieldset>
+      <p className="m-0 text-sm text-muted">{t('teacher.setup.langHint')}</p>
       <Actions busy={busy} onCancel={onCancel} />
     </form>
   );

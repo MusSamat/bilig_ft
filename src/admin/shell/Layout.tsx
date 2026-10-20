@@ -15,7 +15,7 @@ import { Icon } from '../lib/icons';
 import { useAdminPath } from './base';
 import { useAdminTheme } from './theme';
 
-export type NavSection = 'content' | 'programme' | 'translations' | 'publishing' | 'org' | 'ops';
+export type NavSection = 'people' | 'content' | 'programme' | 'translations' | 'publishing' | 'org' | 'control' | 'ops';
 
 export interface NavItem {
   path: string;
@@ -27,6 +27,8 @@ export interface NavItem {
 }
 
 export const NAV: NavItem[] = [
+  // v0.8.0 staff sections (shown from /me.permissions; the server decides)
+  { path: 'teachers', titleKey: 'nav.teachers', endpoint: 'teacherList', section: 'people', icon: 'school' },
   { path: '', titleKey: 'nav.dashboard', endpoint: 'adminTopicList', section: 'content', icon: 'a-dashboard' },
   { path: 'subjects', titleKey: 'nav.subjects', endpoint: 'adminSubjectList', section: 'content', icon: 'layers' },
   { path: 'topics', titleKey: 'nav.topics', endpoint: 'adminTopicList', section: 'content', icon: 'a-topic' },
@@ -45,14 +47,17 @@ export const NAV: NavItem[] = [
   { path: 'analytics', titleKey: 'nav.analytics', endpoint: 'adminAnalyticsOverview', section: 'ops', icon: 'chart' },
   { path: 'tutor', titleKey: 'nav.tutor', endpoint: 'adminTutorSettingsGet', section: 'ops', icon: 'a-tutor' },
   { path: 'audit', titleKey: 'nav.audit', endpoint: 'adminAudit', section: 'ops', icon: 'a-audit' },
+  { path: 'deletions', titleKey: 'nav.deletions', endpoint: 'deletionList', section: 'control', icon: 'trash' },
+  { path: 'journal', titleKey: 'nav.journal', endpoint: 'journal', section: 'control', icon: 'a-audit' },
+  { path: 'staff', titleKey: 'nav.staff', endpoint: 'staffList', section: 'control', icon: 'users' },
 ];
 
-const EXTRA_ICONS: Record<string, string> = { groups: 'a-folder', courses: 'grad', units: 'a-folder', objectives: 'target' };
+const EXTRA_ICONS: Record<string, string> = { teachers: 'school', groups: 'a-folder', courses: 'grad', units: 'a-folder', objectives: 'target' };
 
 /** The nav icon for a route segment (pages outside the nav get a related glyph). */
 export const navIcon = (path: string): string | undefined => NAV.find((n) => n.path === path)?.icon ?? EXTRA_ICONS[path];
 
-const SECTIONS: readonly NavSection[] = ['content', 'programme', 'translations', 'publishing', 'org', 'ops'];
+const SECTIONS: readonly NavSection[] = ['people', 'content', 'programme', 'translations', 'publishing', 'org', 'control', 'ops'];
 
 export function hasAdminAccess(perms: readonly string[] | undefined) {
   return NAV.some((n) => canCallWith(perms, n.endpoint));
