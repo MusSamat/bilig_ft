@@ -54,10 +54,11 @@ function useCoverUrl(book: Pick<Book, 'id' | 'coverUrl'>): string | null {
 }
 
 /** A 3:4 cover, a book icon while loading or without one. */
-export function BookCover({ book, className }: { book: Pick<Book, 'id' | 'coverUrl'>; className?: string }): JSX.Element {
+/** `className` sets the width (`w-12 flex-none` in a row); without it the cover fills its parent. */
+export function BookCover({ book, className = 'w-full' }: { book: Pick<Book, 'id' | 'coverUrl'>; className?: string }): JSX.Element {
   const url = useCoverUrl(book);
   return (
-    <span className={cx('relative block aspect-[3/4] w-full overflow-hidden rounded-md border border-line bg-soft', className)} data-testid="book-cover">
+    <span className={cx('relative block aspect-[3/4] overflow-hidden rounded-md border border-line bg-soft', className)} data-testid="book-cover">
       {url ? (
         <img src={url} alt="" className="block size-full object-cover" />
       ) : (

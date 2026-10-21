@@ -17,7 +17,7 @@ import { server } from '../mocks/node';
 import TeacherPage from '../pages/TeacherPage';
 import KtpPlanPage from './KtpPlanPage';
 import { currentSchoolYear } from './model';
-import { suggestedBook } from './library';
+import { BookCover, suggestedBook } from './library';
 
 interface Seen {
   method: string;
@@ -194,5 +194,21 @@ describe('suggestedBook', () => {
     expect(suggestedBook([b], 'ru')).toBeNull();
     expect(suggestedBook([b, { ...b, id: 'x' }], 'ky')).toBeNull();
     expect(suggestedBook([b], undefined)).toBe(b);
+  });
+});
+
+describe('BookCover', () => {
+  it('a width from the caller replaces the full width (a small cover next to the title, not over it)', () => {
+    const qc = new QueryClient();
+    const { getAllByTestId } = render(
+      <QueryClientProvider client={qc}>
+        <BookCover book={{ id: 'b1', coverUrl: null }} className="w-12 flex-none" />
+        <BookCover book={{ id: 'b2', coverUrl: null }} />
+      </QueryClientProvider>,
+    );
+    const [small, full] = getAllByTestId('book-cover');
+    expect(small.className).toContain('w-12');
+    expect(small.className).not.toContain('w-full');
+    expect(full.className).toContain('w-full');
   });
 });
