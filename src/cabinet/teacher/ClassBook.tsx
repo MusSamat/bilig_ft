@@ -17,7 +17,7 @@ import { EmptyState, ErrorState, Loading, Sheet, btn, cx } from './ui';
 
 /** The class's books of a subject: all published ones (any language) and the chosen one. */
 export function useClassBook(cls: SchoolClass, subjectKey: string, enabled = true) {
-  const list = useLibraryBooks({ grade: cls.grade, subjectKey }, enabled);
+  const list = useLibraryBooks({ grade: cls.grade, subjectKey, kind: 'textbook' }, enabled);
   const lang = useTeachingLang();
   const items = list.data?.items ?? [];
   const chosenId = cls.books?.[subjectKey] ?? null;
@@ -84,7 +84,7 @@ function BookPickerSheet({ cls, subjectKey, subjectTitle, current, busy, onPick,
   const { t } = useTranslation();
   const teachingLang = useTeachingLang();
   const [all, setAll] = useState(!teachingLang);
-  const list = useLibraryBooks({ grade: cls.grade, subjectKey, ...(all || !teachingLang ? {} : { lang: teachingLang }) });
+  const list = useLibraryBooks({ grade: cls.grade, subjectKey, kind: 'textbook', ...(all || !teachingLang ? {} : { lang: teachingLang }) });
   const items = list.data?.items ?? [];
   return (
     <Sheet title={t('teacherHome.book.sheetTitle', { subject: subjectTitle, name: cls.name })} onClose={onClose} wide>

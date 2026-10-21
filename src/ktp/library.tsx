@@ -6,13 +6,13 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { LANGS, type Lang } from '@bilig/content-model';
-import type { Book, SchoolClass } from '@bilig/content-model/api';
+import type { Book, BookKind, SchoolClass } from '@bilig/content-model/api';
 import { api, rawCall } from '../api/client';
 import { useSession } from '../api/session';
 import { Icon } from '../components/Icon';
 import { cx } from '../cabinet/teacher/ui';
 
-export type LibraryQuery = { grade?: number; subjectKey?: string; lang?: Lang };
+export type LibraryQuery = { grade?: number; subjectKey?: string; lang?: Lang; kind?: BookKind };
 
 export const libraryKeys = { list: (q: LibraryQuery) => ['books', 'list', q] as const };
 

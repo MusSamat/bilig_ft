@@ -206,6 +206,7 @@ export function newMockBook(o: { id: string; fileName: string; subjectKey: strin
   const at = new Date().toISOString();
   return {
     id: o.id,
+    kind: 'textbook',
     title: o.title?.trim() || o.fileName.replace(/\.pdf$/i, '').slice(0, 300) || 'Book',
     subjectKey: o.subjectKey,
     grade: o.grade,

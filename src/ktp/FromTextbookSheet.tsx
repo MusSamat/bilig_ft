@@ -223,7 +223,7 @@ function CatalogBooks({ onPick, onLibrary }: { onPick: (tb: Textbook, subjectKey
   const { t } = useTranslation();
   const lang = useLang();
   const books = useTextbooks();
-  const library = useLibraryBooks({});
+  const library = useLibraryBooks({ kind: 'textbook' });
   const { data: catalog } = useCatalog();
   const mine = useTeacherSubjects();
   const [all, setAll] = useState(false);

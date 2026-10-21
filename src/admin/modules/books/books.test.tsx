@@ -24,6 +24,7 @@ const AT = '2026-10-20T08:00:00.000Z';
 
 const book = (o: Partial<Book> = {}): Book => ({
   id: ID1,
+  kind: 'textbook',
   title: 'Физика, 7-класс',
   subjectKey: 'phys',
   grade: 7,

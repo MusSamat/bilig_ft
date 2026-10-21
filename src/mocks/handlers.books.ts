@@ -26,7 +26,7 @@ function filtered(url: URL, statuses?: BookStatus[]) {
   const grade = q.get('grade');
   return mockDb.books
     .map((b) => advanceBook(b))
-    .filter((b) => (!statuses || statuses.includes(b.status)) && (!grade || b.grade === Number(grade)) && (!q.get('subjectKey') || b.subjectKey === q.get('subjectKey')) && (!q.get('lang') || b.lang === q.get('lang')) && (!q.get('status') || b.status === q.get('status')))
+    .filter((b) => (!statuses || statuses.includes(b.status)) && (!grade || b.grade === Number(grade)) && (!q.get('subjectKey') || b.subjectKey === q.get('subjectKey')) && (!q.get('lang') || b.lang === q.get('lang')) && (!q.get('status') || b.status === q.get('status')) && (!q.get('kind') || b.kind === q.get('kind')))
     .sort((a, b) => (b.publishedAt ?? b.updatedAt).localeCompare(a.publishedAt ?? a.updatedAt));
 }
 

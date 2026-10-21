@@ -84,7 +84,7 @@ describe('a class’s textbook', () => {
     const card = await cardOf('Physics');
     expect(await within(card).findByText('Suggested: «Физика, 7-класс», the only book of this grade in your language.')).toBeInTheDocument();
     expect(within(card).getByTestId('class-book')).toHaveTextContent('Textbook: not chosen');
-    expect(log.some((r) => r.path === '/books' && r.search === '?grade=7&subjectKey=phys')).toBe(true);
+    expect(log.some((r) => r.path === '/books' && r.search === '?grade=7&subjectKey=phys&kind=textbook')).toBe(true);
     // Never chosen silently.
     expect(log.some((r) => r.method === 'PATCH')).toBe(false);
     expect(within(card).queryByRole('button', { name: /KTP from the textbook/ })).not.toBeInTheDocument();
@@ -130,7 +130,7 @@ describe('a class’s textbook', () => {
     const sheet = await screen.findByRole('dialog', { name: 'Textbook: Physics, 7А' });
     const list = await within(sheet).findByRole('list', { name: 'Books' });
     expect(within(list).getAllByRole('button')).toHaveLength(1);
-    expect(log.some((r) => r.path === '/books' && r.search === '?grade=7&subjectKey=phys&lang=ky')).toBe(true);
+    expect(log.some((r) => r.path === '/books' && r.search === '?grade=7&subjectKey=phys&kind=textbook&lang=ky')).toBe(true);
     await user.click(within(sheet).getByRole('checkbox', { name: 'Books in every language' }));
     await waitFor(() => expect(within(within(sheet).getByRole('list', { name: 'Books' })).getAllByRole('button')).toHaveLength(2));
     const ruCard = within(sheet).getByRole('button', { name: 'Физика, 7 класс, Grade 7 · 2020' });

@@ -38,7 +38,7 @@ function SubjectBooks({ grade, subjectKey, value, onChange, disabled }: { grade:
   const lang = useLang();
   const catalog = useCatalog();
   const teachingLang = useTeachingLang();
-  const list = useLibraryBooks({ grade, subjectKey });
+  const list = useLibraryBooks({ grade, subjectKey, kind: 'textbook' });
   const subject = catalog.data?.subjects.find((s) => s.key === subjectKey);
   const name = subject ? tr(subject.title, lang) : subjectKey;
   const items = [...(list.data?.items ?? [])].sort((a, b) => Number(b.lang === teachingLang) - Number(a.lang === teachingLang));
