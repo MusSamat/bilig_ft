@@ -4,7 +4,7 @@
  * guided flow (choose → checking → summary → done). With no plan yet, the
  * flow is the whole section. Lazy chunk of the teacher page.
  */
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { KtpIssue, TeachingPlan, TeachingPlanSummary } from '@bilig/content-model/api';
@@ -18,6 +18,8 @@ import { capitalize, fixTarget } from './model';
 import { ProblemCount } from './Problems';
 import { UploadFlow } from './UploadFlow';
 
+const FromTextbookSheet = lazy(() => import('./FromTextbookSheet'));
+
 export default function KtpTab(): JSX.Element {
   const { t } = useTranslation();
   const lang = useLang();
@@ -25,6 +27,7 @@ export default function KtpTab(): JSX.Element {
   const list = useKtpList();
   const items = list.data?.pages.flatMap((p) => p.items) ?? [];
   const [adding, setAdding] = useState(false);
+  const [fromBook, setFromBook] = useState(false);
   const empty = list.isSuccess && items.length === 0;
 
   const open = (plan: TeachingPlan, search?: Record<string, string> | null) => navigate({ pathname: `/${lang}/teacher/ktp/${plan.id}`, search: search ? `?${new URLSearchParams(search)}` : '' });
@@ -37,8 +40,20 @@ export default function KtpTab(): JSX.Element {
     />
   );
 
+  const bookButton = (
+    <button type="button" className={btn('primary')} onClick={() => setFromBook(true)}>
+      <Icon name="book" className="sm" />
+      {t('ktp.book.open')}
+    </button>
+  );
+
   return (
     <div className="grid gap-6">
+      {fromBook && (
+        <Suspense fallback={null}>
+          <FromTextbookSheet onClose={() => setFromBook(false)} />
+        </Suspense>
+      )}
       {(adding || empty) && (
         <Card labelledBy="ktp-add-title" className="grid gap-5">
           <div className="grid gap-2">
@@ -49,6 +64,10 @@ export default function KtpTab(): JSX.Element {
           </div>
           {empty && <Steps />}
           {flow}
+          <div className="grid gap-2 border-t border-line pt-4">
+            <p className="m-0 max-w-[64ch] text-base text-muted">{t('ktp.book.lead')}</p>
+            <div>{bookButton}</div>
+          </div>
         </Card>
       )}
       {!empty && (
@@ -57,11 +76,16 @@ export default function KtpTab(): JSX.Element {
             <CardTitle id="ktp-list-title" icon="cal">
               {t('ktp.list.title')}
             </CardTitle>
-            {!adding && list.isSuccess && (
-              <button type="button" className={btn('primary')} onClick={() => setAdding(true)}>
-                <Icon name="plus" className="sm" />
-                {t('ktp.add')}
-              </button>
+            {list.isSuccess && (
+              <div className="flex flex-wrap gap-2">
+                {!adding && (
+                  <button type="button" className={btn('primary')} onClick={() => setAdding(true)}>
+                    <Icon name="plus" className="sm" />
+                    {t('ktp.add')}
+                  </button>
+                )}
+                {!adding && bookButton}
+              </div>
             )}
           </div>
           {list.isLoading && <Loading rows={2} />}

@@ -174,7 +174,7 @@ export function CopyButton({ value, label, className, withText }: { value: strin
  * Modal sheet: a bottom sheet on phones, a centred dialog from 720px. Esc and
  * the backdrop close it; focus is trapped inside and returns to the opener.
  */
-export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }): JSX.Element {
+export function Sheet({ title, onClose, children, wide }: { title: string; onClose: () => void; children: ReactNode; /** A wider dialog from 720px (tables, wizards). */ wide?: boolean }): JSX.Element {
   const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -193,7 +193,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="relative grid max-h-[92vh] w-full gap-5 overflow-y-auto rounded-t-xl border border-edge bg-g3 p-5 shadow-panel md:max-w-130 md:rounded-xl md:p-6"
+        className={cx('relative grid max-h-[92vh] w-full gap-5 overflow-y-auto rounded-t-xl border border-edge bg-g3 p-5 shadow-panel md:rounded-xl md:p-6', wide ? 'md:max-w-200' : 'md:max-w-130')}
       >
         <div className="flex items-start justify-between gap-3">
           <h2 id={titleId} className="font-serif text-xl font-bold text-ink">

@@ -1,0 +1,382 @@
+{
+  "_source": "bilig_back content/src/textbooks/fizika-7.json (chapters 1-3, ky), as POST /ktp/contents returns it",
+  "draft": {
+    "title": "Физика, 7-класс",
+    "grade": 7,
+    "lang": "ky",
+    "subjectKey": "phys",
+    "chapters": [
+      {
+        "number": "1",
+        "title": "Механика. Кинематиканын негиздери",
+        "lessons": [
+          {
+            "number": "1",
+            "kind": "lesson",
+            "title": "Физика, табият жана турмуш",
+            "pages": {
+              "from": 8,
+              "to": 9
+            },
+            "topicKey": "sim-kinematics"
+          },
+          {
+            "number": "2",
+            "kind": "lesson",
+            "title": "Физикалык билимдер жана аны өздөштүрүүгө көрсөтмөлөр",
+            "pages": {
+              "from": 10,
+              "to": 11
+            },
+            "topicKey": "sim-kinematics"
+          },
+          {
+            "number": "3",
+            "kind": "lesson",
+            "title": "Негизги физикалык чоңдуктар. Чоңдуктарды өлчөө",
+            "pages": {
+              "from": 12,
+              "to": 16
+            },
+            "topicKey": "sim-kinematics"
+          },
+          {
+            "number": "4",
+            "kind": "lesson",
+            "title": "Нерсенин механикалык кыймылы. Кыймылдын траекториясы. Кыймылдын түрлөрү",
+            "pages": {
+              "from": 17,
+              "to": 18
+            },
+            "topicKey": "sim-kinematics"
+          },
+          {
+            "number": "5",
+            "kind": "lesson",
+            "title": "Жол жана которулуш",
+            "pages": {
+              "from": 19,
+              "to": 21
+            },
+            "topicKey": "sim-kinematics"
+          },
+          {
+            "number": "6",
+            "kind": "lesson",
+            "title": "Кыймылдын ылдамдыгы. Бир калыптагы кыймыл",
+            "pages": {
+              "from": 22,
+              "to": 23
+            },
+            "topicKey": "sim-kinematics"
+          },
+          {
+            "number": "7",
+            "kind": "lesson",
+            "title": "Бир калыптагы эмес кыймылдар. Орточо ылдамдык",
+            "pages": {
+              "from": 24,
+              "to": 26
+            },
+            "topicKey": "sim-kinematics"
+          },
+          {
+            "number": "8",
+            "kind": "lesson",
+            "title": "Кыймылдагы нерсенин өткөн жолун жана убактысын эсептөө. Кыймылдын графикте сүрөттөлүшү",
+            "pages": {
+              "from": 27,
+              "to": 29
+            },
+            "topicKey": "sim-kinematics"
+          },
+          {
+            "number": "9",
+            "kind": "lesson",
+            "title": "Ылдамдануу",
+            "pages": {
+              "from": 30,
+              "to": 31
+            },
+            "topicKey": "sim-kinematics"
+          },
+          {
+            "number": "10",
+            "kind": "lesson",
+            "title": "Ылдамдатылган жана акырындатылган кыймылдар",
+            "pages": {
+              "from": 32,
+              "to": 35
+            },
+            "topicKey": "sim-kinematics"
+          },
+          {
+            "number": "11",
+            "kind": "lesson",
+            "title": "Нерсенин айлана боюнча кыймылы",
+            "pages": {
+              "from": 36,
+              "to": 39
+            },
+            "topicKey": "sim-kinematics"
+          },
+          {
+            "number": "",
+            "kind": "review",
+            "title": "«Кинематиканын негиздери» темасы боюнча тесттик тапшырмалардын үлгүлөрү",
+            "pages": {
+              "from": 40,
+              "to": 41
+            },
+            "topicKey": "sim-kinematics"
+          }
+        ]
+      },
+      {
+        "number": "2",
+        "title": "Динамиканын негиздери",
+        "lessons": [
+          {
+            "number": "12",
+            "kind": "lesson",
+            "title": "Нерселердин өз ара аракеттенишүүсү. Күч",
+            "pages": {
+              "from": 42,
+              "to": 43
+            },
+            "topicKey": "sim-forces"
+          },
+          {
+            "number": "13",
+            "kind": "lesson",
+            "title": "Инерция. Инерттүүлүк. Ньютондун биринчи закону",
+            "pages": {
+              "from": 44,
+              "to": 46
+            },
+            "topicKey": "sim-forces"
+          },
+          {
+            "number": "14",
+            "kind": "lesson",
+            "title": "Нерсенин массасы",
+            "pages": {
+              "from": 47,
+              "to": 49
+            },
+            "topicKey": "sim-forces"
+          },
+          {
+            "number": "15",
+            "kind": "lesson",
+            "title": "Нерсенин массасын тараза менен өлчөө",
+            "topicKey": "sim-forces"
+          },
+          {
+            "number": "16",
+            "kind": "lesson",
+            "title": "Заттын тыгыздыгы",
+            "pages": {
+              "from": 52,
+              "to": 55
+            },
+            "topicKey": "sim-forces"
+          },
+          {
+            "number": "17",
+            "kind": "lesson",
+            "title": "Ньютондун экинчи закону",
+            "pages": {
+              "from": 56,
+              "to": 59
+            },
+            "topicKey": "sim-forces"
+          },
+          {
+            "number": "18",
+            "kind": "lesson",
+            "title": "Нерселердин Жерге тартылуусу. Эркин түшүү",
+            "pages": {
+              "from": 60,
+              "to": 61
+            },
+            "topicKey": "sim-forces"
+          },
+          {
+            "number": "19",
+            "kind": "lesson",
+            "title": "Оордук күчү жана салмак",
+            "pages": {
+              "from": 62,
+              "to": 63
+            },
+            "topicKey": "sim-forces"
+          },
+          {
+            "number": "20",
+            "kind": "lesson",
+            "title": "Серпилгичтүүлүк күчү",
+            "pages": {
+              "from": 64,
+              "to": 66
+            },
+            "topicKey": "sim-forces"
+          },
+          {
+            "number": "21",
+            "kind": "lesson",
+            "title": "Күчтү өлчөө. Динамометр",
+            "pages": {
+              "from": 67,
+              "to": 68
+            },
+            "topicKey": "sim-forces"
+          },
+          {
+            "number": "22",
+            "kind": "lesson",
+            "title": "Сүрүлүү күчү. Сүрүлүүнүн түрлөрү. Сүрүлүү коэффициенти",
+            "pages": {
+              "from": 69,
+              "to": 73
+            },
+            "topicKey": "sim-forces"
+          },
+          {
+            "number": "23",
+            "kind": "lesson",
+            "title": "Аракет жана каршы аракет. Ньютондун үчүнчү закону",
+            "pages": {
+              "from": 74,
+              "to": 77
+            },
+            "topicKey": "sim-forces"
+          },
+          {
+            "number": "",
+            "kind": "review",
+            "title": "«Динамиканын негиздери» темасы боюнча тесттик тапшырмалардын үлгүлөрү",
+            "pages": {
+              "from": 78,
+              "to": 79
+            },
+            "topicKey": "sim-forces"
+          }
+        ]
+      },
+      {
+        "number": "3",
+        "title": "Катуу нерселердин, газдардын жана суюктуктардын басымы",
+        "lessons": [
+          {
+            "number": "24",
+            "kind": "lesson",
+            "title": "Катуу нерселердин басымы",
+            "pages": {
+              "from": 80,
+              "to": 83
+            },
+            "topicKey": null
+          },
+          {
+            "number": "25",
+            "kind": "lesson",
+            "title": "Катуу нерселердин басымын көбөйтүүнүн жана азайтуунун жолдору",
+            "pages": {
+              "from": 84,
+              "to": 86
+            },
+            "topicKey": null
+          },
+          {
+            "number": "26",
+            "kind": "lesson",
+            "title": "Газдардагы жана суюктуктардагы басым",
+            "pages": {
+              "from": 87,
+              "to": 89
+            },
+            "topicKey": null
+          },
+          {
+            "number": "27",
+            "kind": "lesson",
+            "title": "Паскаль закону",
+            "pages": {
+              "from": 90,
+              "to": 91
+            },
+            "topicKey": null
+          },
+          {
+            "number": "28",
+            "kind": "lesson",
+            "title": "Паскаль закондун турмушта колдонуу",
+            "pages": {
+              "from": 92,
+              "to": 93
+            },
+            "topicKey": null
+          },
+          {
+            "number": "29",
+            "kind": "lesson",
+            "title": "Атмосфера басымы",
+            "pages": {
+              "from": 94,
+              "to": 94
+            },
+            "topicKey": null
+          },
+          {
+            "number": "",
+            "kind": "review",
+            "title": "«Катуу нерселердин, газдардын жана суюктуктардын басымы» темасы боюнча тесттик тапшырмалардын үлгүлөрү",
+            "pages": {
+              "from": 107,
+              "to": 108
+            },
+            "topicKey": null
+          }
+        ]
+      }
+    ]
+  },
+  "warnings": [
+    {
+      "code": "no_pages",
+      "chapter": 1,
+      "lesson": 3
+    },
+    {
+      "code": "unmatched",
+      "chapter": 2,
+      "lesson": 0
+    },
+    {
+      "code": "unmatched",
+      "chapter": 2,
+      "lesson": 1
+    },
+    {
+      "code": "unmatched",
+      "chapter": 2,
+      "lesson": 2
+    },
+    {
+      "code": "unmatched",
+      "chapter": 2,
+      "lesson": 3
+    },
+    {
+      "code": "unmatched",
+      "chapter": 2,
+      "lesson": 4
+    },
+    {
+      "code": "unmatched",
+      "chapter": 2,
+      "lesson": 5
+    }
+  ]
+}

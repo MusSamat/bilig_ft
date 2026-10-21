@@ -87,6 +87,9 @@ function devMockWorker(): Plugin {
 }
 
 export default defineConfig({
+  // pdf.js is imported lazily («КТП from a textbook»): pre-bundle it up front, else the dev server
+  // discovers it on first use, re-optimizes and reloads the page — losing the wizard's state.
+  optimizeDeps: { include: ['pdfjs-dist/legacy/build/pdf.mjs'] },
   resolve: { alias: aliases },
   server: {
     port: 5173,
@@ -111,6 +114,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,woff2,webp,png,svg,glb,json}'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+        // pdf.js (КТП from a textbook, v0.9.2) loads on demand only: reading a book needs the network anyway.
+        globIgnores: ['**/bookPdf-*.js', '**/pdf.worker*'],
         runtimeCaching: [
           {
             // Topic content packages — cache-first so a downloaded topic is offline.

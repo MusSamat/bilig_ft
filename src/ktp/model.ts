@@ -270,3 +270,21 @@ export function lastClass(planId: string, classes: string[]): string | undefined
   }
   return classes[0];
 }
+
+/* ------------------------------------------------- preliminary КТП (0.9.2) */
+
+/** School year start of `d` (2026 = 2026–2027): from September on it is this year's. */
+export const currentSchoolYear = (d = new Date()): number => (d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1);
+
+/** The server marks a КТП made from a textbook in its title: «… (алдын ала)», «(предварительный)», «(draft)». */
+const DRAFT_TITLE = /\((\u0430\u043b\u0434\u044b\u043d \u0430\u043b\u0430|\u043f\u0440\u0435\u0434\u0432\u0430\u0440\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0439|draft)\)\s*$/iu; // «алдын ала» | «предварительный» (escaped: no Cyrillic in code)
+
+/** A preliminary КТП: the marked title, or lessons that have no date for any class. */
+export const isDraftPlan = (plan: Pick<TeachingPlan, 'title' | 'rows'>): boolean =>
+  DRAFT_TITLE.test(plan.title.trim()) || (plan.rows.length > 0 && plan.rows.every((r) => Object.values(r.dates).every((d) => d === null)));
+
+/** A preliminary КТП has no dates yet by design: «no date» is not a problem there. */
+export const planForView = (plan: TeachingPlan): TeachingPlan => (isDraftPlan(plan) ? { ...plan, issues: plan.issues.filter((i) => i.code !== 'date_missing') } : plan);
+
+/** A class name as a КТП header label: spaces removed («9 А» → «9А»). */
+export const classLabel = (name: string): string => name.replace(/\s+/g, '').slice(0, 12);

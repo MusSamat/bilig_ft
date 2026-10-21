@@ -9,7 +9,7 @@
  */
 import { useCallback, useRef, useState } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { DOCX_MEDIA_TYPE, type KtpPatchRequest, type KtpRowPatch, type TeachingPlan, type TeachingPlanList } from '@bilig/content-model/api';
+import { DOCX_MEDIA_TYPE, type KtpContentsRequest, type KtpFromTextbookRequest, type KtpPatchRequest, type KtpRowPatch, type TeachingPlan, type TeachingPlanList } from '@bilig/content-model/api';
 import type { Lang } from '@bilig/content-model';
 import { api, isApiError, rawCall } from '../api/client';
 import { toast } from '../state/ui';
@@ -181,6 +181,27 @@ export async function fetchLessonPlans(id: string, cls: string, from: number, to
     headers: DOCX_HEADERS,
   });
   return downloadDocx(res, `plans-${cls}-${from}-${to}.docx`);
+}
+
+/** v0.9.2: GET /ktp/:id/docx — the whole КТП as a .docx (an uploaded one or a preliminary one from a textbook). */
+export async function fetchKtpDocx(id: string): Promise<Download> {
+  const res = await rawCall('ktpDocx', { params: { id }, headers: DOCX_HEADERS });
+  return downloadDocx(res, 'KTP.docx');
+}
+
+/** v0.9.2: POST /ktp/contents — read the contents of the teacher's own book (10–40 s when the assistant reads images). */
+export const useKtpContents = () => useMutation({ mutationFn: (body: KtpContentsRequest) => api('ktpContents', { body }) });
+
+/** v0.9.2: POST /ktp/from-textbook — a preliminary КТП; the new plan is cached and the list refetched. */
+export function useKtpFromTextbook() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: KtpFromTextbookRequest) => api('ktpFromTextbook', { body }),
+    onSuccess: (plan) => {
+      qc.setQueryData(ktpKeys.plan(plan.id), plan);
+      void qc.invalidateQueries({ queryKey: ktpKeys.list });
+    },
+  });
 }
 
 /** Lessons `range` (by index) as files of at most KTP_MAX_RANGE lessons, fetched one after another. */

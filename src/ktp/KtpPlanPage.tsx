@@ -22,11 +22,11 @@ import { errorKey } from '../cabinet/format';
 import { Card, CardTitle, ErrorState, Skeleton, Tabs, btn, cx, inputCls, type TabItem } from '../cabinet/teacher/ui';
 import { useLang } from '../lib/hooks';
 import { toast, useUi } from '../state/ui';
-import { fetchLessonPlan, useDownloads, useKtpDelete, useKtpPatch, useKtpPlan } from './api';
+import { fetchKtpDocx, fetchLessonPlan, useDownloads, useKtpDelete, useKtpPatch, useKtpPlan } from './api';
 import { AllLessons } from './AllLessons';
 import { ClassLinks } from './ClassLinks';
 import { LessonSheet } from './LessonSheet';
-import { capitalize, fixTarget, lastClass, problemCounts, rememberClass, todayIso, weekOf } from './model';
+import { capitalize, fixTarget, isDraftPlan, lastClass, planForView, problemCounts, rememberClass, todayIso, weekOf } from './model';
 import { ProblemCount, ProblemList } from './Problems';
 import { UploadFlow } from './UploadFlow';
 import { WeekView } from './WeekView';
@@ -78,7 +78,7 @@ export default function KtpPlanPage(): JSX.Element {
       </div>
     );
   }
-  return <PlanView plan={plan.data} />;
+  return <PlanView plan={planForView(plan.data)} />;
 }
 
 function BackLink(): JSX.Element {
@@ -101,7 +101,11 @@ function PlanView({ plan }: { plan: TeachingPlan }): JSX.Element {
   const lang = useLang();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const view: View = params.get('view') === 'all' ? 'all' : 'week';
+  // A preliminary КТП has no dates yet: «All lessons» is its home view.
+  const draft = isDraftPlan(plan);
+  const home: View = draft ? 'all' : 'week';
+  const asked = params.get('view');
+  const view: View = asked === 'all' || asked === 'week' ? asked : home;
   const lessonIndex = Number(params.get('lesson')) || null;
   const at = params.get('at');
   const [cls, setCls] = useState(() => (at && plan.classes.includes(at) ? at : (lastClass(plan.id, plan.classes) ?? '')));
@@ -151,7 +155,20 @@ function PlanView({ plan }: { plan: TeachingPlan }): JSX.Element {
         <p className="m-0 line-clamp-2 max-w-[80ch] text-sm text-muted" title={plan.title}>
           {plan.title}
         </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button type="button" className={btn('secondary')} disabled={busy === 'ktp-docx'} aria-busy={busy === 'ktp-docx'} onClick={() => void run('ktp-docx', () => fetchKtpDocx(plan.id))}>
+            <Icon name={busy === 'ktp-docx' ? 'sync' : 'download'} className={cx('sm', busy === 'ktp-docx' && 'spin')} />
+            {t('ktp.plan.docx')}
+          </button>
+        </div>
       </header>
+
+      {draft && (
+        <p className="m-0 flex items-start gap-2 rounded-lg border border-line border-l-4 border-l-accent bg-chip p-4 text-base text-ink" data-testid="ktp-draft-info">
+          <Icon name="info" className="mt-0.5 flex-none text-accent" />
+          {t('ktp.plan.draftInfo')}
+        </p>
+      )}
 
       <ClassLinks plan={plan} className="rounded-lg border border-line p-4" />
 
@@ -200,7 +217,7 @@ function PlanView({ plan }: { plan: TeachingPlan }): JSX.Element {
                 </div>
               </div>
             )}
-            <Tabs items={views} value={view} onChange={(v) => setQuery({ view: v === 'all' ? 'all' : null, section: null })} label={t('ktp.view.label')} idBase="ktp-view" />
+            <Tabs items={views} value={view} onChange={(v) => setQuery({ view: v === home ? null : v, section: null })} label={t('ktp.view.label')} idBase="ktp-view" />
           </div>
 
           <Card as="div" className="grid gap-4">

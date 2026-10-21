@@ -4,10 +4,25 @@
  * If-Match and recomputed issues, delete, and .docx downloads (a small
  * placeholder file with the server-style Content-Disposition).
  */
-import { HttpResponse } from 'msw';
-import { DOCX_MEDIA_TYPE, HEADERS, KTP_MAX_BYTES, KtpLessonPlanQuerySchema, KtpLessonPlansQuerySchema, type KtpPatchRequest } from '@bilig/content-model/api';
+import { HttpResponse, delay } from 'msw';
+import { t as tr, type Lang } from '@bilig/content-model';
+import {
+  DOCX_MEDIA_TYPE,
+  HEADERS,
+  KTP_MAX_BYTES,
+  KtpLessonPlanQuerySchema,
+  KtpLessonPlansQuerySchema,
+  SCHOOL_WEEKS,
+  type KtpContentsRequest,
+  type KtpContentsResponse,
+  type KtpFromTextbookRequest,
+  type KtpPatchRequest,
+} from '@bilig/content-model/api';
+import catalogBase from './content/catalog.json';
+import draftFixture from './content/textbook-draft-fizika-7.json';
+import { TEXTBOOKS } from './data';
 import { mockDb, newId, schoolIdsOf } from './db';
-import { buildKtpPlan, computeIssues, planDto, planSummary, sameClassName, type MockKtpPlan } from './ktp';
+import { buildFromTextbook, buildKtpPlan, computeIssues, planDto, planSummary, sameClassName, type BookLine, type MockKtpPlan } from './ktp';
 import type { route as routeFn, fail as failFn } from './handlers';
 
 type Deps = { route: typeof routeFn; fail: typeof failFn };
@@ -27,6 +42,14 @@ const docxResponse = (name: string, text: string) =>
       'Content-Disposition': `attachment; filename="plan.docx"; filename*=UTF-8''${encodeURIComponent(name)}`,
     },
   });
+
+/** v0.9.2: the school year a request is made in (September on = this year's). */
+const schoolYear = (d = new Date()) => (d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1);
+const planLang = (l: Lang | undefined): 'ky' | 'ru' | 'en' => (l === 'ru' || l === 'en' ? l : 'ky');
+const subjectName = (key: string | null | undefined, lang: 'ky' | 'ru' | 'en') => {
+  const s = (catalogBase as { subjects: { key: string; title: Record<string, string> }[] }).subjects.find((x) => x.key === key);
+  return s ? (s.title[lang] ?? s.title.ky).toLocaleLowerCase(lang) : '';
+};
 
 const base64Bytes = (b64: string) => Math.floor((b64.replace(/=+$/, '').length * 3) / 4);
 
@@ -65,6 +88,75 @@ export function ktpHandlers({ route, fail }: Deps) {
       plan.classLinks = Object.fromEntries(plan.classes.map((col) => [col, own.find((c) => sameClassName(c.name, col))?.id ?? null]));
       mockDb.ktp.push(plan);
       return planDto(plan);
+    }),
+    // v0.9.2: the contents of a book. Text and .docx come back at once; images «need the assistant» (slower, 503 when it is down).
+    route('ktpContents', async ({ body }) => {
+      const b = body as KtpContentsRequest;
+      const images = !!b.images?.length;
+      if (images) {
+        if (mockDb.flags.tutorDown) return fail('tutor_unavailable');
+        await delay(600);
+      }
+      if (b.docx && base64Bytes(b.docx) > KTP_MAX_BYTES) return fail('payload_too_large');
+      const res: KtpContentsResponse = {
+        draft: { ...(draftFixture.draft as KtpContentsResponse['draft']), ...(b.grade ? { grade: b.grade } : {}), ...(b.subjectKey ? { subjectKey: b.subjectKey } : {}) },
+        source: images ? 'assistant' : 'text',
+        contentsPages: images ? [Math.min(2, b.images!.length - 1)] : [0],
+        warnings: draftFixture.warnings as KtpContentsResponse['warnings'],
+      };
+      return res;
+    }),
+    route('ktpFromTextbook', ({ user, body }) => {
+      const b = body as KtpFromTextbookRequest;
+      let lines: BookLine[];
+      let subjectKey: string | null;
+      let grade: number | null;
+      let lang = planLang(b.lang);
+      let sourceName: string;
+      if (b.textbookKey) {
+        const tb = TEXTBOOKS.find((x) => x.key === b.textbookKey);
+        if (!tb) return fail('not_found');
+        const chapters = tb.chapters.filter((c) => !b.subjectKey || c.subjectKey === b.subjectKey);
+        if (!chapters.length) return fail('validation_failed', { issues: [{ path: ['subjectKey'], message: 'The textbook has no chapters of this subject' }] });
+        lines = chapters.flatMap((c) =>
+          c.lessons.map((l) => ({ chapter: { number: c.number, title: tr(c.title, lang) }, number: l.number, kind: l.kind, title: tr(l.title, lang), pages: l.pages, topicKey: l.topicKeys[0] ?? null })),
+        );
+        subjectKey = b.subjectKey ?? chapters[0].subjectKey;
+        grade = tb.grade;
+        sourceName = tr(tb.shortTitle ?? tb.title, lang);
+      } else {
+        const d = b.draft!;
+        lang = planLang(b.lang ?? d.lang);
+        lines = d.chapters.flatMap((c) => c.lessons.map((l) => ({ chapter: { number: c.number, title: c.title }, number: l.number, kind: l.kind, title: l.title, pages: l.pages, topicKey: l.topicKey ?? null })));
+        subjectKey = d.subjectKey;
+        grade = d.grade;
+        sourceName = d.title;
+      }
+      const classes = [...new Set((b.classes ?? []).map((c) => c.replace(/\s+/g, '')))];
+      const plan = buildFromTextbook({
+        id: newId(),
+        ownerId: user!.id,
+        lines,
+        subjectKey,
+        subjectName: subjectName(subjectKey, lang),
+        grade,
+        lang,
+        year: b.year ?? schoolYear(),
+        classes,
+        hoursPerWeek: b.hoursPerWeek,
+        weeks: b.weeks ?? SCHOOL_WEEKS,
+        sourceName,
+      });
+      const own = mockDb.classes.filter((c) => schoolIdsOf(user).includes(c.schoolId));
+      plan.classLinks = Object.fromEntries(plan.classes.map((col) => [col, own.find((c) => sameClassName(c.name, col))?.id ?? null]));
+      mockDb.ktp.push(plan);
+      return planDto(plan);
+    }),
+    route('ktpDocx', ({ params, user }) => {
+      const p = mine(params.id, user?.id);
+      if (!p) return fail('not_found');
+      const name = [p.subjectName || 'ktp', p.grade ? `${p.grade}-класс` : null, p.year ? `${p.year}-${p.year + 1}` : null].filter(Boolean).join('_');
+      return docxResponse(`КТП_${name}.docx`, `${p.title}\n${p.rows.length} lessons`);
     }),
     route('ktpGet', ({ params, user }) => {
       const p = mine(params.id, user?.id);

@@ -47,6 +47,8 @@ export function computeIssues(plan: Omit<MockKtpPlan, 'issues'>): KtpIssue[] {
     i = j;
   }
   const y = plan.year;
+  // v0.9.2: a preliminary КТП (from a textbook) has no dates by design — no «date missing» there.
+  const preliminary = /\((алдын ала|предварительный|draft)\)\s*$/.test(plan.title);
   for (const r of plan.rows) {
     if (!r.title.trim()) out.push({ code: 'title_missing', severity: 'warning', row: r.index });
   }
@@ -56,6 +58,7 @@ export function computeIssues(plan: Omit<MockKtpPlan, 'issues'>): KtpIssue[] {
       const d = r.dates[cls] ?? null;
       const raw = plan.raw[String(r.index)]?.[cls];
       if (!d) {
+        if (!raw && preliminary) continue;
         out.push(
           raw
             ? {
@@ -187,4 +190,91 @@ export function planSummary(p: MockKtpPlan) {
     errors: p.issues.filter((i) => i.severity === 'error').length,
     warnings: p.issues.filter((i) => i.severity === 'warning').length,
   };
+}
+
+/* ---------------------------------------------- v0.9.2: КТП from a textbook */
+
+export interface BookLine {
+  chapter: { number: string; title: string };
+  number: string;
+  kind: 'lesson' | 'review' | 'extra';
+  title: string;
+  pages?: { from: number; to: number };
+  topicKey: string | null;
+}
+
+const DRAFT_MARK = { ky: '(алдын ала)', ru: '(предварительный)', en: '(draft)' } as const;
+const PRACTICE = { ky: 'Маселелер чыгаруу', ru: 'Решение задач', en: 'Problem solving' } as const;
+const GRADE = { ky: (g: number) => `${g}-класс`, ru: (g: number) => `${g} класс`, en: (g: number) => `grade ${g}` } as const;
+const homeworkOf = (lang: 'ky' | 'ru' | 'en', l: BookLine) => {
+  const p = l.pages ? (lang === 'ky' ? `${l.pages.from}–${l.pages.to}-беттер` : lang === 'ru' ? `с. ${l.pages.from}–${l.pages.to}` : `pp. ${l.pages.from}–${l.pages.to}`) : '';
+  return [l.number ? `§ ${l.number}` : '', p].filter(Boolean).join(', ');
+};
+
+/**
+ * A preliminary КТП the way the server makes one: the book's lines in order, one
+ * lesson each; extra hours (hours a week × weeks > lines) go to «problem solving»
+ * lessons after the longest §§; fewer hours keep every line and say so
+ * (hours_mismatch). No dates: every class column is empty for the teacher to fill in.
+ */
+export function buildFromTextbook(o: {
+  id: string;
+  ownerId: string;
+  lines: BookLine[];
+  subjectKey: string | null;
+  subjectName: string;
+  grade: number | null;
+  lang: 'ky' | 'ru' | 'en';
+  year: number;
+  classes: string[];
+  hoursPerWeek: number;
+  weeks: number;
+  sourceName: string;
+}): MockKtpPlan {
+  const total = o.hoursPerWeek * o.weeks;
+  const extra = Math.max(0, total - o.lines.length);
+  // Which lines get a practice lesson after them: the longest lessons first, round-robin.
+  const lessons = o.lines.map((l, i) => ({ i, len: l.kind === 'lesson' ? (l.pages ? l.pages.to - l.pages.from + 1 : 1) : -1 })).filter((x) => x.len >= 0).sort((a, b) => b.len - a.len || a.i - b.i);
+  const practice = new Map<number, number>();
+  for (let k = 0; k < extra && lessons.length; k++) {
+    const at = lessons[k % lessons.length].i;
+    practice.set(at, (practice.get(at) ?? 0) + 1);
+  }
+  const rows: KtpRow[] = [];
+  const empty = () => Object.fromEntries(o.classes.map((c) => [c, null])) as Record<string, string | null>;
+  o.lines.forEach((l, i) => {
+    const section = { title: `${l.chapter.number}. ${l.chapter.title}` };
+    const base = { section, hours: 1, dates: empty(), note: '', topicKey: l.topicKey, ...(l.topicKey ? { match: { auto: true, score: 0.9 } } : {}) };
+    rows.push({ ...base, index: rows.length + 1, number: rows.length + 1, title: l.title, type: l.kind === 'review' ? 'test' : l.kind === 'extra' ? 'practice' : 'new', homework: homeworkOf(o.lang, l) });
+    for (let k = 0; k < (practice.get(i) ?? 0); k++) rows.push({ ...base, dates: empty(), index: rows.length + 1, number: rows.length + 1, title: `${PRACTICE[o.lang]}: ${l.title}`, type: 'practice', homework: homeworkOf(o.lang, l) });
+  });
+  // Section hours as a КТП prints them («Механика (12 саат)»).
+  const hours = new Map<string, number>();
+  for (const r of rows) hours.set(r.section!.title, (hours.get(r.section!.title) ?? 0) + 1);
+  for (const r of rows) r.section = { title: r.section!.title, hours: hours.get(r.section!.title) };
+  const at = new Date().toISOString();
+  const what = [o.subjectName, o.grade ? GRADE[o.lang](o.grade) : null].filter(Boolean).join(', ');
+  const base = {
+    id: o.id,
+    ownerId: o.ownerId,
+    title: `${what}, ${o.year}–${o.year + 1} ${DRAFT_MARK[o.lang]}`,
+    subjectName: o.subjectName,
+    subjectKey: o.subjectKey,
+    grade: o.grade,
+    lang: o.lang,
+    teacherName: '',
+    schoolName: '',
+    year: o.year,
+    classes: o.classes,
+    classLinks: Object.fromEntries(o.classes.map((c) => [c, null])) as Record<string, string | null>,
+    declaredHours: total,
+    totalHours: rows.length,
+    rows,
+    raw: {},
+    sourceName: o.sourceName,
+    createdAt: at,
+    updatedAt: at,
+    version: 1,
+  };
+  return { ...base, issues: computeIssues(base) };
 }
