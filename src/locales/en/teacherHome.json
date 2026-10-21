@@ -26,7 +26,12 @@
     "noneHint": "Upload the KTP and the next lesson, lesson plans and progress show up here.",
     "upload": "Upload KTP",
     "uploadLabel": "Upload KTP: {{subject}}, {{name}}",
-    "open": "Open the KTP"
+    "open": "Open the KTP",
+    "main": "Main KTP",
+    "fromBook": "KTP from the textbook (suggested)",
+    "fromBookLabel": "KTP from the textbook: {{subject}}, {{name}}",
+    "fromBookHint": "Without a KTP of your own, a preliminary one is made from the chosen book; you fill in the dates.",
+    "uploadOwn": "Upload my own KTP"
   },
   "next": {
     "title": "Next lesson",
@@ -41,5 +46,26 @@
     "value_one": "{{done}} / {{count}} lesson",
     "value_other": "{{done}} / {{count}} lessons",
     "label": "{{subject}}: lessons done"
+  },
+  "book": {
+    "label": "Textbook",
+    "none": "not chosen",
+    "unavailable": "unavailable",
+    "choose": "Choose",
+    "chooseLabel": "Choose the textbook: {{subject}}, {{name}}",
+    "suggest": "Suggested: «{{title}}», the only book of this grade in your language.",
+    "useThis": "Use this book",
+    "sheetTitle": "Textbook: {{subject}}, {{name}}",
+    "sheetLead": "Published grade {{grade}} books of the Bilig library. The KTP is suggested from the book you choose.",
+    "allLangs": "Books in every language",
+    "list": "Books",
+    "loadError": "Could not load the books",
+    "empty": "No books yet",
+    "emptyText": "Bilig has not published a book for this grade and subject yet.",
+    "clear": "No textbook",
+    "chosen": "Textbook chosen",
+    "cleared": "Textbook removed",
+    "part": "part {{n}}",
+    "pick": "{{title}}, {{meta}}"
   }
 }

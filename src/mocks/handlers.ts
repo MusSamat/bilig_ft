@@ -38,6 +38,7 @@ import {
 } from '@bilig/content-model/api';
 import type { Permission } from '@bilig/permissions';
 import { PACKAGES, TEXTBOOKS, buildCatalog, packageByKey } from './data';
+import { bookHandlers } from './handlers.books';
 import { cabinetHandlers } from './handlers.cabinet';
 import { ktpHandlers } from './handlers.ktp';
 import { registerHandlers } from './handlers.register';
@@ -479,7 +480,18 @@ export const handlers: HttpHandler[] = [
     if (b.subjectKeys) b.subjectKey = b.subjectKeys[0] ?? null;
     else if (b.subjectKey !== undefined) b.subjectKeys = b.subjectKey ? [b.subjectKey] : [];
     if (b.subjectKeys && admitSubjects(user, c.schoolId, b.grade ?? c.grade, b.subjectKeys)) return fail('validation_failed', { issues: [{ path: ['subjectKeys'], message: 'not licensed' }] });
-    Object.assign(c, b);
+    // v0.9.3: a published book per subject; null clears it, the other subjects keep theirs.
+    const { books, ...rest } = b;
+    if (books) {
+      const next = { ...c.books };
+      for (const [k, id] of Object.entries(books)) {
+        if (id === null) delete next[k];
+        else if (!mockDb.books.some((x) => x.id === id && x.status === 'published' && x.subjectKey === k)) return fail('validation_failed', { issues: [{ path: ['books', k], message: 'No published book of this subject' }] });
+        else next[k] = id;
+      }
+      c.books = next;
+    }
+    Object.assign(c, rest);
     return classWithCount(c);
   }),
   route('classJoinCode', ({ params }) => {
@@ -739,6 +751,8 @@ export const handlers: HttpHandler[] = [
 
   // v0.5.0 КТП → сабак планы
   ...ktpHandlers({ route, fail }),
+  // v0.9.3 the book library
+  ...bookHandlers({ route, fail }),
   // v0.8.0 the teacher's home: a class's subjects
   ...teacherHandlers({ route, fail }),
 

@@ -21,6 +21,8 @@ import { Toaster } from './shell/toast';
 import { AdminIconSprite, Icon } from './lib/icons';
 import { Analytics } from './modules/Analytics';
 import { AssetReportPage, AssetsList } from './modules/Assets';
+import { BookPage } from './modules/books/BookPage';
+import { BooksList } from './modules/books/BooksList';
 import {
   ConceptEdit,
   ConceptsList,
@@ -118,6 +120,8 @@ export function AdminRoutes() {
         <Route path="analytics" element={<Analytics />} />
         <Route path="tutor" element={<TutorSettingsPage />} />
         <Route path="generated" element={<Generated />} />
+        <Route path="books" element={<BooksList />} />
+        <Route path="books/:id" element={<BookPage />} />
         <Route path="audit" element={<AuditLog />} />
         <Route path="*" element={<Navigate to="." replace />} />
       </Route>

@@ -124,6 +124,17 @@ export function ktpHandlers({ route, fail }: Deps) {
         subjectKey = b.subjectKey ?? chapters[0].subjectKey;
         grade = tb.grade;
         sourceName = tr(tb.shortTitle ?? tb.title, lang);
+      } else if (b.bookId) {
+        // v0.9.3: a published book of the library, line by line from its sections.
+        const book = mockDb.books.find((x) => x.id === b.bookId && x.status === 'published');
+        if (!book) return fail('not_found');
+        lang = planLang(b.lang ?? book.lang);
+        lines = [...book.sections]
+          .sort((x, y) => x.order - y.order)
+          .map((s) => ({ chapter: { number: s.chapterNumber, title: s.chapterTitle }, number: s.number, kind: s.kind, title: s.title, pages: s.pages, topicKey: s.topicKey }));
+        subjectKey = book.subjectKey;
+        grade = book.grade;
+        sourceName = book.title;
       } else {
         const d = b.draft!;
         lang = planLang(b.lang ?? d.lang);

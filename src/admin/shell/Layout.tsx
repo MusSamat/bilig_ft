@@ -36,6 +36,8 @@ export const NAV: NavItem[] = [
   { path: 'assets', titleKey: 'nav.assets', endpoint: 'adminAssetList', section: 'content', icon: 'cube' },
   { path: 'processes', titleKey: 'nav.processes', endpoint: 'adminProcessList', section: 'content', icon: 'a-steps' },
   { path: 'items', titleKey: 'nav.items', endpoint: 'adminItemList', section: 'content', icon: 'a-quiz' },
+  // v0.9.3: the book library (staff upload school books; the AI reads them)
+  { path: 'books', titleKey: 'nav.books', endpoint: 'adminBookList', section: 'content', icon: 'book' },
   { path: 'programme', titleKey: 'nav.programme', endpoint: 'adminCourseList', section: 'programme', icon: 'grad' },
   { path: 'translations', titleKey: 'nav.translations', endpoint: 'adminStrings', section: 'translations', icon: 'globe' },
   { path: 'glossary', titleKey: 'nav.glossary', endpoint: 'adminGlossaryList', section: 'translations', icon: 'a-glossary' },

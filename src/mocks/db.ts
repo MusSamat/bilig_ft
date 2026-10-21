@@ -15,6 +15,7 @@ import type {
   SnapshotResponse,
 } from '@bilig/content-model/api';
 import { buildKtpPlan, type MockKtpPlan } from './ktp';
+import { seedBooks, type MockBook } from './books';
 
 export interface MockUser {
   id: string;
@@ -126,6 +127,8 @@ export interface MockState {
   /** v0.7.0: WhatsApp codes and verified-number tokens. */
   otps: Record<string, MockOtp>;
   otpTokens: Record<string, MockOtpToken>;
+  /** v0.9.3: the book library (staff uploads, published books). */
+  books: MockBook[];
 }
 
 export const SCHOOL_ID = '0192a000-0000-7000-8000-000000000001';
@@ -297,6 +300,7 @@ function seed(): MockState {
     registrations: {},
     otps: {},
     otpTokens: {},
+    books: seedBooks(),
     ktp: [buildKtpPlan(KTP_ID, TEACHER_ID, 'КТП 8-класс алгебра 2026-2027.docx', new Date(Date.now() - 2 * 86400_000).toISOString()), readyKtp],
   };
 }
@@ -316,6 +320,7 @@ function load(): MockState {
         state.registrations ??= {};
         state.otps ??= {};
         state.otpTokens ??= {};
+        state.books ??= seedBooks();
         return state;
       }
     } catch {

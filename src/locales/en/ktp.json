@@ -359,6 +359,9 @@
       "noDates": "The KTP has no dates: your timetable is your own. Fill them in later on the plan page.",
       "create": "Make the KTP",
       "creating": "Making the KTP…"
+    },
+    "library": {
+      "title": "Bilig library"
     }
   }
 }

@@ -11,26 +11,28 @@ import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { t as tr } from '@bilig/content-model';
-import type { ClassSubject, SchoolClass, TeachingPlan } from '@bilig/content-model/api';
+import type { Book, ClassSubject, SchoolClass, TeachingPlan } from '@bilig/content-model/api';
 import { subjectSwatch } from '@bilig/scene-core';
 import { api } from '../../api/client';
 import { useCatalog } from '../../api/content';
 import { usePermission } from '../../api/session';
 import { Icon } from '../../components/Icon';
 import { fetchLessonPlan, ktpKeys, useDownloads } from '../../ktp/api';
-import { addDays, parseIso, todayIso } from '../../ktp/model';
+import { addDays, classLabel, parseIso, todayIso } from '../../ktp/model';
 import { ProblemCount } from '../../ktp/Problems';
 import { fmtDate } from '../../lib/format';
 import { useLang } from '../../lib/hooks';
 import { topicPath } from '../../lib/urls';
 import { toast, useUi } from '../../state/ui';
 import { errorKey } from '../format';
+import { ClassBookLine, useClassBook } from './ClassBook';
 import { classSubjectKeys } from './ClassesSection';
 import { SubjectToggles } from './ClassForm';
 import { useSubjectTitle } from './TeachingPicker';
 import { Chip, ErrorState, Sheet, Skeleton, btn, cardCls, cx, iconBtn } from './ui';
 
 const KtpUploadSheet = lazy(() => import('../../ktp/UploadSheet'));
+const FromTextbookSheet = lazy(() => import('../../ktp/FromTextbookSheet'));
 
 export const classSubjectsKey = (id: string) => ['classes', 'subjects', id] as const;
 
@@ -40,6 +42,8 @@ export function ClassSubjects({ cls, onChange }: { cls: SchoolClass; onChange: (
   const subjects = useQuery({ queryKey: classSubjectsKey(cls.id), queryFn: () => api('classSubjects', { params: { id: cls.id } }) });
   const [adding, setAdding] = useState(false);
   const [uploadFor, setUploadFor] = useState<string | null>(null);
+  // v0.9.3: «КТП from the class's book», straight to the number of lessons.
+  const [fromBook, setFromBook] = useState<Book | null>(null);
   const keys = classSubjectKeys(cls);
   const items = subjects.data?.items ?? [];
   // One primary action per view: the upload of the first subject still without a КТП.
@@ -81,12 +85,25 @@ export function ClassSubjects({ cls, onChange }: { cls: SchoolClass; onChange: (
               primary={s.subjectKey === firstMissing}
               canRemove={keys.length > 1}
               onUpload={() => setUploadFor(s.subjectKey)}
+              onFromBook={setFromBook}
+              onClass={onChange}
               onRemove={() => setKeys(keys.filter((k) => k !== s.subjectKey))}
             />
           ))}
         </ul>
       )}
       {adding && <AddSubjectsSheet current={keys} onClose={() => setAdding(false)} onSave={(added) => setKeys([...keys, ...added]).then(() => setAdding(false))} />}
+      {fromBook && (
+        <Suspense fallback={null}>
+          <FromTextbookSheet
+            initial={{ book: fromBook, classes: [classLabel(cls.name)] }}
+            onClose={() => {
+              setFromBook(null);
+              void qc.invalidateQueries({ queryKey: classSubjectsKey(cls.id) });
+            }}
+          />
+        </Suspense>
+      )}
       {uploadFor && (
         <Suspense fallback={null}>
           <KtpUploadSheet
@@ -125,6 +142,8 @@ function SubjectCard({
   primary,
   canRemove,
   onUpload,
+  onFromBook,
+  onClass,
   onRemove,
 }: {
   cls: SchoolClass;
@@ -132,6 +151,8 @@ function SubjectCard({
   primary: boolean;
   canRemove: boolean;
   onUpload: () => void;
+  onFromBook: (b: Book) => void;
+  onClass: (c: SchoolClass) => void;
   onRemove: () => Promise<unknown>;
 }): JSX.Element {
   const { t } = useTranslation();
@@ -154,6 +175,7 @@ function SubjectCard({
   const topic = next?.topicKey ? catalog.data?.topics.find((x) => x.key === next.topicKey) : undefined;
   const { done, total } = item.progress;
   const planHref = parsed ? `/${lang}/teacher/ktp/${item.ktp.planId}` : '';
+  const book = useClassBook(cls, item.subjectKey, canPlan);
 
   /** The КТП column this class is linked to — the plan's `class` for the .docx. */
   const download = (planId: string, index: number) =>
@@ -191,6 +213,7 @@ function SubjectCard({
                 <Icon name="check" className="sm" />
                 {t('teacherHome.ktp.ready')}
               </Chip>
+              {book.chosen && <Chip>{t('teacherHome.ktp.main')}</Chip>}
               <ProblemCount errors={item.ktp.errors} warnings={item.ktp.warnings} />
             </div>
           ) : (
@@ -223,6 +246,8 @@ function SubjectCard({
           </div>
         </div>
       )}
+
+      {canPlan && <ClassBookLine cls={cls} subjectKey={item.subjectKey} subjectTitle={title} book={book} onClass={onClass} />}
 
       {parsed ? (
         <>
@@ -286,12 +311,20 @@ function SubjectCard({
         </>
       ) : (
         <div className="grid gap-3">
-          <p className="m-0 text-base text-muted">{t('teacherHome.ktp.noneHint')}</p>
+          <p className="m-0 text-base text-muted">{t(book.chosen ? 'teacherHome.ktp.fromBookHint' : 'teacherHome.ktp.noneHint')}</p>
           {canPlan && (
-            <button type="button" className={btn(primary ? 'primary' : 'secondary', 'justify-self-start')} onClick={onUpload} aria-label={t('teacherHome.ktp.uploadLabel', { subject: title, name: cls.name })}>
-              <Icon name="upload" className="sm" />
-              {t('teacherHome.ktp.upload')}
-            </button>
+            <div className="flex flex-wrap gap-3">
+              {book.chosen && (
+                <button type="button" className={btn(primary ? 'primary' : 'secondary')} onClick={() => onFromBook(book.chosen!)} aria-label={t('teacherHome.ktp.fromBookLabel', { subject: title, name: cls.name })}>
+                  <Icon name="book" className="sm" />
+                  {t('teacherHome.ktp.fromBook')}
+                </button>
+              )}
+              <button type="button" className={btn(primary && !book.chosen ? 'primary' : book.chosen ? 'ghost' : 'secondary', 'justify-self-start')} onClick={onUpload} aria-label={t('teacherHome.ktp.uploadLabel', { subject: title, name: cls.name })}>
+                <Icon name="upload" className="sm" />
+                {t(book.chosen ? 'teacherHome.ktp.uploadOwn' : 'teacherHome.ktp.upload')}
+              </button>
+            </div>
           )}
         </div>
       )}

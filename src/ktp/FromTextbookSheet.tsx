@@ -11,6 +11,9 @@
  *  3. The number of lessons: hours a week × weeks (no dates: every teacher's
  *     timetable differs), the school year and optional class labels →
  *     POST /ktp/from-textbook → the plan page.
+ * v0.9.3: step 1 also lists the published books of the Bilig library
+ * (`bookId`); a class's subject card opens the sheet on step 3 with the
+ * class's book and the class already chosen.
  * Lazy chunk of the КТП tab; pdf.js is a further lazy chunk (`bookPdf.ts`).
  */
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -18,7 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { t as tr, textbookSubjects, type Textbook } from '@bilig/content-model';
-import { SCHOOL_WEEKS, type KtpContentsResponse, type KtpFromTextbookRequest, type TeachingPlan } from '@bilig/content-model/api';
+import { SCHOOL_WEEKS, type Book as LibraryBook, type KtpContentsResponse, type KtpFromTextbookRequest, type TeachingPlan } from '@bilig/content-model/api';
 import { isApiError } from '../api/client';
 import { useCatalog, useTextbooks } from '../api/content';
 import { useSession } from '../api/session';
@@ -29,6 +32,7 @@ import { Chip, EmptyState, ErrorState, Field, Loading, Sheet, Tabs, btn, cx, des
 import { useLang } from '../lib/hooks';
 import { BOOK_ACCEPT, BookError, CONTENTS_MAX_IMAGES, bookKind, checkBookFiles, prepareBook, type PrepProgress } from './book';
 import { useKtpContents, useKtpFromTextbook } from './api';
+import { BookCover, useLibraryBooks } from './library';
 import {
   LESSON_KINDS,
   fromContents,
@@ -53,6 +57,7 @@ const HOURS = [1, 2, 3, 4, 5, 6];
 /** The chosen book: a catalog textbook (step 2 skipped) or the checked contents of the teacher's own. */
 type Book =
   | { kind: 'catalog'; textbook: Textbook; subjectKey: string | null }
+  | { kind: 'library'; book: LibraryBook }
   | {
       kind: 'own';
       draft: EditDraft;
@@ -62,12 +67,19 @@ type Book =
 
 type Step = 1 | 2 | 3;
 
-export default function FromTextbookSheet({ onClose }: { onClose: () => void }): JSX.Element {
+export interface FromTextbookInitial {
+  /** A published library book: the sheet opens on step 3. */
+  book: LibraryBook;
+  /** Class labels to prefill («7А»). */
+  classes?: string[];
+}
+
+export default function FromTextbookSheet({ onClose, initial }: { onClose: () => void; initial?: FromTextbookInitial }): JSX.Element {
   const { t } = useTranslation();
   const lang = useLang();
   const navigate = useNavigate();
-  const [step, setStep] = useState<Step>(1);
-  const [book, setBook] = useState<Book | null>(null);
+  const [step, setStep] = useState<Step>(initial ? 3 : 1);
+  const [book, setBook] = useState<Book | null>(initial ? { kind: 'library', book: initial.book } : null);
   const [tab, setTab] = useState<'catalog' | 'own'>('catalog');
   const heading = useRef<HTMLHeadingElement>(null);
   const first = useRef(true);
@@ -87,7 +99,7 @@ export default function FromTextbookSheet({ onClose }: { onClose: () => void }):
 
   return (
     <Sheet title={t('ktp.book.title')} onClose={onClose} wide>
-      <StepHeader step={step} skipped={book?.kind === 'catalog'} />
+      <StepHeader step={step} skipped={book?.kind === 'catalog' || book?.kind === 'library'} />
       <h3 ref={heading} tabIndex={-1} className="m-0 font-serif text-lg font-bold text-ink outline-none" data-testid="ktp-book-step">
         {t('ktp.book.stepOf', {
           n: step,
@@ -103,6 +115,10 @@ export default function FromTextbookSheet({ onClose }: { onClose: () => void }):
             setBook({ kind: 'catalog', textbook, subjectKey });
             setStep(3);
           }}
+          onLibrary={(b) => {
+            setBook({ kind: 'library', book: b });
+            setStep(3);
+          }}
           onOwn={(res, fileName) => {
             setBook({
               kind: 'own',
@@ -115,7 +131,7 @@ export default function FromTextbookSheet({ onClose }: { onClose: () => void }):
         />
       )}
       {step === 2 && book?.kind === 'own' && <ReviewStep book={book} onChange={(draft) => setBook({ ...book, draft })} onBack={() => setStep(1)} onNext={() => setStep(3)} />}
-      {step === 3 && book && <LessonsStep book={book} onBack={() => setStep(own ? 2 : 1)} onDone={done} />}
+      {step === 3 && book && <LessonsStep book={book} initialClasses={initial?.classes} onBack={() => setStep(own ? 2 : 1)} onDone={done} />}
     </Sheet>
   );
 }
@@ -172,11 +188,13 @@ function BookStep({
   tab,
   onTab,
   onCatalog,
+  onLibrary,
   onOwn,
 }: {
   tab: 'catalog' | 'own';
   onTab: (k: 'catalog' | 'own') => void;
   onCatalog: (tb: Textbook, subjectKey: string | null) => void;
+  onLibrary: (b: LibraryBook) => void;
   onOwn: (res: KtpContentsResponse, fileName: string) => void;
 }): JSX.Element {
   const { t } = useTranslation();
@@ -193,7 +211,7 @@ function BookStep({
         idBase="ktp-book"
       />
       <div role="tabpanel" id="ktp-book-panel" aria-labelledby={`ktp-book-tab-${tab}`} className="grid gap-4">
-        {tab === 'catalog' ? <CatalogBooks onPick={onCatalog} /> : <OwnBook onRead={onOwn} />}
+        {tab === 'catalog' ? <CatalogBooks onPick={onCatalog} onLibrary={onLibrary} /> : <OwnBook onRead={onOwn} />}
       </div>
     </div>
   );
@@ -201,10 +219,11 @@ function BookStep({
 
 const lessonsOf = (tb: Textbook, subjectKey: string | null): number => tb.chapters.filter((c) => !subjectKey || c.subjectKey === subjectKey).reduce((n, c) => n + c.lessons.length, 0);
 
-function CatalogBooks({ onPick }: { onPick: (tb: Textbook, subjectKey: string | null) => void }): JSX.Element {
+function CatalogBooks({ onPick, onLibrary }: { onPick: (tb: Textbook, subjectKey: string | null) => void; onLibrary: (b: LibraryBook) => void }): JSX.Element {
   const { t } = useTranslation();
   const lang = useLang();
   const books = useTextbooks();
+  const library = useLibraryBooks({});
   const { data: catalog } = useCatalog();
   const mine = useTeacherSubjects();
   const [all, setAll] = useState(false);
@@ -221,9 +240,12 @@ function CatalogBooks({ onPick }: { onPick: (tb: Textbook, subjectKey: string | 
     .filter((g) => g.books.length);
   const others = items.filter((tb) => !textbookSubjects(tb).some((k) => mine.includes(k)));
 
+  // The teacher's subjects first, then the rest; newest first within (the server's order).
+  const libItems = [...(library.data?.items ?? [])].sort((a, b) => Number(!mine.includes(a.subjectKey)) - Number(!mine.includes(b.subjectKey)));
+
   if (books.isLoading) return <Loading rows={2} />;
   if (books.isError) return <ErrorState text={t('ktp.book.catalog.loadError')} onRetry={() => void books.refetch()} />;
-  if (!items.length) return <EmptyState icon="book" title={t('ktp.book.catalog.empty')} text={t('ktp.book.catalog.emptyText')} />;
+  if (!items.length && !libItems.length) return <EmptyState icon="book" title={t('ktp.book.catalog.empty')} text={t('ktp.book.catalog.emptyText')} />;
 
   const list = (bks: Textbook[], subjectKey: string | null) => (
     <ul className="m-0 grid list-none gap-2 p-0 md:grid-cols-2">
@@ -258,6 +280,35 @@ function CatalogBooks({ onPick }: { onPick: (tb: Textbook, subjectKey: string | 
   return (
     <div className="grid gap-4">
       <p className="m-0 text-base text-muted">{t('ktp.book.catalog.lead')}</p>
+      {libItems.length > 0 && (
+        <section className="grid gap-2" aria-labelledby="ktp-book-library">
+          <h4 id="ktp-book-library" className="m-0 text-sm font-semibold text-muted">
+            {t('ktp.book.library.title')}
+          </h4>
+          <ul className="m-0 grid list-none gap-2 p-0 md:grid-cols-2">
+            {libItems.map((b) => {
+              const meta = [t('textbook.grade', { grade: b.grade }), subjectTitle(b.subjectKey), b.lang.toUpperCase(), t('ktp.book.catalog.lessons', { count: b.sectionCount })].join(' · ');
+              return (
+                <li key={b.id}>
+                  <button
+                    type="button"
+                    className="flex min-h-11 w-full items-start gap-3 rounded-lg border border-line bg-chip p-3 text-start text-ink transition-colors hover:border-accent"
+                    aria-label={t('ktp.book.catalog.pick', { name: b.title, meta })}
+                    onClick={() => onLibrary(b)}
+                  >
+                    <BookCover book={b} className="w-12 flex-none" />
+                    <span className="grid min-w-0 flex-1 gap-0.5">
+                      <b className="text-base">{b.title}</b>
+                      <span className="text-sm text-muted">{meta}</span>
+                    </span>
+                    <Icon name="chevron-right" className="mt-2 text-muted" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
       {groups.map((g) => (
         <section key={g.key} className="grid gap-2" aria-labelledby={`ktp-book-subj-${g.key}`}>
           <h4 id={`ktp-book-subj-${g.key}`} className="m-0 text-sm font-semibold text-muted">
@@ -712,7 +763,7 @@ function Nav({ onBack, children }: { onBack: () => void; children: ReactNode }):
 
 const sameLabel = (a: string, b: string) => classLabel(a).toLocaleLowerCase() === classLabel(b).toLocaleLowerCase();
 
-function LessonsStep({ book, onBack, onDone }: { book: Book; onBack: () => void; onDone: (p: TeachingPlan) => void }): JSX.Element {
+function LessonsStep({ book, initialClasses, onBack, onDone }: { book: Book; initialClasses?: string[]; onBack: () => void; onDone: (p: TeachingPlan) => void }): JSX.Element {
   const { t } = useTranslation();
   const lang = useLang();
   const create = useKtpFromTextbook();
@@ -724,13 +775,14 @@ function LessonsStep({ book, onBack, onDone }: { book: Book; onBack: () => void;
   const [weeks, setWeeks] = useState(String(SCHOOL_WEEKS));
   const [year, setYear] = useState(nowYear);
   const [extra, setExtra] = useState('');
-  const [labels, setLabels] = useState<string[] | null>(null);
+  const [labels, setLabels] = useState<string[] | null>(initialClasses?.length ? initialClasses : null);
   const [error, setError] = useState<string | null>(null);
 
   const draft = book.kind === 'own' ? toDraft(book.draft) : null;
-  const grade = book.kind === 'catalog' ? book.textbook.grade : draft?.ok ? draft.draft.grade : null;
-  const subjectKey = book.kind === 'catalog' ? (book.subjectKey ?? textbookSubjects(book.textbook)[0] ?? null) : draft?.ok ? draft.draft.subjectKey : null;
-  const name = book.kind === 'catalog' ? tr(book.textbook.shortTitle ?? book.textbook.title, lang) : book.draft.title;
+  const grade = book.kind === 'catalog' ? book.textbook.grade : book.kind === 'library' ? book.book.grade : draft?.ok ? draft.draft.grade : null;
+  const subjectKey =
+    book.kind === 'catalog' ? (book.subjectKey ?? textbookSubjects(book.textbook)[0] ?? null) : book.kind === 'library' ? book.book.subjectKey : draft?.ok ? draft.draft.subjectKey : null;
+  const name = book.kind === 'catalog' ? tr(book.textbook.shortTitle ?? book.textbook.title, lang) : book.kind === 'library' ? book.book.title : book.draft.title;
 
   // Prefill (once the classes are known): the teacher's classes of the book's grade and subject.
   const picked = labels ?? mine.filter((c) => c.grade === grade && (!subjectKey || classSubjectKeys(c).includes(subjectKey))).map((c) => classLabel(c.name));
@@ -758,10 +810,12 @@ function LessonsStep({ book, onBack, onDone }: { book: Book; onBack: () => void;
             ...(book.subjectKey ? { subjectKey: book.subjectKey } : {}),
             lang,
           }
-        : {
-            draft: draft!.ok ? draft!.draft : undefined,
-            lang: book.draft.lang,
-          }),
+        : book.kind === 'library'
+          ? { bookId: book.book.id, lang: book.book.lang }
+          : {
+              draft: draft!.ok ? draft!.draft : undefined,
+              lang: book.draft.lang,
+            }),
       hoursPerWeek: hours,
       ...(weeksN !== SCHOOL_WEEKS ? { weeks: weeksN } : {}),
       year,
