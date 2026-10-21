@@ -18,13 +18,17 @@ import { toast, useUi } from '../../state/ui';
 import { errorKey } from '../format';
 import { ALL_GRADES, useClassSubjectOptions } from './TeachingPicker';
 import { Field, Sheet, btn, cx, described, inputCls } from './ui';
+import { ClassFormBooks, type FormBooks } from './ClassFormBooks';
+import { normalizeClassName } from '@bilig/content-model/api';
 
 interface Values {
   name: string;
   grade: number | '';
   subjectKeys: string[];
+  /** v0.9.3: the book per subject chosen in the form (undefined = not looked at yet, null = none). */
+  books?: FormBooks;
 }
-type Valid = { name: string; grade: number; subjectKeys: string[] };
+type Valid = { name: string; grade: number; subjectKeys: string[]; books?: Record<string, string> };
 type Errors = Partial<Record<'name' | 'grade' | 'subjects', string>>;
 
 const toggle = (xs: string[], x: string): string[] => (xs.includes(x) ? xs.filter((y) => y !== x) : [...xs, x]);
@@ -107,10 +111,12 @@ export function ClassFields({
   submitLabel,
   onSubmit,
   onCancel,
+  withBooks = false,
 }: {
   idBase: string;
   initial: Values;
   withSubjects: boolean;
+  withBooks?: boolean;
   busy: boolean;
   error: string | null;
   submitLabel: string;
@@ -131,11 +137,13 @@ export function ClassFields({
     if (found.name) return document.getElementById(`${idBase}-name`)?.focus();
     if (found.grade) return document.getElementById(`${idBase}-grade`)?.focus();
     if (found.subjects) return document.querySelector<HTMLElement>(`#${idBase}-subjects button`)?.focus();
-    onSubmit({ name: v.name.trim(), grade: v.grade as number, subjectKeys: v.subjectKeys });
+    // Only the books of subjects still chosen (a subject turned off drops its book).
+    const books = Object.fromEntries(Object.entries(v.books ?? {}).filter((e): e is [string, string] => !!e[1] && v.subjectKeys.includes(e[0])));
+    onSubmit({ name: normalizeClassName(v.name), grade: v.grade as number, subjectKeys: v.subjectKeys, ...(withBooks && Object.keys(books).length ? { books } : {}) });
   };
   return (
     <form className="grid gap-4" onSubmit={submit} noValidate>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid items-start gap-4 sm:grid-cols-2">
         <Field id={`${idBase}-name`} label={t('teacher.classForm.name')} hint={t('teacher.classForm.nameHint')} error={errors.name}>
           <input
             id={`${idBase}-name`}
@@ -143,7 +151,8 @@ export function ClassFields({
             value={v.name}
             maxLength={40}
             autoComplete="off"
-            onChange={(e) => setV({ ...v, name: e.target.value })}
+            // Letters in capitals as they are typed («8а» → «8А»), as Bilig shows every class name.
+            onChange={(e) => setV({ ...v, name: e.target.value.toLocaleUpperCase('ru') })}
             aria-describedby={described(`${idBase}-name`, true)}
             aria-invalid={!!errors.name || undefined}
           />
@@ -167,6 +176,7 @@ export function ClassFields({
         </Field>
       </div>
       {withSubjects && <SubjectToggles id={`${idBase}-subjects`} value={v.subjectKeys} onChange={(subjectKeys) => setV({ ...v, subjectKeys })} error={errors.subjects} disabled={busy} />}
+      {withBooks && <ClassFormBooks grade={v.grade} subjectKeys={v.subjectKeys} value={v.books ?? {}} onPick={(k, id) => setV((cur) => ({ ...cur, books: { ...(cur.books ?? {}), [k]: id } }))} disabled={busy} />}
       <p className="m-0 text-sm font-semibold text-bad empty:hidden" role="alert">
         {error ?? ''}
       </p>
@@ -195,7 +205,7 @@ export function useCreateClass(onCreated: (c: SchoolClass) => void | Promise<voi
     setBusy(true);
     setError(null);
     try {
-      const c = await api('classCreate', { body: { name: v.name, grade: v.grade, subjectKeys: v.subjectKeys } });
+      const c = await api('classCreate', { body: { name: v.name, grade: v.grade, subjectKeys: v.subjectKeys, ...(v.books ? { books: v.books } : {}) } });
       await qc.invalidateQueries({ queryKey: ['classes'] });
       toast({ key: 'teacher.created', params: { name: c.name }, kind: 'success' });
       await onCreated(c);
@@ -215,7 +225,7 @@ export function NewClassSheet({ onClose, onCreated, initial = NEW_CLASS }: { onC
   const { busy, error, create } = useCreateClass(onCreated);
   return (
     <Sheet title={t('teacher.classForm.newTitle')} onClose={onClose}>
-      <ClassFields idBase="new-class" initial={initial} withSubjects busy={busy} error={error} submitLabel={t('teacher.classForm.create')} onSubmit={(v) => void create(v)} onCancel={onClose} />
+      <ClassFields idBase="new-class" initial={initial} withSubjects withBooks busy={busy} error={error} submitLabel={t('teacher.classForm.create')} onSubmit={(v) => void create(v)} onCancel={onClose} />
     </Sheet>
   );
 }

@@ -44,7 +44,7 @@
   "classForm": {
     "newTitle": "New class",
     "name": "Class name",
-    "nameHint": "The way you write it: 8B, 8-V, 9 A",
+    "nameHint": "For example: 8A, 8-B, 9 C — letters are written in capitals",
     "nameRequired": "Enter the class name",
     "grade": "Grade",
     "subject": "Subject",
@@ -57,7 +57,11 @@
     "subjectsHint": "One or more subjects",
     "subjectsRequired": "Choose at least one subject",
     "gradeRequired": "Choose the grade",
-    "gradeChoose": "Choose…"
+    "gradeChoose": "Choose…",
+    "books": "Textbooks",
+    "booksHint": "The class textbook for each subject: the system suggests a KTP from it. You can also choose later.",
+    "noBooks": "No grade {{grade}} textbook for this subject yet",
+    "recommended": "Suggested"
   },
   "joinCode": "Class join code",
   "joinCodeHint": "Students type this code on the sign-in page, then pick their name from the list.",

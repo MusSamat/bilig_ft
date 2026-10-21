@@ -199,6 +199,29 @@ describe('Home «My classes» (§6.2)', () => {
     expect(cards.map((c) => within(c).getByRole('heading').textContent)).toEqual(['Physics', 'Chemistry']);
   });
 
+  it('v0.9.3: the name in capitals as typed; the book of each subject chosen in the form (the one fitting book preselected, visibly)', async () => {
+    await signIn({ phone: READY_PHONE });
+    const user = userEvent.setup();
+    open();
+    await user.click(await screen.findByRole('button', { name: 'Add a class' }));
+    const sheet = screen.getByRole('dialog', { name: 'New class' });
+    await user.type(within(sheet).getByLabelText('Class name'), '7б');
+    expect(within(sheet).getByLabelText('Class name')).toHaveValue('7Б');
+    // No grade yet → no books block; grade 7 + Physics → the library's Physics 7.
+    expect(within(sheet).queryByRole('group', { name: 'Physics' })).not.toBeInTheDocument();
+    await user.selectOptions(within(sheet).getByLabelText('Grade'), '7');
+    await user.click(within(sheet).getByRole('button', { name: 'Physics' }));
+    const books = await within(sheet).findByRole('group', { name: 'Physics' });
+    const book = await within(books).findByRole('button', { name: /Физика, 7-класс/ });
+    await waitFor(() => expect(book).toHaveAttribute('aria-pressed', 'true'));
+    expect(within(books).getByText('Suggested')).toBeInTheDocument();
+    await user.click(within(sheet).getByRole('button', { name: 'Add class' }));
+    await screen.findByRole('heading', { level: 1, name: '7Б' });
+    const body = sent.find((r) => r.method === 'POST' && r.path.endsWith('/classes'))?.body as { name: string; books?: Record<string, string> };
+    expect(body).toMatchObject({ name: '7Б', grade: 7, subjectKeys: ['phys'] });
+    expect(Object.keys(body.books ?? {})).toEqual(['phys']);
+  });
+
   it('closes the sheet with Escape without creating anything', async () => {
     await signIn({ email: TEACHER_EMAIL });
     const user = userEvent.setup();

@@ -46,6 +46,14 @@ export function ClassBookLine({ cls, subjectKey, subjectTitle, book, onClass }: 
   };
   const { chosen, chosenId, suggestion } = book;
   const label = t('teacherHome.book.chooseLabel', { subject: subjectTitle, name: cls.name });
+  // No published book for this grade and subject: say so, don't offer an empty picker.
+  if (book.list.isSuccess && book.items.length === 0 && !chosenId)
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-line p-3 text-sm text-muted" data-testid="class-book">
+        <Icon name="book" className="sm" />
+        {t('teacherHome.book.noneYet', { grade: cls.grade })}
+      </div>
+    );
   return (
     <div className="grid gap-2 rounded-lg border border-line p-3" data-testid="class-book">
       <div className="flex flex-wrap items-center gap-2">

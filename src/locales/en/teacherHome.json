@@ -66,6 +66,7 @@
     "chosen": "Textbook chosen",
     "cleared": "Textbook removed",
     "part": "part {{n}}",
-    "pick": "{{title}}, {{meta}}"
+    "pick": "{{title}}, {{meta}}",
+    "noneYet": "No grade {{grade}} textbook for this subject in the Bilig library yet"
   }
 }

@@ -35,6 +35,7 @@ import {
   type ErrorCode,
   type Progress,
   type SyncRequest,
+  normalizeClassName,
 } from '@bilig/content-model/api';
 import type { Permission } from '@bilig/permissions';
 import { PACKAGES, TEXTBOOKS, buildCatalog, packageByKey } from './data';
@@ -469,7 +470,10 @@ export const handlers: HttpHandler[] = [
     const bad = admitSubjects(user, schoolId, b.grade, keys);
     if (bad) return fail('validation_failed', { issues: [{ path: ['subjectKeys'], message: 'not licensed' }] });
     const code = Math.random().toString(36).slice(2, 8).toUpperCase().padEnd(6, 'X').replace(/[^A-Z0-9]/g, 'X');
-    const c = { id: newId(), schoolId, name: b.name, grade: b.grade, joinCode: code, joinCodeEnabled: true, ...(keys.length ? { subjectKey: keys[0], subjectKeys: keys } : {}) };
+    // v0.9.3: names in capitals; the books chosen in the form, only published books of the class's subjects.
+    for (const [k, id] of Object.entries(b.books ?? {}))
+      if (!keys.includes(k) || !mockDb.books.some((x) => x.id === id && x.status === 'published' && x.subjectKey === k)) return fail('validation_failed', { issues: [{ path: ['books', k], message: 'No published book of this subject' }] });
+    const c = { id: newId(), schoolId, name: normalizeClassName(b.name), grade: b.grade, joinCode: code, joinCodeEnabled: true, ...(keys.length ? { subjectKey: keys[0], subjectKeys: keys } : {}), ...(b.books && Object.keys(b.books).length ? { books: { ...b.books } } : {}) };
     mockDb.classes.push(c);
     return classWithCount(c);
   }),
@@ -491,7 +495,7 @@ export const handlers: HttpHandler[] = [
       }
       c.books = next;
     }
-    Object.assign(c, rest);
+    Object.assign(c, rest, rest.name !== undefined ? { name: normalizeClassName(rest.name) } : {});
     return classWithCount(c);
   }),
   route('classJoinCode', ({ params }) => {
