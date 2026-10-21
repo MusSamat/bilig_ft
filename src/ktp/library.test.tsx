@@ -176,7 +176,7 @@ describe('a class’s textbook', () => {
     await user.click(screen.getByRole('button', { name: 'Make a KTP from a textbook' }));
     const dialog = await screen.findByRole('dialog', { name: 'A KTP from a textbook' });
     const lib = await within(dialog).findByRole('region', { name: 'Bilig library' }, { timeout: 5000 });
-    await user.click(within(lib).getByRole('button', { name: /^Физика, 7-класс, Grade 7 · Physics · KY/ }));
+    await user.click(within(lib).getByRole('button', { name: /^Физика, 7-класс — Э. М. Мамбетакунов, Grade 7 · Physics · KY/ }));
     expect(within(dialog).getByTestId('ktp-book-step')).toHaveTextContent('Step 3 of 3');
     await user.click(within(dialog).getByRole('button', { name: 'Make the KTP' }));
     await waitFor(() => expect(log.find((r) => r.path === '/ktp/from-textbook')).toBeDefined());

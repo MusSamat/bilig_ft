@@ -285,23 +285,22 @@ function CatalogBooks({ onPick, onLibrary }: { onPick: (tb: Textbook, subjectKey
           <h4 id="ktp-book-library" className="m-0 text-sm font-semibold text-muted">
             {t('ktp.book.library.title')}
           </h4>
-          <ul className="m-0 grid list-none gap-2 p-0 md:grid-cols-2">
+          <ul className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3 md:grid-cols-4">
             {libItems.map((b) => {
               const meta = [t('textbook.grade', { grade: b.grade }), subjectTitle(b.subjectKey), b.lang.toUpperCase(), t('ktp.book.catalog.lessons', { count: b.sectionCount })].join(' · ');
+              const authors = b.authors.join(', ');
               return (
-                <li key={b.id}>
+                <li key={b.id} className="min-w-0">
                   <button
                     type="button"
-                    className="flex min-h-11 w-full items-start gap-3 rounded-lg border border-line bg-chip p-3 text-start text-ink transition-colors hover:border-accent"
-                    aria-label={t('ktp.book.catalog.pick', { name: b.title, meta })}
+                    className="grid h-full w-full content-start gap-1.5 rounded-lg border border-line bg-chip p-2 text-start text-ink transition-colors hover:border-accent"
+                    aria-label={t('ktp.book.catalog.pick', { name: [b.title, authors].filter(Boolean).join(' — '), meta })}
                     onClick={() => onLibrary(b)}
                   >
-                    <BookCover book={b} className="w-12 flex-none" />
-                    <span className="grid min-w-0 flex-1 gap-0.5">
-                      <b className="text-base">{b.title}</b>
-                      <span className="text-sm text-muted">{meta}</span>
-                    </span>
-                    <Icon name="chevron-right" className="mt-2 text-muted" />
+                    <BookCover book={b} />
+                    <b className="line-clamp-2 text-sm">{b.title}</b>
+                    {authors && <span className="line-clamp-2 text-sm text-ink">{authors}</span>}
+                    <span className="line-clamp-2 text-sm text-muted">{meta}</span>
                   </button>
                 </li>
               );

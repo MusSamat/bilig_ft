@@ -74,7 +74,7 @@ function SubjectBooks({ grade, subjectKey, value, onChange, disabled }: { grade:
               aria-pressed={value === null || value === undefined}
               disabled={disabled}
               onClick={() => onChange(null)}
-              className={cx('grid h-full w-24 place-content-center gap-1 rounded-lg border p-2 text-center text-sm text-muted', value ? 'border-line' : 'border-accent ring-2 ring-accent')}
+              className={cx('grid h-full w-28 place-content-center gap-1 rounded-lg border p-2 text-center text-sm text-muted', value ? 'border-line' : 'border-accent ring-2 ring-accent')}
             >
               <Icon name="x" className="mx-auto" />
               {t('teacherHome.book.clear')}
@@ -93,18 +93,20 @@ function SubjectBooks({ grade, subjectKey, value, onChange, disabled }: { grade:
 
 function BookChoice({ book, selected, recommended, disabled, onPick }: { book: Book; selected: boolean; recommended: boolean; disabled?: boolean; onPick: () => void }): JSX.Element {
   const { t } = useTranslation();
-  const meta = [book.lang.toUpperCase(), book.year, book.authors[0]].filter(Boolean).join(' · ');
+  const authors = book.authors.join(', ');
+  const meta = [book.lang.toUpperCase(), book.year].filter(Boolean).join(' · ');
   return (
     <button
       type="button"
       aria-pressed={selected}
-      aria-label={t('teacherHome.book.pick', { title: book.title, meta })}
+      aria-label={t('teacherHome.book.pick', { title: [book.title, authors].filter(Boolean).join(' — '), meta })}
       disabled={disabled}
       onClick={onPick}
-      className={cx('grid w-28 content-start gap-1 rounded-lg border bg-chip p-1.5 text-start text-ink hover:border-accent', selected ? 'border-accent ring-2 ring-accent' : 'border-line')}
+      className={cx('grid w-36 content-start gap-1 rounded-lg border bg-chip p-1.5 text-start text-ink hover:border-accent', selected ? 'border-accent ring-2 ring-accent' : 'border-line')}
     >
       <BookCover book={book} />
       <b className="line-clamp-2 text-sm">{book.title}</b>
+      {authors && <span className="line-clamp-2 text-sm text-ink">{authors}</span>}
       <span className="line-clamp-1 text-sm text-muted">{meta}</span>
       {recommended && (
         <span className="inline-flex items-center gap-1 text-sm font-semibold text-accent">
